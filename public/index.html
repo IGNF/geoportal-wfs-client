@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>geoportal-wfs-client</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container">
+        <h2>API KEY</h2>
+
+        <div class="row">
+            <form>
+                <div class="form-group">
+                    <label for="inputApiKey">Email address</label>
+                    <input type="text" class="form-control" id="inputApiKey" placeholder="API KEY">
+                </div>
+                <div class="form-group">
+                    <input type="button" class="form-control btn btn-primary" value="OK" onclick="updateKey()">
+                </div>
+            </form>
+        </div>
+
+        <h2>FeatureTypes</h2>
+
+        <div class="row" style="height: 200px; overflow-y: scroll;">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th class="col-sm-4">NAMESPACE</th>
+                        <th class="col-sm-4">TYPE</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="feature-type-rows">
+
+                </tbody>
+            </table>
+        </div>
+
+        <h2>Features</h2>
+
+        <div id="features" class="row">
+        </div>
+    </div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="../dist/geoportal-wfs-client.js"></script>
+    <script type="text/javascript">
+        var client = null;
+
+        function updateKey(){
+            var apiKey = $('#inputApiKey').val();
+            client = new GeoportalWfsClient(apiKey,{referer:'http://localhost'});
+
+            var $featureTypeRows = $('#feature-type-rows');
+            client.getTypeNames()
+                .then(function(typeNames){
+                    $featureTypeRows.html();
+                    typeNames.forEach(function(typeName){
+                        var $row = $('<tr>');
+                        var parts = typeName.split(':');
+                        // namespace
+                        $row.append($('<td>'+parts[0]+'</td>'));
+                        // type
+                        $row.append($('<td>'+parts[1]+'</td>'));
+
+                        // actions
+                        var $actions = $('<td class="pull-right"></td>');
+                        $actions.append($('<a href="javascript:getFeatures(\''+typeName+'\')">features</a>'));
+                        $row.append($actions);
+                        $featureTypeRows.append( $row ) ;
+                    });
+                })
+                .catch(function(err){
+                    console.log(err);
+                })
+            ;
+        }
+
+        function getFeatures(typeName){
+            client.getFeatures(typeName)
+                .then(function(data){
+                    console.log(data);
+                })
+                .catch(function(err){
+                    console.log(err);
+                })
+            ;
+        }
+
+
+        $(document).ready(updateKey);
+    </script>
+
+  </body>
+</html>
