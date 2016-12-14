@@ -78218,17 +78218,25 @@ module.exports = Client ;
 var WKT = require('terraformer-wkt-parser');
 var flip = require('turf-flip');
 
+/*
+ * ATTENTION : Malgré l'utilisation de WGS84, il faut effectuer des flips sur les coordonnées
+ */
+
+
+function parseBoundingBox(bbox){
+    if ( typeof bbox !== 'string' ){
+        return bbox;
+    }
+    return bbox.replace(/'/g, '').split(',');
+}
+
 
 function bboxToFilter(bbox){
-    // hack (strange "'"  added around bbox)
-    bbox = bbox.replace(/'/g, '');
-
-    var parts = bbox.split(',');
-    var xmin = parts[1];
-    var ymin = parts[0];
-    var xmax = parts[3];
-    var ymax = parts[2];
-
+    bbox = parseBoundingBox(bbox);
+    var xmin = bbox[1];
+    var ymin = bbox[0];
+    var xmax = bbox[3];
+    var ymax = bbox[2];
     return `BBOX(the_geom,${xmin},${ymin},${xmax},${ymax})` ;
 }
 
