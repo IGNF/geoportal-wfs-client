@@ -64,14 +64,17 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/5.5.10/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/5.5.10/jsoneditor.min.js"></script>
+
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="../dist/geoportal-wfs-client.js"></script>
     <script type="text/javascript">
         var client = null;
 
-        function updateKey(){
+        function getFeatureTypes(){
             var apiKey = $('#inputApiKey').val();
-            client = new GeoportalWfsClient(apiKey,{referer:'http://localhost'});
+            client = new GeoportalWfsClient(apiKey);
 
             var $featureTypeRows = $('#feature-type-rows');
             client.getTypeNames()
@@ -97,11 +100,19 @@
                 })
             ;
         }
+        $(document).ready(getFeatureTypes);
 
         function getFeatures(typeName){
+            $('#features').html("Chargement en cours...");
             client.getFeatures(typeName)
                 .then(function(data){
-                    console.log(data);
+                    try {
+                        $('#features').html('');
+                        var jsonEditor = new JSONEditor(document.getElementById("features"), {});
+                        jsonEditor.set(JSON.parse(data));
+                    }catch(err){
+                        $("#features").html($('<div class="alert alert-warning">').html(data));
+                    }
                 })
                 .catch(function(err){
                     console.log(err);
@@ -110,7 +121,6 @@
         }
 
 
-        $(document).ready(updateKey);
     </script>
 
   </body>

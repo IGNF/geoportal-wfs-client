@@ -10,6 +10,7 @@ var clq_filter = require('./internal/cql_filter')
 var Client = function(apiKey,options){
     if (!apiKey) throw new Error('Required param: apiKey');
     this.apiKey = apiKey;
+    options = options || {};
     this.referer = options.referer || 'http://localhost';
 };
 
