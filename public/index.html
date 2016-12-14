@@ -72,6 +72,9 @@
     <script type="text/javascript">
         var client = null;
 
+        /**
+         * build GeoportalWfsClient and invoke getTypeNames
+         */
         function getFeatureTypes(){
             var apiKey = $('#inputApiKey').val();
             client = new GeoportalWfsClient(apiKey);
@@ -102,6 +105,9 @@
         }
         $(document).ready(getFeatureTypes);
 
+        /**
+         * invoke client.getFeatures(typeName)
+         */
         function getFeatures(typeName){
             $('#features').html("Chargement en cours...");
             client.getFeatures(typeName)
@@ -119,7 +125,6 @@
                 })
             ;
         }
-
 
     </script>
 
