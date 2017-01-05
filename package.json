@@ -14,7 +14,7 @@
     "request": "^2.79.0",
     "request-promise": "^4.1.1",
     "terraformer-wkt-parser": "^1.1.2",
-    "turf-flip": "^3.0.12",
+    "@turf/flip": "^3.0.12",
     "xmldom": "^0.1.27",
     "xpath": "0.0.23"
   }

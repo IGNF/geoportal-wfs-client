@@ -1,6 +1,6 @@
 
 var WKT = require('terraformer-wkt-parser');
-var flip = require('turf-flip');
+var flip = require('@turf/flip');
 
 /*
  * ATTENTION : Malgré l'utilisation de WGS84, il faut effectuer des flips sur les coordonnées

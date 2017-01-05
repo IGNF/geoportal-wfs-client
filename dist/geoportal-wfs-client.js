@@ -66746,7 +66746,7 @@ exports.debug = debug // for test
 
 }).call(this,require('_process'),require("buffer").Buffer)
 },{"_process":206,"assert":23,"buffer":62,"events":105,"http":285,"https":144,"net":59,"tls":59,"util":310}],302:[function(require,module,exports){
-var coordEach = require('turf-meta').coordEach;
+var coordEach = require('@turf/meta').coordEach;
 
 /**
  * Takes input features and flips all of their coordinates
@@ -78216,7 +78216,7 @@ module.exports = Client ;
 },{"./internal/cql_filter":324,"./internal/getTypeNamesFromCapabilities":325,"request":238,"request-promise":237}],324:[function(require,module,exports){
 
 var WKT = require('terraformer-wkt-parser');
-var flip = require('turf-flip');
+var flip = require('@turf/lip');
 
 /*
  * ATTENTION : Malgré l'utilisation de WGS84, il faut effectuer des flips sur les coordonnées
