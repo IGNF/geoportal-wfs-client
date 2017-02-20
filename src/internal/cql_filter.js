@@ -3,11 +3,11 @@ var WKT = require('terraformer-wkt-parser');
 var flip = require('@turf/flip');
 
 /*
- * ATTENTION : Malgré l'utilisation de WGS84, il faut effectuer des flips sur les coordonnées
+ * WARNING: Despite the use of WGS84, you need to do a flip on the coordinates
  */
 
 /**
- * Convertion d'une bbox en un tableau à 4 valeurs
+ * Convert a bbox on array with 4 values
  */
 function parseBoundingBox(bbox){
     if ( typeof bbox !== 'string' ){
@@ -17,7 +17,7 @@ function parseBoundingBox(bbox){
 }
 
 /**
- * Convertion d'une bbox en fragment cql_filter
+ * Convert a bbox in cql_filter fragment
  */
 function bboxToFilter(bbox){
     bbox = parseBoundingBox(bbox);
