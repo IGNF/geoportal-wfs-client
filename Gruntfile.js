@@ -13,12 +13,22 @@ module.exports = function (grunt) {
                     }
                 }
             }
-        }
+        },
+        jsdoc : {
+			dist : {
+				src: ['src/*.js','src/internal/*.js'],
+				options: {
+					"destination": "doc", 
+					"configure" : "jsdoc.conf.json"
+				}
+			}
+		}
     });
 
     // Load the plugin that provides the "uglify" task.
     grunt.loadNpmTasks('grunt-browserify');
+    grunt.loadNpmTasks('grunt-jsdoc');
 
     // Default task(s).
-    grunt.registerTask('default', ['browserify']);
+    grunt.registerTask('default', ['browserify','jsdoc']);
 };
