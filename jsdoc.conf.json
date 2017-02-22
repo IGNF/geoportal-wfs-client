@@ -9,7 +9,7 @@
     },
     "opts": {
 		"destination": "./doc",          
-		"recurse": true,                 
+		"recurse": true,          
 		"readme": "./README.md"
 	}
 
