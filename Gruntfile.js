@@ -18,7 +18,7 @@ module.exports = function (grunt) {
 			dist : {
 				src: ['src/*.js'],
 				options: {
-					"destination": "doc", 
+					"destination": "doc",
 					"configure" : "jsdoc.conf.json"
 				}
 			}
@@ -30,5 +30,5 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-jsdoc');
 
     // Default task(s).
-    grunt.registerTask('default', ['browserify','jsdoc']);
+    grunt.registerTask('default', ['browserify']);
 };
