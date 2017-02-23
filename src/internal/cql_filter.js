@@ -36,11 +36,14 @@ module.exports =  function(params){
         if ( name.charAt(0) === '_' ){
             continue;
         }
-        
+
         if ( name == 'bbox' ){
             parts.push(bboxToFilter(params['bbox'])) ;
         }else if ( name == 'geom' ){
-            var geom = JSON.parse(params[name]) ;
+            var geom = params[name] ;
+            if ( typeof geom !== 'object' ){
+                geom = JSON.parse(geom) ;
+            }
             var wkt = WKT.convert(flip(geom));
             parts.push(`INTERSECTS(the_geom,${wkt})`);
         }else{

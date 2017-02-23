@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+      "test": "node_modules/.bin/mocha"
   },
   "author": "",
   "license": "ISC",
@@ -17,5 +18,9 @@
     "xmldom": "^0.1.27",
     "xpath": "0.0.23",
     "grunt-jsdoc": "^2.1.0"
+  },
+  "devDependencies": {
+    "mocha": "^3.1.0",
+    "should": "^11.1.0"
   }
 }
