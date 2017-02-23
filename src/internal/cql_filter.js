@@ -25,9 +25,8 @@ function bboxToFilter(bbox){
     var ymin = bbox[0];
     var xmax = bbox[3];
     var ymax = bbox[2];
-    return `BBOX(the_geom,${xmin},${ymin},${xmax},${ymax})` ;
+    return 'BBOX(the_geom,'+xmin+','+ymin+','+xmax+','+ymax+')' ;
 }
-
 
 module.exports =  function(params){
     var parts = [] ;
@@ -45,7 +44,7 @@ module.exports =  function(params){
                 geom = JSON.parse(geom) ;
             }
             var wkt = WKT.convert(flip(geom));
-            parts.push(`INTERSECTS(the_geom,${wkt})`);
+            parts.push('INTERSECTS(the_geom,'+wkt+')');
         }else{
             parts.push(name+'=\''+ params[name]+'\'');
         }

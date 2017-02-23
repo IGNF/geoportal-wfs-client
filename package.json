@@ -2,24 +2,25 @@
   "name": "geoportal-wfs-client",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "dist/geoportal-wfs-client.min.js",
   "scripts": {
-      "test": "node_modules/.bin/mocha"
+    "test": "node_modules/.bin/mocha"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "grunt": "^1.0.1",
-    "grunt-browserify": "^5.0.0",
     "request": "^2.79.0",
     "request-promise": "^4.1.1",
     "terraformer-wkt-parser": "^1.1.2",
     "@turf/flip": "^3.0.12",
     "xmldom": "^0.1.27",
-    "xpath": "0.0.23",
-    "grunt-jsdoc": "^2.1.0"
+    "xpath": "0.0.23"
   },
   "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-browserify": "^5.0.0",
+    "grunt-contrib-uglify": "^2.1.0",
+    "grunt-jsdoc": "^2.1.0",
     "mocha": "^3.1.0",
     "should": "^11.1.0"
   }

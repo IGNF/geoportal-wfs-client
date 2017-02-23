@@ -14,6 +14,13 @@ module.exports = function (grunt) {
                 }
             }
         },
+        uglify: {
+            main: {
+                files: {
+                    './dist/geoportal-wfs-client.min.js': ['./dist/geoportal-wfs-client.js']
+                }
+            }
+        },
         jsdoc : {
 			dist : {
 				src: ['src/*.js'],
@@ -25,10 +32,10 @@ module.exports = function (grunt) {
 		}
     });
 
-    // Load the plugin that provides the "uglify" task.
     grunt.loadNpmTasks('grunt-browserify');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-jsdoc');
 
-    // Default task(s).
-    grunt.registerTask('default', ['browserify']);
+    grunt.registerTask('build', ['browserify','uglify']);
+    grunt.registerTask('default', ['build']);
 };
