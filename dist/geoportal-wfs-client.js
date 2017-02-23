@@ -78239,7 +78239,7 @@ var Client = function(apiKey,options){
     this.referer = options.referer || 'http://localhost';
 };
 
-/** 
+/**
  * Get WFS URL
  */
 Client.prototype.getUrl = function(){
@@ -78294,6 +78294,10 @@ Client.prototype.getFeatures = function(typeName, params){
     if ( typeof params._start !== 'undefined' ){
         options.qs.startIndex = parseInt(params._start);
     }
+
+    options.transform = function(body){
+        return JSON.parse(body);
+    };
 
     /*
      * bbox and attribute filter
