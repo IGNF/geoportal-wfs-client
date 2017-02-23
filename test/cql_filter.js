@@ -4,6 +4,13 @@ const cql_filter = require('../src/internal/cql_filter');
 
 describe('cql_filter', function () {
 
+    it('should return null for null filter', function (done) {
+        var input    = null;
+        var result = cql_filter(input);
+        ( result === null).should.be.true;
+        done();
+    });
+
     it('should return null for empty filter', function (done) {
         var input    = {};
         var result = cql_filter(input);
