@@ -10918,13 +10918,12 @@ var rp = function(options){
  * WFS access client for the geoportal
  * @constructor
  * @param {string} apiKey - The Geoportal Key to use the Geoportal API
- * @param {string} options - Parameters for the wfs streams to use
+ * @param {string} headers - Headers for HTTP requests
  */
-var Client = function(apiKey,options){
+var Client = function(apiKey,headers){
     if (typeof apiKey === 'undefined' ) throw new Error('Required param: apiKey');
     this.apiKey = apiKey;
-    options = options || {};
-    this.referer = options.referer || 'http://localhost';
+    this.headers = headers || {};
 };
 
 /**
@@ -10944,9 +10943,7 @@ Client.prototype.getDefaultOptions = function() {
             service: 'WFS',
             version: '2.0.0'
         },
-        headers: {
-            Referer: this.referer
-        }
+        headers: this.headers
     };
 };
 
