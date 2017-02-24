@@ -8,6 +8,7 @@ Client d'accès spécifique au WFS du géoportail ([http://wxs.ign.fr/geoportail
 
 * Format fixe : JSON/GeoJSON
 * Projection fixe : WGS84 (longitude,latitude)
+* Requête spatiale et attributaire simple
 
 ## Construction du client
 

@@ -2,7 +2,7 @@
 const cql_filter = require('../src/internal/cql_filter');
 
 
-describe('cql_filter', function () {
+describe('testcql_filter', function () {
 
     it('should return null for null filter', function (done) {
         var input    = null;
