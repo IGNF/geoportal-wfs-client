@@ -2,7 +2,13 @@
 
 ## Description
 
-Client d'accès spécifique au WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities) visant à simplifier l'utilisation de ce dernier.
+Cette bibliothèque est un client d'accès spécifique au WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities) visant à simplifier l'utilisation de ce dernier.
+
+Elle reprend les principes de simplification de l'utilisation de l'accès aux services développées dans le cadre d'[APICARTO](https://apicarto.ign.fr) et rend possible une simplification côté client à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib).
+
+
+ATTENTION : Cette bibliothèque est encore au statut expérimentale. Elle est publiée sur GITHUB en mode "revue de code" et "collecte de commentaires".
+
 
 ## Principes
 
