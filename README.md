@@ -4,10 +4,10 @@
 
 Cette bibliothèque est un client d'accès spécifique au WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities) visant à simplifier l'utilisation de ce dernier.
 
-Elle reprend les principes de simplification de l'utilisation de l'accès aux services développées dans le cadre d'[APICARTO](https://apicarto.ign.fr) et rend possible une simplification côté client à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib).
+Elle reprend les principes de simplification de l'utilisation de l'accès aux services développés dans le cadre d'[APICARTO](https://apicarto.ign.fr) et rend possible une simplification côté client à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib).
 
 
-ATTENTION : Cette bibliothèque est encore au statut expérimentale. Elle est publiée sur GITHUB en mode "revue de code" et "collecte de commentaires".
+ATTENTION : Cette bibliothèque est encore au statut expérimental. Elle est publiée sur GITHUB en mode "revue de code" et "collecte de commentaires".
 
 
 ## Principes
@@ -101,7 +101,7 @@ client.getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:divcad",params)
 
 * filtrage par attribut
 
-La syntaxe ci après permet de définir des égalités
+La syntaxe ci-après permet de définir des égalités
 
 ```
 {"<attributeName>":"<attributeValue>"}
@@ -109,10 +109,10 @@ La syntaxe ci après permet de définir des égalités
 
 * pagination
 
-    * *_limit* : nombre maximum de résultat
+    * *_limit* : nombre maximum de résultats
     * *_start* : premier résultat
 
 
 ### Remarque sur les performances
 
-Certains types correspondent à l'aggrégation de plusieurs schémas de données. Certaines requêtes seront sous performantes ou en échec en l'abscence de filtre.
+Certains types correspondent à l'aggrégation de plusieurs schémas de données. Certaines requêtes seront sous-performantes ou en échec en l'abscence de filtre.
