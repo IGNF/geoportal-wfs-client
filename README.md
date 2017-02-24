@@ -37,7 +37,7 @@ var client = new GeoportalWfsClient(API_KEY);
 </script>
 ```
 
-Remarque : le referer est ignoré
+Remarque : on ne peut pas forcer le referer depuis le navigateur
 
 ## client.getTypeNames() - lister les types
 
