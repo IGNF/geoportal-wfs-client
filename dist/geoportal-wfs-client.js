@@ -10897,18 +10897,21 @@ var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilit
 var clq_filter = require('./internal/cql_filter')
 
 var rp = function(options){
-    var axiosParams = {
-        method: 'post',
-        url: options.uri,
-        data: options.qs,
-        headers: options.headers
+    var axiosOptions = {
+        'params': options.qs,
+        'headers': options.headers,
+        'responseType': 'text'
     };
     if ( options.transform ){
-        axiosParams.transformRequest = options.transform;
+        axiosOptions.transformResponse = [options.transform] ;
     }
-    return axios(axiosParams);
+    return axios.get(
+        options.uri,
+        axiosOptions
+    ).then(function(response){
+        return response.data;
+    });
 };
-
 
 /**
  * @classdesc
@@ -10918,7 +10921,7 @@ var rp = function(options){
  * @param {string} options - Parameters for the wfs streams to use
  */
 var Client = function(apiKey,options){
-    if (!apiKey) throw new Error('Required param: apiKey');
+    if (typeof apiKey === 'undefined' ) throw new Error('Required param: apiKey');
     this.apiKey = apiKey;
     options = options || {};
     this.referer = options.referer || 'http://localhost';
