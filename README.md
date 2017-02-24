@@ -4,17 +4,20 @@
 
 Cette bibliothèque est un client d'accès spécifique au WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities) visant à simplifier l'utilisation de ce dernier.
 
-Elle reprend les principes de simplification de l'utilisation de l'accès aux services développés dans le cadre d'[APICARTO](https://apicarto.ign.fr) et rend possible une simplification côté client à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib).
-
+Elle reprend les principes de simplification de l'utilisation des services développés dans le cadre d'[APICARTO](https://apicarto.ign.fr). Toutefois, à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib), cette simplification est disponible côté client sans mise en oeuvre de nouveaux serveurs.
 
 ATTENTION : Cette bibliothèque est encore au statut expérimental. Elle est publiée sur GITHUB en mode "revue de code" et "collecte de commentaires".
-
 
 ## Principes
 
 * Format fixe : JSON/GeoJSON
 * Projection fixe : WGS84 (longitude,latitude)
 * Requête spatiale et attributaire simple
+
+## Fonctionnement
+
+La bibliothèque génère des requêtes WFS (GetCapabilities et GetFeatures avec cql_filter) en fixant des paramètres (outputFormat=application/json, projection=CRS:84, etc.) et parse les résultats.
+
 
 ## Construction du client
 
@@ -24,7 +27,7 @@ ATTENTION : Cette bibliothèque est encore au statut expérimental. Elle est pub
 ```
 var Client = require('geoportal-wfs-client');
 var client = new GeoportalWfsClient(API_KEY,{
-    referer: 'http://localhost.ign.fr'
+    Referer: 'http://localhost.ign.fr'
 });
 ```
 
