@@ -1,8 +1,21 @@
-var request = require('request');
-var rp = require('request-promise');
+var axios = require('axios') ;
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
 var clq_filter = require('./internal/cql_filter')
+
+var rp = function(options){
+    var axiosParams = {
+        method: 'post',
+        url: options.uri,
+        data: options.qs,
+        headers: options.headers
+    };
+    if ( options.transform ){
+        axiosParams.transformRequest = options.transform;
+    }
+    return axios(axiosParams);
+};
+
 
 /**
  * @classdesc
