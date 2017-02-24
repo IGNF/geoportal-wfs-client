@@ -1,21 +1,36 @@
-var request = require('request');
-var rp = require('request-promise');
+var axios = require('axios') ;
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
 var clq_filter = require('./internal/cql_filter')
+
+var rp = function(options){
+    var axiosOptions = {
+        'params': options.qs,
+        'headers': options.headers,
+        'responseType': 'text'
+    };
+    if ( options.transform ){
+        axiosOptions.transformResponse = [options.transform] ;
+    }
+    return axios.get(
+        options.uri,
+        axiosOptions
+    ).then(function(response){
+        return response.data;
+    });
+};
 
 /**
  * @classdesc
  * WFS access client for the geoportal
  * @constructor
  * @param {string} apiKey - The Geoportal Key to use the Geoportal API
- * @param {string} options - Parameters for the wfs streams to use
+ * @param {string} headers - Headers for HTTP requests
  */
-var Client = function(apiKey,options){
-    if (!apiKey) throw new Error('Required param: apiKey');
+var Client = function(apiKey,headers){
+    if (typeof apiKey === 'undefined' ) throw new Error('Required param: apiKey');
     this.apiKey = apiKey;
-    options = options || {};
-    this.referer = options.referer || 'http://localhost';
+    this.headers = headers || {};
 };
 
 /**
@@ -35,9 +50,7 @@ Client.prototype.getDefaultOptions = function() {
             service: 'WFS',
             version: '2.0.0'
         },
-        headers: {
-            Referer: this.referer
-        }
+        headers: this.headers
     };
 };
 
