@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@turf/flip": "^3.10.3",
     "axios": "^0.15.3",
-    "@turf/flip": "^3.0.12",
     "terraformer-wkt-parser": "^1.1.2",
     "xmldom": "^0.1.27",
     "xpath": "0.0.23"
