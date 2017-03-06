@@ -1,6 +1,7 @@
 # geoportal-wfs-client
 
 [![Build Status](https://travis-ci.org/IGNF/geoportal-wfs-client.svg)](https://travis-ci.org/IGNF/geoportal-wfs-client)
+[![Coverage Status](https://coveralls.io/repos/github/IGNF/geoportal-wfs-client/badge.svg?branch=master)](https://coveralls.io/github/IGNF/geoportal-wfs-client?branch=master)
 
 ## Description
 
