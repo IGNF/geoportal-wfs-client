@@ -7,7 +7,7 @@
     "index.js": "./dist/geoportal-wfs-client.min.js"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha"
+    "test": "node_modules/.bin/mocha --timeout 5000"
   },
   "author": "",
   "license": "ISC",

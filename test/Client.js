@@ -1,9 +1,9 @@
 
 const Client = require('../src/Client');
 
-var apiKey = process.env.API_KEY;
+var apiKey  = process.env.API_KEY;
 
-describe('test Client with apiKey : '+apiKey, function () {
+describe('test Client with apiKey (provided by environment API_KEY)', function () {
 
 if( typeof apiKey !== 'undefined' ){
 
@@ -22,7 +22,7 @@ if( typeof apiKey !== 'undefined' ){
 
     it('should return a FeatureCollection for getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",{"code_dep":"25"})', function (done) {
         var client = new Client(apiKey,{
-            Referer: 'http://localhost.ign.fr'
+            referer: 'http://localhost'
         });
         client.getFeatures(
             "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",
@@ -35,6 +35,7 @@ if( typeof apiKey !== 'undefined' ){
             featureCollection['type'].should.equal("FeatureCollection");
             done();
         }).catch(function(err){
+            console.log(err);
             done(new Error("getFeatures was not supposed to fail"));
         }) ;
     });

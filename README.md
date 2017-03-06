@@ -1,5 +1,7 @@
 # geoportal-wfs-client
 
+[![Build Status](https://travis-ci.org/IGNF/geoportal-wfs-client.svg)](https://travis-ci.org/IGNF/geoportal-wfs-client)
+
 ## Description
 
 Cette bibliothèque est un client d'accès spécifique au WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities) visant à simplifier l'utilisation de ce dernier.
