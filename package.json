@@ -2,7 +2,10 @@
   "name": "geoportal-wfs-client",
   "version": "0.0.1",
   "description": "",
-  "main": "dist/geoportal-wfs-client.min.js",
+  "main": "index.js",
+  "browser": {
+    "index.js": "./dist/geoportal-wfs-client.min.js"
+  },
   "scripts": {
     "test": "node_modules/.bin/mocha"
   },
