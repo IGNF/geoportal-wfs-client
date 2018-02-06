@@ -48,7 +48,7 @@ var client = new GeoportalWfsClient(options);
 var options = {
     "apiKey":API_KEY
 };
-var client = new GeoportalWfsClient(API_KEY);
+var client = new GeoportalWfsClient(options);
 </script>
 ```
 

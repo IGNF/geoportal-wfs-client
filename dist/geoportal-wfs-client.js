@@ -11320,7 +11320,7 @@ var Client = function(options){
  * Get WFS URL
  */
 Client.prototype.getUrl = function(){
-    return REPLACE_ALL(this.url, '{apiKey}', this.apiKey);
+    return this.url.replace('{apiKey}', this.apiKey);
 };
 
 /**
