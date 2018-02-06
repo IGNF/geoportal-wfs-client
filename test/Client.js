@@ -3,12 +3,16 @@ const Client = require('../src/Client');
 
 var apiKey  = process.env.API_KEY;
 
+var options = {
+    "apiKey":apiKey
+};
+
 describe('test Client with apiKey (provided by environment API_KEY)', function () {
 
 if( typeof apiKey !== 'undefined' ){
 
     it('should return an array for getTypeNames', function (done) {
-        var client = new Client(apiKey);
+        var client = new Client(options);
         client.getTypeNames()
             .then(function(typeNames){
                 typeNames.should.be.a.Array();
@@ -20,10 +24,12 @@ if( typeof apiKey !== 'undefined' ){
         ;
     });
 
+    options.headers = {
+        "referer": 'http://localhost'
+    };
+
     it('should return a FeatureCollection for getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",{"code_dep":"25"})', function (done) {
-        var client = new Client(apiKey,{
-            referer: 'http://localhost'
-        });
+        var client = new Client(options);
         client.getFeatures(
             "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",
             {
