@@ -24,20 +24,20 @@ var rp = function(options){
  * @classdesc
  * WFS access client for the geoportal
  * @constructor
- * @param {string} apiKey - The Geoportal Key to use the Geoportal API
- * @param {string} headers - Headers for HTTP requests
  */
-var Client = function(apiKey,headers){
-    if (typeof apiKey === 'undefined' ) throw new Error('Required param: apiKey');
-    this.apiKey = apiKey;
-    this.headers = headers || {};
+var Client = function(options){
+    // should be removed to allow user/password?
+    if (typeof options.apiKey === 'undefined' ) throw new Error('Required param: apiKey');
+    this.url = options.url || 'https://wxs.ign.fr/{apiKey}/geoportail/wfs';
+    this.apiKey = options.apiKey || null;
+    this.headers = options.headers || {};    
 };
 
 /**
  * Get WFS URL
  */
 Client.prototype.getUrl = function(){
-    return 'http://wxs.ign.fr/'+this.apiKey+'/geoportail/wfs';
+    return REPLACE_ALL(this.url, '{apiKey}', this.apiKey);
 };
 
 /**

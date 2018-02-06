@@ -29,9 +29,14 @@ La bibliothèque génère des requêtes WFS (GetCapabilities et GetFeatures avec
 
 ```
 var Client = require('geoportal-wfs-client');
-var client = new GeoportalWfsClient(API_KEY,{
-    Referer: 'http://localhost.ign.fr'
-});
+
+var options = {
+    "apiKey":API_KEY,
+    "headers":{
+        Referer: 'http://localhost.ign.fr'
+    }
+};
+var client = new GeoportalWfsClient(options);
 ```
 
 ### En contexte navigateur
@@ -39,6 +44,10 @@ var client = new GeoportalWfsClient(API_KEY,{
 ```
 <script src="dist/geoportal-wfs-client.js"></script>
 <script type="text/javascript">
+
+var options = {
+    "apiKey":API_KEY
+};
 var client = new GeoportalWfsClient(API_KEY);
 </script>
 ```
