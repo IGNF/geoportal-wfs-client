@@ -9,19 +9,13 @@ Cette bibliothèque est un client d'accès spécifique aux services WFS du géop
 
 Ce client reprend les principes de simplification de l'utilisation des services initiés dans le cadre d'[APICARTO](https://apicarto.ign.fr) :
 
-* Format fixé à GeoJSON
-* Projection cartographique fixée à WGS84 (longitude, latitude)
-* Filtrage simple par attribut et par géométrie
+* Format fixe : JSON/GeoJSON
+* Projection fixe : WGS84 (longitude,latitude)
+* Requête spatiale et attributaire simple
 
 Toutefois, à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib), ces simplifications sont disponibles côté client sans mise en oeuvre de nouveaux serveurs.
 
 Remarque : Cette bibliothèque est réutilisable avec d'autres serveurs WFS (ex : [www.geoportail-urbanisme.gouv.fr](https://www.geoportail-urbanisme.gouv.fr)) mais fait appel à des fonctionnalités spécifiques à GeoServer (ex : `cql_filter`).
-
-## Principes
-
-* Format fixe : JSON/GeoJSON
-* Projection fixe : WGS84 (longitude,latitude)
-* Requête spatiale et attributaire simple
 
 ## Fonctionnement
 
