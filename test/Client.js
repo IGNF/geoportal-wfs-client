@@ -4,7 +4,9 @@ const Client = require('../src/Client');
 var apiKey  = process.env.API_KEY;
 
 var options = {
-    "apiKey":apiKey
+    "apiKey":apiKey,
+    // http is relative to issue #5
+    "url": 'http://wxs.ign.fr/{apiKey}/geoportail/wfs'
 };
 
 describe('test Client with apiKey (provided by environment API_KEY)', function () {
