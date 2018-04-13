@@ -5,11 +5,17 @@
 
 ## Description
 
-Cette bibliothèque est un client d'accès spécifique au WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities) visant à simplifier l'utilisation de ce dernier.
+Cette bibliothèque est un client d'accès spécifique aux services WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities)) visant à simplifier l'accès aux données vectorielles. 
 
-Elle reprend les principes de simplification de l'utilisation des services développés dans le cadre d'[APICARTO](https://apicarto.ign.fr). Toutefois, à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib), cette simplification est disponible côté client sans mise en oeuvre de nouveaux serveurs.
+Ce client reprend les principes de simplification de l'utilisation des services initiés dans le cadre d'[APICARTO](https://apicarto.ign.fr) :
 
-ATTENTION : Cette bibliothèque est encore au statut expérimental. Elle est publiée sur GITHUB en mode "revue de code" et "collecte de commentaires".
+* Format fixé à GeoJSON
+* Projection cartographique fixée à WGS84 (longitude, latitude)
+* Filtrage simple par attribut et par géométrie
+
+Toutefois, à l'instar de [geoportal-access-lib](https://github.com/IGNF/geoportal-access-lib), ces simplifications sont disponibles côté client sans mise en oeuvre de nouveaux serveurs.
+
+Remarque : Cette bibliothèque est réutilisable avec d'autres serveurs WFS (ex : [www.geoportail-urbanisme.gouv.fr](https://www.geoportail-urbanisme.gouv.fr)) mais fait appel à des fonctionnalités spécifiques à GeoServer (ex : `cql_filter`).
 
 ## Principes
 
