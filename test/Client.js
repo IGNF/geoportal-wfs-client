@@ -30,7 +30,7 @@ if( typeof apiKey !== 'undefined' ){
         "referer": 'http://localhost'
     };
 
-    it('should return a FeatureCollection for getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",{"code_dep":"25"})', function (done) {
+    it('should return a FeatureCollection for getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",{"code_dep":"25","section": "ZE"})', function (done) {
         var client = new Client(options);
         client.getFeatures(
             "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",
@@ -43,7 +43,6 @@ if( typeof apiKey !== 'undefined' ){
             featureCollection['type'].should.equal("FeatureCollection");
             done();
         }).catch(function(err){
-            console.log(err);
             done(new Error("getFeatures was not supposed to fail"));
         }) ;
     });
