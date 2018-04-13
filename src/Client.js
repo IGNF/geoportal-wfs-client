@@ -88,7 +88,15 @@ Client.prototype.getFeatures = function(typeName, params){
     }
 
     options.transform = function(body){
-        return JSON.parse(body);
+        try {
+            return JSON.parse(body);
+        }catch(err){
+            // forward xml errors
+            throw {
+                'type': 'error',
+                'message': body
+            };
+        }
     };
 
     /*
