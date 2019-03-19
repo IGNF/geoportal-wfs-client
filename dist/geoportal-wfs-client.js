@@ -1,159 +1,1141 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.GeoportalWfsClient = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 module.exports = require('./src/Client.js');
 
-},{"./src/Client.js":36}],2:[function(require,module,exports){
-var coordEach = require('@turf/meta').coordEach;
+},{"./src/Client.js":39}],2:[function(require,module,exports){
+'use strict';
 
 /**
- * Takes input features and flips all of their coordinates
- * from `[x, y]` to `[y, x]`.
+ * Returns a cloned copy of the passed GeoJSON Object, including possible 'Foreign Members'.
+ * ~3-5x faster than the common JSON.parse + JSON.stringify combo method.
+ *
+ * @name clone
+ * @param {GeoJSON} geojson GeoJSON Object
+ * @returns {GeoJSON} cloned GeoJSON Object
+ * @example
+ * var line = turf.lineString([[-74, 40], [-78, 42], [-82, 35]], {color: 'red'});
+ *
+ * var lineCloned = turf.clone(line);
+ */
+function clone(geojson) {
+    if (!geojson) throw new Error('geojson is required');
+
+    switch (geojson.type) {
+    case 'Feature':
+        return cloneFeature(geojson);
+    case 'FeatureCollection':
+        return cloneFeatureCollection(geojson);
+    case 'Point':
+    case 'LineString':
+    case 'Polygon':
+    case 'MultiPoint':
+    case 'MultiLineString':
+    case 'MultiPolygon':
+    case 'GeometryCollection':
+        return cloneGeometry(geojson);
+    default:
+        throw new Error('unknown GeoJSON type');
+    }
+}
+
+/**
+ * Clone Feature
+ *
+ * @private
+ * @param {Feature<any>} geojson GeoJSON Feature
+ * @returns {Feature<any>} cloned Feature
+ */
+function cloneFeature(geojson) {
+    var cloned = {type: 'Feature'};
+    // Preserve Foreign Members
+    Object.keys(geojson).forEach(function (key) {
+        switch (key) {
+        case 'type':
+        case 'properties':
+        case 'geometry':
+            return;
+        default:
+            cloned[key] = geojson[key];
+        }
+    });
+    // Add properties & geometry last
+    cloned.properties = cloneProperties(geojson.properties);
+    cloned.geometry = cloneGeometry(geojson.geometry);
+    return cloned;
+}
+
+/**
+ * Clone Properties
+ *
+ * @private
+ * @param {Object} properties GeoJSON Properties
+ * @returns {Object} cloned Properties
+ */
+function cloneProperties(properties) {
+    var cloned = {};
+    if (!properties) return cloned;
+    Object.keys(properties).forEach(function (key) {
+        var value = properties[key];
+        if (typeof value === 'object') {
+            if (value === null) {
+                // handle null
+                cloned[key] = null;
+            } else if (value.length) {
+                // handle Array
+                cloned[key] = value.map(function (item) {
+                    return item;
+                });
+            } else {
+                // handle generic Object
+                cloned[key] = cloneProperties(value);
+            }
+        } else cloned[key] = value;
+    });
+    return cloned;
+}
+
+/**
+ * Clone Feature Collection
+ *
+ * @private
+ * @param {FeatureCollection<any>} geojson GeoJSON Feature Collection
+ * @returns {FeatureCollection<any>} cloned Feature Collection
+ */
+function cloneFeatureCollection(geojson) {
+    var cloned = {type: 'FeatureCollection'};
+
+    // Preserve Foreign Members
+    Object.keys(geojson).forEach(function (key) {
+        switch (key) {
+        case 'type':
+        case 'features':
+            return;
+        default:
+            cloned[key] = geojson[key];
+        }
+    });
+    // Add features
+    cloned.features = geojson.features.map(function (feature) {
+        return cloneFeature(feature);
+    });
+    return cloned;
+}
+
+/**
+ * Clone Geometry
+ *
+ * @private
+ * @param {Geometry<any>} geometry GeoJSON Geometry
+ * @returns {Geometry<any>} cloned Geometry
+ */
+function cloneGeometry(geometry) {
+    var geom = {type: geometry.type};
+    if (geometry.bbox) geom.bbox = geometry.bbox;
+
+    if (geometry.type === 'GeometryCollection') {
+        geom.geometries = geometry.geometries.map(function (geom) {
+            return cloneGeometry(geom);
+        });
+        return geom;
+    }
+    geom.coordinates = deepSlice(geometry.coordinates);
+    return geom;
+}
+
+/**
+ * Deep Slice coordinates
+ *
+ * @private
+ * @param {Coordinates} coords Coordinates
+ * @returns {Coordinates} all coordinates sliced
+ */
+function deepSlice(coords) {
+    if (typeof coords[0] !== 'object') { return coords.slice(); }
+    return coords.map(function (coord) {
+        return deepSlice(coord);
+    });
+}
+
+module.exports = clone;
+module.exports.default = clone;
+
+},{}],3:[function(require,module,exports){
+'use strict';
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var meta = require('@turf/meta');
+var helpers = require('@turf/helpers');
+var clone = _interopDefault(require('@turf/clone'));
+
+/**
+ * Takes input features and flips all of their coordinates from `[x, y]` to `[y, x]`.
  *
  * @name flip
- * @param {(Feature|FeatureCollection)} input input features
- * @returns {(Feature|FeatureCollection)} a feature or set of features of the same type as `input` with flipped coordinates
+ * @param {GeoJSON} geojson input features
+ * @param {Object} [options={}] Optional parameters
+ * @param {boolean} [options.mutate=false] allows GeoJSON input to be mutated (significant performance increase if true)
+ * @returns {GeoJSON} a feature or set of features of the same type as `input` with flipped coordinates
  * @example
- * var serbia = {
- *   "type": "Feature",
- *   "properties": {},
- *   "geometry": {
- *     "type": "Point",
- *     "coordinates": [20.566406, 43.421008]
- *   }
- * };
- *
- * //=serbia
+ * var serbia = turf.point([20.566406, 43.421008]);
  *
  * var saudiArabia = turf.flip(serbia);
  *
- * //=saudiArabia
+ * //addToMap
+ * var addToMap = [serbia, saudiArabia];
  */
-module.exports = function flip(input) {
+function flip(geojson, options) {
+    // Optional parameters
+    options = options || {};
+    if (!helpers.isObject(options)) throw new Error('options is invalid');
+    var mutate = options.mutate;
+
+    if (!geojson) throw new Error('geojson is required');
     // ensure that we don't modify features in-place and changes to the
     // output do not change the previous feature, including changes to nested
     // properties.
-    input = JSON.parse(JSON.stringify(input));
+    if (mutate === false || mutate === undefined) geojson = clone(geojson);
 
-    coordEach(input, function (coord) {
-        coord.reverse();
+    meta.coordEach(geojson, function (coord) {
+        var x = coord[0];
+        var y = coord[1];
+        coord[0] = y;
+        coord[1] = x;
     });
-    return input;
+    return geojson;
+}
+
+module.exports = flip;
+module.exports.default = flip;
+
+},{"@turf/clone":2,"@turf/helpers":4,"@turf/meta":5}],4:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+/**
+ * Earth Radius used with the Harvesine formula and approximates using a spherical (non-ellipsoid) Earth.
+ */
+var earthRadius = 6371008.8;
+
+/**
+ * Unit of measurement factors using a spherical (non-ellipsoid) earth radius.
+ */
+var factors = {
+    meters: earthRadius,
+    metres: earthRadius,
+    millimeters: earthRadius * 1000,
+    millimetres: earthRadius * 1000,
+    centimeters: earthRadius * 100,
+    centimetres: earthRadius * 100,
+    kilometers: earthRadius / 1000,
+    kilometres: earthRadius / 1000,
+    miles: earthRadius / 1609.344,
+    nauticalmiles: earthRadius / 1852,
+    inches: earthRadius * 39.370,
+    yards: earthRadius / 1.0936,
+    feet: earthRadius * 3.28084,
+    radians: 1,
+    degrees: earthRadius / 111325,
 };
 
-},{"@turf/meta":3}],3:[function(require,module,exports){
+/**
+ * Units of measurement factors based on 1 meter.
+ */
+var unitsFactors = {
+    meters: 1,
+    metres: 1,
+    millimeters: 1000,
+    millimetres: 1000,
+    centimeters: 100,
+    centimetres: 100,
+    kilometers: 1 / 1000,
+    kilometres: 1 / 1000,
+    miles: 1 / 1609.344,
+    nauticalmiles: 1 / 1852,
+    inches: 39.370,
+    yards: 1 / 1.0936,
+    feet: 3.28084,
+    radians: 1 / earthRadius,
+    degrees: 1 / 111325,
+};
+
+/**
+ * Area of measurement factors based on 1 square meter.
+ */
+var areaFactors = {
+    meters: 1,
+    metres: 1,
+    millimeters: 1000000,
+    millimetres: 1000000,
+    centimeters: 10000,
+    centimetres: 10000,
+    kilometers: 0.000001,
+    kilometres: 0.000001,
+    acres: 0.000247105,
+    miles: 3.86e-7,
+    yards: 1.195990046,
+    feet: 10.763910417,
+    inches: 1550.003100006
+};
+
+/**
+ * Wraps a GeoJSON {@link Geometry} in a GeoJSON {@link Feature}.
+ *
+ * @name feature
+ * @param {Geometry} geometry input geometry
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature} a GeoJSON Feature
+ * @example
+ * var geometry = {
+ *   "type": "Point",
+ *   "coordinates": [110, 50]
+ * };
+ *
+ * var feature = turf.feature(geometry);
+ *
+ * //=feature
+ */
+function feature(geometry, properties, options) {
+    // Optional Parameters
+    options = options || {};
+    if (!isObject(options)) throw new Error('options is invalid');
+    var bbox = options.bbox;
+    var id = options.id;
+
+    // Validation
+    if (geometry === undefined) throw new Error('geometry is required');
+    if (properties && properties.constructor !== Object) throw new Error('properties must be an Object');
+    if (bbox) validateBBox(bbox);
+    if (id) validateId(id);
+
+    // Main
+    var feat = {type: 'Feature'};
+    if (id) feat.id = id;
+    if (bbox) feat.bbox = bbox;
+    feat.properties = properties || {};
+    feat.geometry = geometry;
+    return feat;
+}
+
+/**
+ * Creates a GeoJSON {@link Geometry} from a Geometry string type & coordinates.
+ * For GeometryCollection type use `helpers.geometryCollection`
+ *
+ * @name geometry
+ * @param {string} type Geometry Type
+ * @param {Array<number>} coordinates Coordinates
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Geometry
+ * @returns {Geometry} a GeoJSON Geometry
+ * @example
+ * var type = 'Point';
+ * var coordinates = [110, 50];
+ *
+ * var geometry = turf.geometry(type, coordinates);
+ *
+ * //=geometry
+ */
+function geometry(type, coordinates, options) {
+    // Optional Parameters
+    options = options || {};
+    if (!isObject(options)) throw new Error('options is invalid');
+    var bbox = options.bbox;
+
+    // Validation
+    if (!type) throw new Error('type is required');
+    if (!coordinates) throw new Error('coordinates is required');
+    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
+    if (bbox) validateBBox(bbox);
+
+    // Main
+    var geom;
+    switch (type) {
+    case 'Point': geom = point(coordinates).geometry; break;
+    case 'LineString': geom = lineString(coordinates).geometry; break;
+    case 'Polygon': geom = polygon(coordinates).geometry; break;
+    case 'MultiPoint': geom = multiPoint(coordinates).geometry; break;
+    case 'MultiLineString': geom = multiLineString(coordinates).geometry; break;
+    case 'MultiPolygon': geom = multiPolygon(coordinates).geometry; break;
+    default: throw new Error(type + ' is invalid');
+    }
+    if (bbox) geom.bbox = bbox;
+    return geom;
+}
+
+/**
+ * Creates a {@link Point} {@link Feature} from a Position.
+ *
+ * @name point
+ * @param {Array<number>} coordinates longitude, latitude position (each in decimal degrees)
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature<Point>} a Point feature
+ * @example
+ * var point = turf.point([-75.343, 39.984]);
+ *
+ * //=point
+ */
+function point(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
+    if (coordinates.length < 2) throw new Error('coordinates must be at least 2 numbers long');
+    if (!isNumber(coordinates[0]) || !isNumber(coordinates[1])) throw new Error('coordinates must contain numbers');
+
+    return feature({
+        type: 'Point',
+        coordinates: coordinates
+    }, properties, options);
+}
+
+/**
+ * Creates a {@link Point} {@link FeatureCollection} from an Array of Point coordinates.
+ *
+ * @name points
+ * @param {Array<Array<number>>} coordinates an array of Points
+ * @param {Object} [properties={}] Translate these properties to each Feature
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the FeatureCollection
+ * @param {string|number} [options.id] Identifier associated with the FeatureCollection
+ * @returns {FeatureCollection<Point>} Point Feature
+ * @example
+ * var points = turf.points([
+ *   [-75, 39],
+ *   [-80, 45],
+ *   [-78, 50]
+ * ]);
+ *
+ * //=points
+ */
+function points(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
+
+    return featureCollection(coordinates.map(function (coords) {
+        return point(coords, properties);
+    }), options);
+}
+
+/**
+ * Creates a {@link Polygon} {@link Feature} from an Array of LinearRings.
+ *
+ * @name polygon
+ * @param {Array<Array<Array<number>>>} coordinates an array of LinearRings
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature<Polygon>} Polygon Feature
+ * @example
+ * var polygon = turf.polygon([[[-5, 52], [-4, 56], [-2, 51], [-7, 54], [-5, 52]]], { name: 'poly1' });
+ *
+ * //=polygon
+ */
+function polygon(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+
+    for (var i = 0; i < coordinates.length; i++) {
+        var ring = coordinates[i];
+        if (ring.length < 4) {
+            throw new Error('Each LinearRing of a Polygon must have 4 or more Positions.');
+        }
+        for (var j = 0; j < ring[ring.length - 1].length; j++) {
+            // Check if first point of Polygon contains two numbers
+            if (i === 0 && j === 0 && !isNumber(ring[0][0]) || !isNumber(ring[0][1])) throw new Error('coordinates must contain numbers');
+            if (ring[ring.length - 1][j] !== ring[0][j]) {
+                throw new Error('First and last Position are not equivalent.');
+            }
+        }
+    }
+
+    return feature({
+        type: 'Polygon',
+        coordinates: coordinates
+    }, properties, options);
+}
+
+/**
+ * Creates a {@link Polygon} {@link FeatureCollection} from an Array of Polygon coordinates.
+ *
+ * @name polygons
+ * @param {Array<Array<Array<Array<number>>>>} coordinates an array of Polygon coordinates
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the FeatureCollection
+ * @returns {FeatureCollection<Polygon>} Polygon FeatureCollection
+ * @example
+ * var polygons = turf.polygons([
+ *   [[[-5, 52], [-4, 56], [-2, 51], [-7, 54], [-5, 52]]],
+ *   [[[-15, 42], [-14, 46], [-12, 41], [-17, 44], [-15, 42]]],
+ * ]);
+ *
+ * //=polygons
+ */
+function polygons(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
+
+    return featureCollection(coordinates.map(function (coords) {
+        return polygon(coords, properties);
+    }), options);
+}
+
+/**
+ * Creates a {@link LineString} {@link Feature} from an Array of Positions.
+ *
+ * @name lineString
+ * @param {Array<Array<number>>} coordinates an array of Positions
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature<LineString>} LineString Feature
+ * @example
+ * var linestring1 = turf.lineString([[-24, 63], [-23, 60], [-25, 65], [-20, 69]], {name: 'line 1'});
+ * var linestring2 = turf.lineString([[-14, 43], [-13, 40], [-15, 45], [-10, 49]], {name: 'line 2'});
+ *
+ * //=linestring1
+ * //=linestring2
+ */
+function lineString(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+    if (coordinates.length < 2) throw new Error('coordinates must be an array of two or more positions');
+    // Check if first point of LineString contains two numbers
+    if (!isNumber(coordinates[0][1]) || !isNumber(coordinates[0][1])) throw new Error('coordinates must contain numbers');
+
+    return feature({
+        type: 'LineString',
+        coordinates: coordinates
+    }, properties, options);
+}
+
+/**
+ * Creates a {@link LineString} {@link FeatureCollection} from an Array of LineString coordinates.
+ *
+ * @name lineStrings
+ * @param {Array<Array<number>>} coordinates an array of LinearRings
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the FeatureCollection
+ * @param {string|number} [options.id] Identifier associated with the FeatureCollection
+ * @returns {FeatureCollection<LineString>} LineString FeatureCollection
+ * @example
+ * var linestrings = turf.lineStrings([
+ *   [[-24, 63], [-23, 60], [-25, 65], [-20, 69]],
+ *   [[-14, 43], [-13, 40], [-15, 45], [-10, 49]]
+ * ]);
+ *
+ * //=linestrings
+ */
+function lineStrings(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
+
+    return featureCollection(coordinates.map(function (coords) {
+        return lineString(coords, properties);
+    }), options);
+}
+
+/**
+ * Takes one or more {@link Feature|Features} and creates a {@link FeatureCollection}.
+ *
+ * @name featureCollection
+ * @param {Feature[]} features input features
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {FeatureCollection} FeatureCollection of Features
+ * @example
+ * var locationA = turf.point([-75.343, 39.984], {name: 'Location A'});
+ * var locationB = turf.point([-75.833, 39.284], {name: 'Location B'});
+ * var locationC = turf.point([-75.534, 39.123], {name: 'Location C'});
+ *
+ * var collection = turf.featureCollection([
+ *   locationA,
+ *   locationB,
+ *   locationC
+ * ]);
+ *
+ * //=collection
+ */
+function featureCollection(features, options) {
+    // Optional Parameters
+    options = options || {};
+    if (!isObject(options)) throw new Error('options is invalid');
+    var bbox = options.bbox;
+    var id = options.id;
+
+    // Validation
+    if (!features) throw new Error('No features passed');
+    if (!Array.isArray(features)) throw new Error('features must be an Array');
+    if (bbox) validateBBox(bbox);
+    if (id) validateId(id);
+
+    // Main
+    var fc = {type: 'FeatureCollection'};
+    if (id) fc.id = id;
+    if (bbox) fc.bbox = bbox;
+    fc.features = features;
+    return fc;
+}
+
+/**
+ * Creates a {@link Feature<MultiLineString>} based on a
+ * coordinate array. Properties can be added optionally.
+ *
+ * @name multiLineString
+ * @param {Array<Array<Array<number>>>} coordinates an array of LineStrings
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature<MultiLineString>} a MultiLineString feature
+ * @throws {Error} if no coordinates are passed
+ * @example
+ * var multiLine = turf.multiLineString([[[0,0],[10,10]]]);
+ *
+ * //=multiLine
+ */
+function multiLineString(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+
+    return feature({
+        type: 'MultiLineString',
+        coordinates: coordinates
+    }, properties, options);
+}
+
+/**
+ * Creates a {@link Feature<MultiPoint>} based on a
+ * coordinate array. Properties can be added optionally.
+ *
+ * @name multiPoint
+ * @param {Array<Array<number>>} coordinates an array of Positions
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature<MultiPoint>} a MultiPoint feature
+ * @throws {Error} if no coordinates are passed
+ * @example
+ * var multiPt = turf.multiPoint([[0,0],[10,10]]);
+ *
+ * //=multiPt
+ */
+function multiPoint(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+
+    return feature({
+        type: 'MultiPoint',
+        coordinates: coordinates
+    }, properties, options);
+}
+
+/**
+ * Creates a {@link Feature<MultiPolygon>} based on a
+ * coordinate array. Properties can be added optionally.
+ *
+ * @name multiPolygon
+ * @param {Array<Array<Array<Array<number>>>>} coordinates an array of Polygons
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature<MultiPolygon>} a multipolygon feature
+ * @throws {Error} if no coordinates are passed
+ * @example
+ * var multiPoly = turf.multiPolygon([[[[0,0],[0,10],[10,10],[10,0],[0,0]]]]);
+ *
+ * //=multiPoly
+ *
+ */
+function multiPolygon(coordinates, properties, options) {
+    if (!coordinates) throw new Error('coordinates is required');
+
+    return feature({
+        type: 'MultiPolygon',
+        coordinates: coordinates
+    }, properties, options);
+}
+
+/**
+ * Creates a {@link Feature<GeometryCollection>} based on a
+ * coordinate array. Properties can be added optionally.
+ *
+ * @name geometryCollection
+ * @param {Array<Geometry>} geometries an array of GeoJSON Geometries
+ * @param {Object} [properties={}] an Object of key-value pairs to add as properties
+ * @param {Object} [options={}] Optional Parameters
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Feature
+ * @param {string|number} [options.id] Identifier associated with the Feature
+ * @returns {Feature<GeometryCollection>} a GeoJSON GeometryCollection Feature
+ * @example
+ * var pt = {
+ *     "type": "Point",
+ *       "coordinates": [100, 0]
+ *     };
+ * var line = {
+ *     "type": "LineString",
+ *     "coordinates": [ [101, 0], [102, 1] ]
+ *   };
+ * var collection = turf.geometryCollection([pt, line]);
+ *
+ * //=collection
+ */
+function geometryCollection(geometries, properties, options) {
+    if (!geometries) throw new Error('geometries is required');
+    if (!Array.isArray(geometries)) throw new Error('geometries must be an Array');
+
+    return feature({
+        type: 'GeometryCollection',
+        geometries: geometries
+    }, properties, options);
+}
+
+/**
+ * Round number to precision
+ *
+ * @param {number} num Number
+ * @param {number} [precision=0] Precision
+ * @returns {number} rounded number
+ * @example
+ * turf.round(120.4321)
+ * //=120
+ *
+ * turf.round(120.4321, 2)
+ * //=120.43
+ */
+function round(num, precision) {
+    if (num === undefined || num === null || isNaN(num)) throw new Error('num is required');
+    if (precision && !(precision >= 0)) throw new Error('precision must be a positive number');
+    var multiplier = Math.pow(10, precision || 0);
+    return Math.round(num * multiplier) / multiplier;
+}
+
+/**
+ * Convert a distance measurement (assuming a spherical Earth) from radians to a more friendly unit.
+ * Valid units: miles, nauticalmiles, inches, yards, meters, metres, kilometers, centimeters, feet
+ *
+ * @name radiansToLength
+ * @param {number} radians in radians across the sphere
+ * @param {string} [units='kilometers'] can be degrees, radians, miles, or kilometers inches, yards, metres, meters, kilometres, kilometers.
+ * @returns {number} distance
+ */
+function radiansToLength(radians, units) {
+    if (radians === undefined || radians === null) throw new Error('radians is required');
+
+    if (units && typeof units !== 'string') throw new Error('units must be a string');
+    var factor = factors[units || 'kilometers'];
+    if (!factor) throw new Error(units + ' units is invalid');
+    return radians * factor;
+}
+
+/**
+ * Convert a distance measurement (assuming a spherical Earth) from a real-world unit into radians
+ * Valid units: miles, nauticalmiles, inches, yards, meters, metres, kilometers, centimeters, feet
+ *
+ * @name lengthToRadians
+ * @param {number} distance in real units
+ * @param {string} [units='kilometers'] can be degrees, radians, miles, or kilometers inches, yards, metres, meters, kilometres, kilometers.
+ * @returns {number} radians
+ */
+function lengthToRadians(distance, units) {
+    if (distance === undefined || distance === null) throw new Error('distance is required');
+
+    if (units && typeof units !== 'string') throw new Error('units must be a string');
+    var factor = factors[units || 'kilometers'];
+    if (!factor) throw new Error(units + ' units is invalid');
+    return distance / factor;
+}
+
+/**
+ * Convert a distance measurement (assuming a spherical Earth) from a real-world unit into degrees
+ * Valid units: miles, nauticalmiles, inches, yards, meters, metres, centimeters, kilometres, feet
+ *
+ * @name lengthToDegrees
+ * @param {number} distance in real units
+ * @param {string} [units='kilometers'] can be degrees, radians, miles, or kilometers inches, yards, metres, meters, kilometres, kilometers.
+ * @returns {number} degrees
+ */
+function lengthToDegrees(distance, units) {
+    return radiansToDegrees(lengthToRadians(distance, units));
+}
+
+/**
+ * Converts any bearing angle from the north line direction (positive clockwise)
+ * and returns an angle between 0-360 degrees (positive clockwise), 0 being the north line
+ *
+ * @name bearingToAzimuth
+ * @param {number} bearing angle, between -180 and +180 degrees
+ * @returns {number} angle between 0 and 360 degrees
+ */
+function bearingToAzimuth(bearing) {
+    if (bearing === null || bearing === undefined) throw new Error('bearing is required');
+
+    var angle = bearing % 360;
+    if (angle < 0) angle += 360;
+    return angle;
+}
+
+/**
+ * Converts an angle in radians to degrees
+ *
+ * @name radiansToDegrees
+ * @param {number} radians angle in radians
+ * @returns {number} degrees between 0 and 360 degrees
+ */
+function radiansToDegrees(radians) {
+    if (radians === null || radians === undefined) throw new Error('radians is required');
+
+    var degrees = radians % (2 * Math.PI);
+    return degrees * 180 / Math.PI;
+}
+
+/**
+ * Converts an angle in degrees to radians
+ *
+ * @name degreesToRadians
+ * @param {number} degrees angle between 0 and 360 degrees
+ * @returns {number} angle in radians
+ */
+function degreesToRadians(degrees) {
+    if (degrees === null || degrees === undefined) throw new Error('degrees is required');
+
+    var radians = degrees % 360;
+    return radians * Math.PI / 180;
+}
+
+/**
+ * Converts a length to the requested unit.
+ * Valid units: miles, nauticalmiles, inches, yards, meters, metres, kilometers, centimeters, feet
+ *
+ * @param {number} length to be converted
+ * @param {string} originalUnit of the length
+ * @param {string} [finalUnit='kilometers'] returned unit
+ * @returns {number} the converted length
+ */
+function convertLength(length, originalUnit, finalUnit) {
+    if (length === null || length === undefined) throw new Error('length is required');
+    if (!(length >= 0)) throw new Error('length must be a positive number');
+
+    return radiansToLength(lengthToRadians(length, originalUnit), finalUnit || 'kilometers');
+}
+
+/**
+ * Converts a area to the requested unit.
+ * Valid units: kilometers, kilometres, meters, metres, centimetres, millimeters, acres, miles, yards, feet, inches
+ * @param {number} area to be converted
+ * @param {string} [originalUnit='meters'] of the distance
+ * @param {string} [finalUnit='kilometers'] returned unit
+ * @returns {number} the converted distance
+ */
+function convertArea(area, originalUnit, finalUnit) {
+    if (area === null || area === undefined) throw new Error('area is required');
+    if (!(area >= 0)) throw new Error('area must be a positive number');
+
+    var startFactor = areaFactors[originalUnit || 'meters'];
+    if (!startFactor) throw new Error('invalid original units');
+
+    var finalFactor = areaFactors[finalUnit || 'kilometers'];
+    if (!finalFactor) throw new Error('invalid final units');
+
+    return (area / startFactor) * finalFactor;
+}
+
+/**
+ * isNumber
+ *
+ * @param {*} num Number to validate
+ * @returns {boolean} true/false
+ * @example
+ * turf.isNumber(123)
+ * //=true
+ * turf.isNumber('foo')
+ * //=false
+ */
+function isNumber(num) {
+    return !isNaN(num) && num !== null && !Array.isArray(num);
+}
+
+/**
+ * isObject
+ *
+ * @param {*} input variable to validate
+ * @returns {boolean} true/false
+ * @example
+ * turf.isObject({elevation: 10})
+ * //=true
+ * turf.isObject('foo')
+ * //=false
+ */
+function isObject(input) {
+    return (!!input) && (input.constructor === Object);
+}
+
+/**
+ * Validate BBox
+ *
+ * @private
+ * @param {Array<number>} bbox BBox to validate
+ * @returns {void}
+ * @throws Error if BBox is not valid
+ * @example
+ * validateBBox([-180, -40, 110, 50])
+ * //=OK
+ * validateBBox([-180, -40])
+ * //=Error
+ * validateBBox('Foo')
+ * //=Error
+ * validateBBox(5)
+ * //=Error
+ * validateBBox(null)
+ * //=Error
+ * validateBBox(undefined)
+ * //=Error
+ */
+function validateBBox(bbox) {
+    if (!bbox) throw new Error('bbox is required');
+    if (!Array.isArray(bbox)) throw new Error('bbox must be an Array');
+    if (bbox.length !== 4 && bbox.length !== 6) throw new Error('bbox must be an Array of 4 or 6 numbers');
+    bbox.forEach(function (num) {
+        if (!isNumber(num)) throw new Error('bbox must only contain numbers');
+    });
+}
+
+/**
+ * Validate Id
+ *
+ * @private
+ * @param {string|number} id Id to validate
+ * @returns {void}
+ * @throws Error if Id is not valid
+ * @example
+ * validateId([-180, -40, 110, 50])
+ * //=Error
+ * validateId([-180, -40])
+ * //=Error
+ * validateId('Foo')
+ * //=OK
+ * validateId(5)
+ * //=OK
+ * validateId(null)
+ * //=Error
+ * validateId(undefined)
+ * //=Error
+ */
+function validateId(id) {
+    if (!id) throw new Error('id is required');
+    if (['string', 'number'].indexOf(typeof id) === -1) throw new Error('id must be a number or a string');
+}
+
+// Deprecated methods
+function radians2degrees() {
+    throw new Error('method has been renamed to `radiansToDegrees`');
+}
+
+function degrees2radians() {
+    throw new Error('method has been renamed to `degreesToRadians`');
+}
+
+function distanceToDegrees() {
+    throw new Error('method has been renamed to `lengthToDegrees`');
+}
+
+function distanceToRadians() {
+    throw new Error('method has been renamed to `lengthToRadians`');
+}
+
+function radiansToDistance() {
+    throw new Error('method has been renamed to `radiansToLength`');
+}
+
+function bearingToAngle() {
+    throw new Error('method has been renamed to `bearingToAzimuth`');
+}
+
+function convertDistance() {
+    throw new Error('method has been renamed to `convertLength`');
+}
+
+exports.earthRadius = earthRadius;
+exports.factors = factors;
+exports.unitsFactors = unitsFactors;
+exports.areaFactors = areaFactors;
+exports.feature = feature;
+exports.geometry = geometry;
+exports.point = point;
+exports.points = points;
+exports.polygon = polygon;
+exports.polygons = polygons;
+exports.lineString = lineString;
+exports.lineStrings = lineStrings;
+exports.featureCollection = featureCollection;
+exports.multiLineString = multiLineString;
+exports.multiPoint = multiPoint;
+exports.multiPolygon = multiPolygon;
+exports.geometryCollection = geometryCollection;
+exports.round = round;
+exports.radiansToLength = radiansToLength;
+exports.lengthToRadians = lengthToRadians;
+exports.lengthToDegrees = lengthToDegrees;
+exports.bearingToAzimuth = bearingToAzimuth;
+exports.radiansToDegrees = radiansToDegrees;
+exports.degreesToRadians = degreesToRadians;
+exports.convertLength = convertLength;
+exports.convertArea = convertArea;
+exports.isNumber = isNumber;
+exports.isObject = isObject;
+exports.validateBBox = validateBBox;
+exports.validateId = validateId;
+exports.radians2degrees = radians2degrees;
+exports.degrees2radians = degrees2radians;
+exports.distanceToDegrees = distanceToDegrees;
+exports.distanceToRadians = distanceToRadians;
+exports.radiansToDistance = radiansToDistance;
+exports.bearingToAngle = bearingToAngle;
+exports.convertDistance = convertDistance;
+
+},{}],5:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var helpers = require('@turf/helpers');
+
 /**
  * Callback for coordEach
  *
- * @private
  * @callback coordEachCallback
- * @param {[number, number]} currentCoords The current coordinates being processed.
- * @param {number} currentIndex The index of the current element being processed in the
- * array.Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {Array<number>} currentCoord The current coordinate being processed.
+ * @param {number} coordIndex The current index of the coordinate being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed.
+ * @param {number} geometryIndex The current index of the Geometry being processed.
  */
 
 /**
  * Iterate over coordinates in any GeoJSON object, similar to Array.forEach()
  *
  * @name coordEach
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (currentCoords, currentIndex)
- * @param {boolean} [excludeWrapCoord=false] whether or not to include
- * the final coordinate of LinearRings that wraps the ring in its iteration.
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (currentCoord, coordIndex, featureIndex, multiFeatureIndex)
+ * @param {boolean} [excludeWrapCoord=false] whether or not to include the final coordinate of LinearRings that wraps the ring in its iteration.
+ * @returns {void}
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.coordEach(features, function (currentCoords, currentIndex) {
- *   //=currentCoords
- *   //=currentIndex
+ * var features = turf.featureCollection([
+ *   turf.point([26, 37], {"foo": "bar"}),
+ *   turf.point([36, 53], {"hello": "world"})
+ * ]);
+ *
+ * turf.coordEach(features, function (currentCoord, coordIndex, featureIndex, multiFeatureIndex, geometryIndex) {
+ *   //=currentCoord
+ *   //=coordIndex
+ *   //=featureIndex
+ *   //=multiFeatureIndex
+ *   //=geometryIndex
  * });
  */
-function coordEach(layer, callback, excludeWrapCoord) {
-    var i, j, k, g, l, geometry, stopG, coords,
+function coordEach(geojson, callback, excludeWrapCoord) {
+    // Handles null Geometry -- Skips this GeoJSON
+    if (geojson === null) return;
+    var j, k, l, geometry, stopG, coords,
         geometryMaybeCollection,
         wrapShrink = 0,
-        currentIndex = 0,
+        coordIndex = 0,
         isGeometryCollection,
-        isFeatureCollection = layer.type === 'FeatureCollection',
-        isFeature = layer.type === 'Feature',
-        stop = isFeatureCollection ? layer.features.length : 1;
+        type = geojson.type,
+        isFeatureCollection = type === 'FeatureCollection',
+        isFeature = type === 'Feature',
+        stop = isFeatureCollection ? geojson.features.length : 1;
 
-  // This logic may look a little weird. The reason why it is that way
-  // is because it's trying to be fast. GeoJSON supports multiple kinds
-  // of objects at its root: FeatureCollection, Features, Geometries.
-  // This function has the responsibility of handling all of them, and that
-  // means that some of the `for` loops you see below actually just don't apply
-  // to certain inputs. For instance, if you give this just a
-  // Point geometry, then both loops are short-circuited and all we do
-  // is gradually rename the input until it's called 'geometry'.
-  //
-  // This also aims to allocate as few resources as possible: just a
-  // few numbers and booleans, rather than any temporary arrays as would
-  // be required with the normalization approach.
-    for (i = 0; i < stop; i++) {
-
-        geometryMaybeCollection = (isFeatureCollection ? layer.features[i].geometry :
-        (isFeature ? layer.geometry : layer));
-        isGeometryCollection = geometryMaybeCollection.type === 'GeometryCollection';
+    // This logic may look a little weird. The reason why it is that way
+    // is because it's trying to be fast. GeoJSON supports multiple kinds
+    // of objects at its root: FeatureCollection, Features, Geometries.
+    // This function has the responsibility of handling all of them, and that
+    // means that some of the `for` loops you see below actually just don't apply
+    // to certain inputs. For instance, if you give this just a
+    // Point geometry, then both loops are short-circuited and all we do
+    // is gradually rename the input until it's called 'geometry'.
+    //
+    // This also aims to allocate as few resources as possible: just a
+    // few numbers and booleans, rather than any temporary arrays as would
+    // be required with the normalization approach.
+    for (var featureIndex = 0; featureIndex < stop; featureIndex++) {
+        geometryMaybeCollection = (isFeatureCollection ? geojson.features[featureIndex].geometry :
+            (isFeature ? geojson.geometry : geojson));
+        isGeometryCollection = (geometryMaybeCollection) ? geometryMaybeCollection.type === 'GeometryCollection' : false;
         stopG = isGeometryCollection ? geometryMaybeCollection.geometries.length : 1;
 
-        for (g = 0; g < stopG; g++) {
+        for (var geomIndex = 0; geomIndex < stopG; geomIndex++) {
+            var multiFeatureIndex = 0;
+            var geometryIndex = 0;
             geometry = isGeometryCollection ?
-            geometryMaybeCollection.geometries[g] : geometryMaybeCollection;
+                geometryMaybeCollection.geometries[geomIndex] : geometryMaybeCollection;
+
+            // Handles null Geometry -- Skips this geometry
+            if (geometry === null) continue;
             coords = geometry.coordinates;
+            var geomType = geometry.type;
 
-            wrapShrink = (excludeWrapCoord &&
-                (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')) ?
-                1 : 0;
+            wrapShrink = (excludeWrapCoord && (geomType === 'Polygon' || geomType === 'MultiPolygon')) ? 1 : 0;
 
-            if (geometry.type === 'Point') {
-                callback(coords, currentIndex);
-                currentIndex++;
-            } else if (geometry.type === 'LineString' || geometry.type === 'MultiPoint') {
+            switch (geomType) {
+            case null:
+                break;
+            case 'Point':
+                if (callback(coords, coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
+                coordIndex++;
+                multiFeatureIndex++;
+                break;
+            case 'LineString':
+            case 'MultiPoint':
                 for (j = 0; j < coords.length; j++) {
-                    callback(coords[j], currentIndex);
-                    currentIndex++;
+                    if (callback(coords[j], coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
+                    coordIndex++;
+                    if (geomType === 'MultiPoint') multiFeatureIndex++;
                 }
-            } else if (geometry.type === 'Polygon' || geometry.type === 'MultiLineString') {
-                for (j = 0; j < coords.length; j++)
+                if (geomType === 'LineString') multiFeatureIndex++;
+                break;
+            case 'Polygon':
+            case 'MultiLineString':
+                for (j = 0; j < coords.length; j++) {
                     for (k = 0; k < coords[j].length - wrapShrink; k++) {
-                        callback(coords[j][k], currentIndex);
-                        currentIndex++;
+                        if (callback(coords[j][k], coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
+                        coordIndex++;
                     }
-            } else if (geometry.type === 'MultiPolygon') {
-                for (j = 0; j < coords.length; j++)
-                    for (k = 0; k < coords[j].length; k++)
+                    if (geomType === 'MultiLineString') multiFeatureIndex++;
+                    if (geomType === 'Polygon') geometryIndex++;
+                }
+                if (geomType === 'Polygon') multiFeatureIndex++;
+                break;
+            case 'MultiPolygon':
+                for (j = 0; j < coords.length; j++) {
+                    if (geomType === 'MultiPolygon') geometryIndex = 0;
+                    for (k = 0; k < coords[j].length; k++) {
                         for (l = 0; l < coords[j][k].length - wrapShrink; l++) {
-                            callback(coords[j][k][l], currentIndex);
-                            currentIndex++;
+                            if (callback(coords[j][k][l], coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
+                            coordIndex++;
                         }
-            } else if (geometry.type === 'GeometryCollection') {
+                        geometryIndex++;
+                    }
+                    multiFeatureIndex++;
+                }
+                break;
+            case 'GeometryCollection':
                 for (j = 0; j < geometry.geometries.length; j++)
-                    coordEach(geometry.geometries[j], callback, excludeWrapCoord);
-            } else {
+                    if (coordEach(geometry.geometries[j], callback, excludeWrapCoord) === false) return false;
+                break;
+            default:
                 throw new Error('Unknown Geometry Type');
             }
         }
     }
 }
-module.exports.coordEach = coordEach;
 
 /**
  * Callback for coordReduce
@@ -169,124 +1151,90 @@ module.exports.coordEach = coordEach;
  *  - The previousValue argument is the value of the first element present in the array.
  *  - The currentValue argument is the value of the second element present in the array.
  *
- * @private
  * @callback coordReduceCallback
  * @param {*} previousValue The accumulated value previously returned in the last invocation
  * of the callback, or initialValue, if supplied.
- * @param {[number, number]} currentCoords The current coordinate being processed.
- * @param {number} currentIndex The index of the current element being processed in the
- * array.Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {Array<number>} currentCoord The current coordinate being processed.
+ * @param {number} coordIndex The current index of the coordinate being processed.
+ * Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed.
+ * @param {number} geometryIndex The current index of the Geometry being processed.
  */
 
 /**
  * Reduce coordinates in any GeoJSON object, similar to Array.reduce()
  *
  * @name coordReduce
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (previousValue, currentCoords, currentIndex)
+ * @param {FeatureCollection|Geometry|Feature} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (previousValue, currentCoord, coordIndex)
  * @param {*} [initialValue] Value to use as the first argument to the first call of the callback.
- * @param {boolean} [excludeWrapCoord=false] whether or not to include
- * the final coordinate of LinearRings that wraps the ring in its iteration.
+ * @param {boolean} [excludeWrapCoord=false] whether or not to include the final coordinate of LinearRings that wraps the ring in its iteration.
  * @returns {*} The value that results from the reduction.
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.coordReduce(features, function (previousValue, currentCoords, currentIndex) {
+ * var features = turf.featureCollection([
+ *   turf.point([26, 37], {"foo": "bar"}),
+ *   turf.point([36, 53], {"hello": "world"})
+ * ]);
+ *
+ * turf.coordReduce(features, function (previousValue, currentCoord, coordIndex, featureIndex, multiFeatureIndex, geometryIndex) {
  *   //=previousValue
- *   //=currentCoords
- *   //=currentIndex
- *   return currentCoords;
+ *   //=currentCoord
+ *   //=coordIndex
+ *   //=featureIndex
+ *   //=multiFeatureIndex
+ *   //=geometryIndex
+ *   return currentCoord;
  * });
  */
-function coordReduce(layer, callback, initialValue, excludeWrapCoord) {
+function coordReduce(geojson, callback, initialValue, excludeWrapCoord) {
     var previousValue = initialValue;
-    coordEach(layer, function (currentCoords, currentIndex) {
-        if (currentIndex === 0 && initialValue === undefined) {
-            previousValue = currentCoords;
-        } else {
-            previousValue = callback(previousValue, currentCoords, currentIndex);
-        }
+    coordEach(geojson, function (currentCoord, coordIndex, featureIndex, multiFeatureIndex, geometryIndex) {
+        if (coordIndex === 0 && initialValue === undefined) previousValue = currentCoord;
+        else previousValue = callback(previousValue, currentCoord, coordIndex, featureIndex, multiFeatureIndex, geometryIndex);
     }, excludeWrapCoord);
     return previousValue;
 }
-module.exports.coordReduce = coordReduce;
 
 /**
  * Callback for propEach
  *
- * @private
  * @callback propEachCallback
- * @param {*} currentProperties The current properties being processed.
- * @param {number} currentIndex The index of the current element being processed in the
- * array.Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {Object} currentProperties The current Properties being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
  */
 
 /**
  * Iterate over properties in any GeoJSON object, similar to Array.forEach()
  *
  * @name propEach
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (currentProperties, currentIndex)
+ * @param {FeatureCollection|Feature} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (currentProperties, featureIndex)
+ * @returns {void}
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {"foo": "bar"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {"hello": "world"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.propEach(features, function (currentProperties, currentIndex) {
+ * var features = turf.featureCollection([
+ *     turf.point([26, 37], {foo: 'bar'}),
+ *     turf.point([36, 53], {hello: 'world'})
+ * ]);
+ *
+ * turf.propEach(features, function (currentProperties, featureIndex) {
  *   //=currentProperties
- *   //=currentIndex
+ *   //=featureIndex
  * });
  */
-function propEach(layer, callback) {
+function propEach(geojson, callback) {
     var i;
-    switch (layer.type) {
+    switch (geojson.type) {
     case 'FeatureCollection':
-        for (i = 0; i < layer.features.length; i++) {
-            callback(layer.features[i].properties, i);
+        for (i = 0; i < geojson.features.length; i++) {
+            if (callback(geojson.features[i].properties, i) === false) break;
         }
         break;
     case 'Feature':
-        callback(layer.properties, 0);
+        callback(geojson.properties, 0);
         break;
     }
 }
-module.exports.propEach = propEach;
 
 
 /**
@@ -303,13 +1251,11 @@ module.exports.propEach = propEach;
  *  - The previousValue argument is the value of the first element present in the array.
  *  - The currentValue argument is the value of the second element present in the array.
  *
- * @private
  * @callback propReduceCallback
  * @param {*} previousValue The accumulated value previously returned in the last invocation
  * of the callback, or initialValue, if supplied.
- * @param {*} currentProperties The current properties being processed.
- * @param {number} currentIndex The index of the current element being processed in the
- * array.Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {*} currentProperties The current Properties being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
  */
 
 /**
@@ -318,60 +1264,38 @@ module.exports.propEach = propEach;
  * the reduction, so an array of all properties is unnecessary.
  *
  * @name propReduce
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (previousValue, currentProperties, currentIndex)
+ * @param {FeatureCollection|Feature} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (previousValue, currentProperties, featureIndex)
  * @param {*} [initialValue] Value to use as the first argument to the first call of the callback.
  * @returns {*} The value that results from the reduction.
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {"foo": "bar"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {"hello": "world"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.propReduce(features, function (previousValue, currentProperties, currentIndex) {
+ * var features = turf.featureCollection([
+ *     turf.point([26, 37], {foo: 'bar'}),
+ *     turf.point([36, 53], {hello: 'world'})
+ * ]);
+ *
+ * turf.propReduce(features, function (previousValue, currentProperties, featureIndex) {
  *   //=previousValue
  *   //=currentProperties
- *   //=currentIndex
+ *   //=featureIndex
  *   return currentProperties
  * });
  */
-function propReduce(layer, callback, initialValue) {
+function propReduce(geojson, callback, initialValue) {
     var previousValue = initialValue;
-    propEach(layer, function (currentProperties, currentIndex) {
-        if (currentIndex === 0 && initialValue === undefined) {
-            previousValue = currentProperties;
-        } else {
-            previousValue = callback(previousValue, currentProperties, currentIndex);
-        }
+    propEach(geojson, function (currentProperties, featureIndex) {
+        if (featureIndex === 0 && initialValue === undefined) previousValue = currentProperties;
+        else previousValue = callback(previousValue, currentProperties, featureIndex);
     });
     return previousValue;
 }
-module.exports.propReduce = propReduce;
 
 /**
  * Callback for featureEach
  *
- * @private
  * @callback featureEachCallback
- * @param {Feature<any>} currentFeature The current feature being processed.
- * @param {number} currentIndex The index of the current element being processed in the
- * array.Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {Feature<any>} currentFeature The current Feature being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
  */
 
 /**
@@ -379,45 +1303,29 @@ module.exports.propReduce = propReduce;
  * Array.forEach.
  *
  * @name featureEach
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (currentFeature, currentIndex)
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (currentFeature, featureIndex)
+ * @returns {void}
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.featureEach(features, function (currentFeature, currentIndex) {
+ * var features = turf.featureCollection([
+ *   turf.point([26, 37], {foo: 'bar'}),
+ *   turf.point([36, 53], {hello: 'world'})
+ * ]);
+ *
+ * turf.featureEach(features, function (currentFeature, featureIndex) {
  *   //=currentFeature
- *   //=currentIndex
+ *   //=featureIndex
  * });
  */
-function featureEach(layer, callback) {
-    if (layer.type === 'Feature') {
-        callback(layer, 0);
-    } else if (layer.type === 'FeatureCollection') {
-        for (var i = 0; i < layer.features.length; i++) {
-            callback(layer.features[i], i);
+function featureEach(geojson, callback) {
+    if (geojson.type === 'Feature') {
+        callback(geojson, 0);
+    } else if (geojson.type === 'FeatureCollection') {
+        for (var i = 0; i < geojson.features.length; i++) {
+            if (callback(geojson.features[i], i) === false) break;
         }
     }
 }
-module.exports.featureEach = featureEach;
 
 /**
  * Callback for featureReduce
@@ -433,190 +1341,168 @@ module.exports.featureEach = featureEach;
  *  - The previousValue argument is the value of the first element present in the array.
  *  - The currentValue argument is the value of the second element present in the array.
  *
- * @private
  * @callback featureReduceCallback
  * @param {*} previousValue The accumulated value previously returned in the last invocation
  * of the callback, or initialValue, if supplied.
- * @param {Feature<any>} currentFeature The current Feature being processed.
- * @param {number} currentIndex The index of the current element being processed in the
- * array.Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {Feature} currentFeature The current Feature being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
  */
 
 /**
  * Reduce features in any GeoJSON object, similar to Array.reduce().
  *
  * @name featureReduce
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (previousValue, currentFeature, currentIndex)
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (previousValue, currentFeature, featureIndex)
  * @param {*} [initialValue] Value to use as the first argument to the first call of the callback.
  * @returns {*} The value that results from the reduction.
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {"foo": "bar"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {"hello": "world"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.featureReduce(features, function (previousValue, currentFeature, currentIndex) {
+ * var features = turf.featureCollection([
+ *   turf.point([26, 37], {"foo": "bar"}),
+ *   turf.point([36, 53], {"hello": "world"})
+ * ]);
+ *
+ * turf.featureReduce(features, function (previousValue, currentFeature, featureIndex) {
  *   //=previousValue
  *   //=currentFeature
- *   //=currentIndex
+ *   //=featureIndex
  *   return currentFeature
  * });
  */
-function featureReduce(layer, callback, initialValue) {
+function featureReduce(geojson, callback, initialValue) {
     var previousValue = initialValue;
-    featureEach(layer, function (currentFeature, currentIndex) {
-        if (currentIndex === 0 && initialValue === undefined) {
-            previousValue = currentFeature;
-        } else {
-            previousValue = callback(previousValue, currentFeature, currentIndex);
-        }
+    featureEach(geojson, function (currentFeature, featureIndex) {
+        if (featureIndex === 0 && initialValue === undefined) previousValue = currentFeature;
+        else previousValue = callback(previousValue, currentFeature, featureIndex);
     });
     return previousValue;
 }
-module.exports.featureReduce = featureReduce;
 
 /**
  * Get all coordinates from any GeoJSON object.
  *
  * @name coordAll
- * @param {Object} layer any GeoJSON object
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
  * @returns {Array<Array<number>>} coordinate position array
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
+ * var features = turf.featureCollection([
+ *   turf.point([26, 37], {foo: 'bar'}),
+ *   turf.point([36, 53], {hello: 'world'})
+ * ]);
+ *
  * var coords = turf.coordAll(features);
- * //=coords
+ * //= [[26, 37], [36, 53]]
  */
-function coordAll(layer) {
+function coordAll(geojson) {
     var coords = [];
-    coordEach(layer, function (coord) {
+    coordEach(geojson, function (coord) {
         coords.push(coord);
     });
     return coords;
 }
-module.exports.coordAll = coordAll;
+
+/**
+ * Callback for geomEach
+ *
+ * @callback geomEachCallback
+ * @param {Geometry} currentGeometry The current Geometry being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {Object} featureProperties The current Feature Properties being processed.
+ * @param {Array<number>} featureBBox The current Feature BBox being processed.
+ * @param {number|string} featureId The current Feature Id being processed.
+ */
 
 /**
  * Iterate over each geometry in any GeoJSON object, similar to Array.forEach()
  *
  * @name geomEach
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (currentGeometry, currentIndex)
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (currentGeometry, featureIndex, featureProperties, featureBBox, featureId)
+ * @returns {void}
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.geomEach(features, function (currentGeometry, currentIndex) {
+ * var features = turf.featureCollection([
+ *     turf.point([26, 37], {foo: 'bar'}),
+ *     turf.point([36, 53], {hello: 'world'})
+ * ]);
+ *
+ * turf.geomEach(features, function (currentGeometry, featureIndex, featureProperties, featureBBox, featureId) {
  *   //=currentGeometry
- *   //=currentIndex
+ *   //=featureIndex
+ *   //=featureProperties
+ *   //=featureBBox
+ *   //=featureId
  * });
  */
-function geomEach(layer, callback) {
+function geomEach(geojson, callback) {
     var i, j, g, geometry, stopG,
         geometryMaybeCollection,
         isGeometryCollection,
-        currentIndex = 0,
-        isFeatureCollection = layer.type === 'FeatureCollection',
-        isFeature = layer.type === 'Feature',
-        stop = isFeatureCollection ? layer.features.length : 1;
+        featureProperties,
+        featureBBox,
+        featureId,
+        featureIndex = 0,
+        isFeatureCollection = geojson.type === 'FeatureCollection',
+        isFeature = geojson.type === 'Feature',
+        stop = isFeatureCollection ? geojson.features.length : 1;
 
-  // This logic may look a little weird. The reason why it is that way
-  // is because it's trying to be fast. GeoJSON supports multiple kinds
-  // of objects at its root: FeatureCollection, Features, Geometries.
-  // This function has the responsibility of handling all of them, and that
-  // means that some of the `for` loops you see below actually just don't apply
-  // to certain inputs. For instance, if you give this just a
-  // Point geometry, then both loops are short-circuited and all we do
-  // is gradually rename the input until it's called 'geometry'.
-  //
-  // This also aims to allocate as few resources as possible: just a
-  // few numbers and booleans, rather than any temporary arrays as would
-  // be required with the normalization approach.
+    // This logic may look a little weird. The reason why it is that way
+    // is because it's trying to be fast. GeoJSON supports multiple kinds
+    // of objects at its root: FeatureCollection, Features, Geometries.
+    // This function has the responsibility of handling all of them, and that
+    // means that some of the `for` loops you see below actually just don't apply
+    // to certain inputs. For instance, if you give this just a
+    // Point geometry, then both loops are short-circuited and all we do
+    // is gradually rename the input until it's called 'geometry'.
+    //
+    // This also aims to allocate as few resources as possible: just a
+    // few numbers and booleans, rather than any temporary arrays as would
+    // be required with the normalization approach.
     for (i = 0; i < stop; i++) {
 
-        geometryMaybeCollection = (isFeatureCollection ? layer.features[i].geometry :
-        (isFeature ? layer.geometry : layer));
-        isGeometryCollection = geometryMaybeCollection.type === 'GeometryCollection';
+        geometryMaybeCollection = (isFeatureCollection ? geojson.features[i].geometry :
+            (isFeature ? geojson.geometry : geojson));
+        featureProperties = (isFeatureCollection ? geojson.features[i].properties :
+            (isFeature ? geojson.properties : {}));
+        featureBBox = (isFeatureCollection ? geojson.features[i].bbox :
+            (isFeature ? geojson.bbox : undefined));
+        featureId = (isFeatureCollection ? geojson.features[i].id :
+            (isFeature ? geojson.id : undefined));
+        isGeometryCollection = (geometryMaybeCollection) ? geometryMaybeCollection.type === 'GeometryCollection' : false;
         stopG = isGeometryCollection ? geometryMaybeCollection.geometries.length : 1;
 
         for (g = 0; g < stopG; g++) {
             geometry = isGeometryCollection ?
-            geometryMaybeCollection.geometries[g] : geometryMaybeCollection;
+                geometryMaybeCollection.geometries[g] : geometryMaybeCollection;
 
-            if (geometry.type === 'Point' ||
-                geometry.type === 'LineString' ||
-                geometry.type === 'MultiPoint' ||
-                geometry.type === 'Polygon' ||
-                geometry.type === 'MultiLineString' ||
-                geometry.type === 'MultiPolygon') {
-                callback(geometry, currentIndex);
-                currentIndex++;
-            } else if (geometry.type === 'GeometryCollection') {
+            // Handle null Geometry
+            if (geometry === null) {
+                if (callback(null, featureIndex, featureProperties, featureBBox, featureId) === false) return false;
+                continue;
+            }
+            switch (geometry.type) {
+            case 'Point':
+            case 'LineString':
+            case 'MultiPoint':
+            case 'Polygon':
+            case 'MultiLineString':
+            case 'MultiPolygon': {
+                if (callback(geometry, featureIndex, featureProperties, featureBBox, featureId) === false) return false;
+                break;
+            }
+            case 'GeometryCollection': {
                 for (j = 0; j < geometry.geometries.length; j++) {
-                    callback(geometry.geometries[j], currentIndex);
-                    currentIndex++;
+                    if (callback(geometry.geometries[j], featureIndex, featureProperties, featureBBox, featureId) === false) return false;
                 }
-            } else {
+                break;
+            }
+            default:
                 throw new Error('Unknown Geometry Type');
             }
         }
+        // Only increase `featureIndex` per each feature
+        featureIndex++;
     }
 }
-module.exports.geomEach = geomEach;
 
 /**
  * Callback for geomReduce
@@ -632,68 +1518,618 @@ module.exports.geomEach = geomEach;
  *  - The previousValue argument is the value of the first element present in the array.
  *  - The currentValue argument is the value of the second element present in the array.
  *
- * @private
  * @callback geomReduceCallback
  * @param {*} previousValue The accumulated value previously returned in the last invocation
  * of the callback, or initialValue, if supplied.
- * @param {*} currentGeometry The current Feature being processed.
- * @param {number} currentIndex The index of the current element being processed in the
- * array.Starts at index 0, if an initialValue is provided, and at index 1 otherwise.
+ * @param {Geometry} currentGeometry The current Geometry being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {Object} featureProperties The current Feature Properties being processed.
+ * @param {Array<number>} featureBBox The current Feature BBox being processed.
+ * @param {number|string} featureId The current Feature Id being processed.
  */
 
 /**
  * Reduce geometry in any GeoJSON object, similar to Array.reduce().
  *
  * @name geomReduce
- * @param {Object} layer any GeoJSON object
- * @param {Function} callback a method that takes (previousValue, currentGeometry, currentIndex)
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (previousValue, currentGeometry, featureIndex, featureProperties, featureBBox, featureId)
  * @param {*} [initialValue] Value to use as the first argument to the first call of the callback.
  * @returns {*} The value that results from the reduction.
  * @example
- * var features = {
- *   "type": "FeatureCollection",
- *   "features": [
- *     {
- *       "type": "Feature",
- *       "properties": {"foo": "bar"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [26, 37]
- *       }
- *     },
- *     {
- *       "type": "Feature",
- *       "properties": {"hello": "world"},
- *       "geometry": {
- *         "type": "Point",
- *         "coordinates": [36, 53]
- *       }
- *     }
- *   ]
- * };
- * turf.geomReduce(features, function (previousValue, currentGeometry, currentIndex) {
+ * var features = turf.featureCollection([
+ *     turf.point([26, 37], {foo: 'bar'}),
+ *     turf.point([36, 53], {hello: 'world'})
+ * ]);
+ *
+ * turf.geomReduce(features, function (previousValue, currentGeometry, featureIndex, featureProperties, featureBBox, featureId) {
  *   //=previousValue
  *   //=currentGeometry
- *   //=currentIndex
+ *   //=featureIndex
+ *   //=featureProperties
+ *   //=featureBBox
+ *   //=featureId
  *   return currentGeometry
  * });
  */
-function geomReduce(layer, callback, initialValue) {
+function geomReduce(geojson, callback, initialValue) {
     var previousValue = initialValue;
-    geomEach(layer, function (currentGeometry, currentIndex) {
-        if (currentIndex === 0 && initialValue === undefined) {
-            previousValue = currentGeometry;
-        } else {
-            previousValue = callback(previousValue, currentGeometry, currentIndex);
-        }
+    geomEach(geojson, function (currentGeometry, featureIndex, featureProperties, featureBBox, featureId) {
+        if (featureIndex === 0 && initialValue === undefined) previousValue = currentGeometry;
+        else previousValue = callback(previousValue, currentGeometry, featureIndex, featureProperties, featureBBox, featureId);
     });
     return previousValue;
 }
-module.exports.geomReduce = geomReduce;
 
-},{}],4:[function(require,module,exports){
+/**
+ * Callback for flattenEach
+ *
+ * @callback flattenEachCallback
+ * @param {Feature} currentFeature The current flattened feature being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed.
+ */
+
+/**
+ * Iterate over flattened features in any GeoJSON object, similar to
+ * Array.forEach.
+ *
+ * @name flattenEach
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (currentFeature, featureIndex, multiFeatureIndex)
+ * @example
+ * var features = turf.featureCollection([
+ *     turf.point([26, 37], {foo: 'bar'}),
+ *     turf.multiPoint([[40, 30], [36, 53]], {hello: 'world'})
+ * ]);
+ *
+ * turf.flattenEach(features, function (currentFeature, featureIndex, multiFeatureIndex) {
+ *   //=currentFeature
+ *   //=featureIndex
+ *   //=multiFeatureIndex
+ * });
+ */
+function flattenEach(geojson, callback) {
+    geomEach(geojson, function (geometry, featureIndex, properties, bbox, id) {
+        // Callback for single geometry
+        var type = (geometry === null) ? null : geometry.type;
+        switch (type) {
+        case null:
+        case 'Point':
+        case 'LineString':
+        case 'Polygon':
+            if (callback(helpers.feature(geometry, properties, {bbox: bbox, id: id}), featureIndex, 0) === false) return false;
+            return;
+        }
+
+        var geomType;
+
+        // Callback for multi-geometry
+        switch (type) {
+        case 'MultiPoint':
+            geomType = 'Point';
+            break;
+        case 'MultiLineString':
+            geomType = 'LineString';
+            break;
+        case 'MultiPolygon':
+            geomType = 'Polygon';
+            break;
+        }
+
+        for (var multiFeatureIndex = 0; multiFeatureIndex < geometry.coordinates.length; multiFeatureIndex++) {
+            var coordinate = geometry.coordinates[multiFeatureIndex];
+            var geom = {
+                type: geomType,
+                coordinates: coordinate
+            };
+            if (callback(helpers.feature(geom, properties), featureIndex, multiFeatureIndex) === false) return false;
+        }
+    });
+}
+
+/**
+ * Callback for flattenReduce
+ *
+ * The first time the callback function is called, the values provided as arguments depend
+ * on whether the reduce method has an initialValue argument.
+ *
+ * If an initialValue is provided to the reduce method:
+ *  - The previousValue argument is initialValue.
+ *  - The currentValue argument is the value of the first element present in the array.
+ *
+ * If an initialValue is not provided:
+ *  - The previousValue argument is the value of the first element present in the array.
+ *  - The currentValue argument is the value of the second element present in the array.
+ *
+ * @callback flattenReduceCallback
+ * @param {*} previousValue The accumulated value previously returned in the last invocation
+ * of the callback, or initialValue, if supplied.
+ * @param {Feature} currentFeature The current Feature being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed.
+ */
+
+/**
+ * Reduce flattened features in any GeoJSON object, similar to Array.reduce().
+ *
+ * @name flattenReduce
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON object
+ * @param {Function} callback a method that takes (previousValue, currentFeature, featureIndex, multiFeatureIndex)
+ * @param {*} [initialValue] Value to use as the first argument to the first call of the callback.
+ * @returns {*} The value that results from the reduction.
+ * @example
+ * var features = turf.featureCollection([
+ *     turf.point([26, 37], {foo: 'bar'}),
+ *     turf.multiPoint([[40, 30], [36, 53]], {hello: 'world'})
+ * ]);
+ *
+ * turf.flattenReduce(features, function (previousValue, currentFeature, featureIndex, multiFeatureIndex) {
+ *   //=previousValue
+ *   //=currentFeature
+ *   //=featureIndex
+ *   //=multiFeatureIndex
+ *   return currentFeature
+ * });
+ */
+function flattenReduce(geojson, callback, initialValue) {
+    var previousValue = initialValue;
+    flattenEach(geojson, function (currentFeature, featureIndex, multiFeatureIndex) {
+        if (featureIndex === 0 && multiFeatureIndex === 0 && initialValue === undefined) previousValue = currentFeature;
+        else previousValue = callback(previousValue, currentFeature, featureIndex, multiFeatureIndex);
+    });
+    return previousValue;
+}
+
+/**
+ * Callback for segmentEach
+ *
+ * @callback segmentEachCallback
+ * @param {Feature<LineString>} currentSegment The current Segment being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed.
+ * @param {number} geometryIndex The current index of the Geometry being processed.
+ * @param {number} segmentIndex The current index of the Segment being processed.
+ * @returns {void}
+ */
+
+/**
+ * Iterate over 2-vertex line segment in any GeoJSON object, similar to Array.forEach()
+ * (Multi)Point geometries do not contain segments therefore they are ignored during this operation.
+ *
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON
+ * @param {Function} callback a method that takes (currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex)
+ * @returns {void}
+ * @example
+ * var polygon = turf.polygon([[[-50, 5], [-40, -10], [-50, -10], [-40, 5], [-50, 5]]]);
+ *
+ * // Iterate over GeoJSON by 2-vertex segments
+ * turf.segmentEach(polygon, function (currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex) {
+ *   //=currentSegment
+ *   //=featureIndex
+ *   //=multiFeatureIndex
+ *   //=geometryIndex
+ *   //=segmentIndex
+ * });
+ *
+ * // Calculate the total number of segments
+ * var total = 0;
+ * turf.segmentEach(polygon, function () {
+ *     total++;
+ * });
+ */
+function segmentEach(geojson, callback) {
+    flattenEach(geojson, function (feature$$1, featureIndex, multiFeatureIndex) {
+        var segmentIndex = 0;
+
+        // Exclude null Geometries
+        if (!feature$$1.geometry) return;
+        // (Multi)Point geometries do not contain segments therefore they are ignored during this operation.
+        var type = feature$$1.geometry.type;
+        if (type === 'Point' || type === 'MultiPoint') return;
+
+        // Generate 2-vertex line segments
+        var previousCoords;
+        if (coordEach(feature$$1, function (currentCoord, coordIndex, featureIndexCoord, mutliPartIndexCoord, geometryIndex) {
+            // Simulating a meta.coordReduce() since `reduce` operations cannot be stopped by returning `false`
+            if (previousCoords === undefined) {
+                previousCoords = currentCoord;
+                return;
+            }
+            var currentSegment = helpers.lineString([previousCoords, currentCoord], feature$$1.properties);
+            if (callback(currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex) === false) return false;
+            segmentIndex++;
+            previousCoords = currentCoord;
+        }) === false) return false;
+    });
+}
+
+/**
+ * Callback for segmentReduce
+ *
+ * The first time the callback function is called, the values provided as arguments depend
+ * on whether the reduce method has an initialValue argument.
+ *
+ * If an initialValue is provided to the reduce method:
+ *  - The previousValue argument is initialValue.
+ *  - The currentValue argument is the value of the first element present in the array.
+ *
+ * If an initialValue is not provided:
+ *  - The previousValue argument is the value of the first element present in the array.
+ *  - The currentValue argument is the value of the second element present in the array.
+ *
+ * @callback segmentReduceCallback
+ * @param {*} previousValue The accumulated value previously returned in the last invocation
+ * of the callback, or initialValue, if supplied.
+ * @param {Feature<LineString>} currentSegment The current Segment being processed.
+ * @param {number} featureIndex The current index of the Feature being processed.
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed.
+ * @param {number} geometryIndex The current index of the Geometry being processed.
+ * @param {number} segmentIndex The current index of the Segment being processed.
+ */
+
+/**
+ * Reduce 2-vertex line segment in any GeoJSON object, similar to Array.reduce()
+ * (Multi)Point geometries do not contain segments therefore they are ignored during this operation.
+ *
+ * @param {FeatureCollection|Feature|Geometry} geojson any GeoJSON
+ * @param {Function} callback a method that takes (previousValue, currentSegment, currentIndex)
+ * @param {*} [initialValue] Value to use as the first argument to the first call of the callback.
+ * @returns {void}
+ * @example
+ * var polygon = turf.polygon([[[-50, 5], [-40, -10], [-50, -10], [-40, 5], [-50, 5]]]);
+ *
+ * // Iterate over GeoJSON by 2-vertex segments
+ * turf.segmentReduce(polygon, function (previousSegment, currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex) {
+ *   //= previousSegment
+ *   //= currentSegment
+ *   //= featureIndex
+ *   //= multiFeatureIndex
+ *   //= geometryIndex
+ *   //= segmentInex
+ *   return currentSegment
+ * });
+ *
+ * // Calculate the total number of segments
+ * var initialValue = 0
+ * var total = turf.segmentReduce(polygon, function (previousValue) {
+ *     previousValue++;
+ *     return previousValue;
+ * }, initialValue);
+ */
+function segmentReduce(geojson, callback, initialValue) {
+    var previousValue = initialValue;
+    var started = false;
+    segmentEach(geojson, function (currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex) {
+        if (started === false && initialValue === undefined) previousValue = currentSegment;
+        else previousValue = callback(previousValue, currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex);
+        started = true;
+    });
+    return previousValue;
+}
+
+/**
+ * Callback for lineEach
+ *
+ * @callback lineEachCallback
+ * @param {Feature<LineString>} currentLine The current LineString|LinearRing being processed
+ * @param {number} featureIndex The current index of the Feature being processed
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed
+ * @param {number} geometryIndex The current index of the Geometry being processed
+ */
+
+/**
+ * Iterate over line or ring coordinates in LineString, Polygon, MultiLineString, MultiPolygon Features or Geometries,
+ * similar to Array.forEach.
+ *
+ * @name lineEach
+ * @param {Geometry|Feature<LineString|Polygon|MultiLineString|MultiPolygon>} geojson object
+ * @param {Function} callback a method that takes (currentLine, featureIndex, multiFeatureIndex, geometryIndex)
+ * @example
+ * var multiLine = turf.multiLineString([
+ *   [[26, 37], [35, 45]],
+ *   [[36, 53], [38, 50], [41, 55]]
+ * ]);
+ *
+ * turf.lineEach(multiLine, function (currentLine, featureIndex, multiFeatureIndex, geometryIndex) {
+ *   //=currentLine
+ *   //=featureIndex
+ *   //=multiFeatureIndex
+ *   //=geometryIndex
+ * });
+ */
+function lineEach(geojson, callback) {
+    // validation
+    if (!geojson) throw new Error('geojson is required');
+
+    flattenEach(geojson, function (feature$$1, featureIndex, multiFeatureIndex) {
+        if (feature$$1.geometry === null) return;
+        var type = feature$$1.geometry.type;
+        var coords = feature$$1.geometry.coordinates;
+        switch (type) {
+        case 'LineString':
+            if (callback(feature$$1, featureIndex, multiFeatureIndex, 0, 0) === false) return false;
+            break;
+        case 'Polygon':
+            for (var geometryIndex = 0; geometryIndex < coords.length; geometryIndex++) {
+                if (callback(helpers.lineString(coords[geometryIndex], feature$$1.properties), featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
+            }
+            break;
+        }
+    });
+}
+
+/**
+ * Callback for lineReduce
+ *
+ * The first time the callback function is called, the values provided as arguments depend
+ * on whether the reduce method has an initialValue argument.
+ *
+ * If an initialValue is provided to the reduce method:
+ *  - The previousValue argument is initialValue.
+ *  - The currentValue argument is the value of the first element present in the array.
+ *
+ * If an initialValue is not provided:
+ *  - The previousValue argument is the value of the first element present in the array.
+ *  - The currentValue argument is the value of the second element present in the array.
+ *
+ * @callback lineReduceCallback
+ * @param {*} previousValue The accumulated value previously returned in the last invocation
+ * of the callback, or initialValue, if supplied.
+ * @param {Feature<LineString>} currentLine The current LineString|LinearRing being processed.
+ * @param {number} featureIndex The current index of the Feature being processed
+ * @param {number} multiFeatureIndex The current index of the Multi-Feature being processed
+ * @param {number} geometryIndex The current index of the Geometry being processed
+ */
+
+/**
+ * Reduce features in any GeoJSON object, similar to Array.reduce().
+ *
+ * @name lineReduce
+ * @param {Geometry|Feature<LineString|Polygon|MultiLineString|MultiPolygon>} geojson object
+ * @param {Function} callback a method that takes (previousValue, currentLine, featureIndex, multiFeatureIndex, geometryIndex)
+ * @param {*} [initialValue] Value to use as the first argument to the first call of the callback.
+ * @returns {*} The value that results from the reduction.
+ * @example
+ * var multiPoly = turf.multiPolygon([
+ *   turf.polygon([[[12,48],[2,41],[24,38],[12,48]], [[9,44],[13,41],[13,45],[9,44]]]),
+ *   turf.polygon([[[5, 5], [0, 0], [2, 2], [4, 4], [5, 5]]])
+ * ]);
+ *
+ * turf.lineReduce(multiPoly, function (previousValue, currentLine, featureIndex, multiFeatureIndex, geometryIndex) {
+ *   //=previousValue
+ *   //=currentLine
+ *   //=featureIndex
+ *   //=multiFeatureIndex
+ *   //=geometryIndex
+ *   return currentLine
+ * });
+ */
+function lineReduce(geojson, callback, initialValue) {
+    var previousValue = initialValue;
+    lineEach(geojson, function (currentLine, featureIndex, multiFeatureIndex, geometryIndex) {
+        if (featureIndex === 0 && initialValue === undefined) previousValue = currentLine;
+        else previousValue = callback(previousValue, currentLine, featureIndex, multiFeatureIndex, geometryIndex);
+    });
+    return previousValue;
+}
+
+/**
+ * Finds a particular 2-vertex LineString Segment from a GeoJSON using `@turf/meta` indexes.
+ *
+ * Negative indexes are permitted.
+ * Point & MultiPoint will always return null.
+ *
+ * @param {FeatureCollection|Feature|Geometry} geojson Any GeoJSON Feature or Geometry
+ * @param {Object} [options={}] Optional parameters
+ * @param {number} [options.featureIndex=0] Feature Index
+ * @param {number} [options.multiFeatureIndex=0] Multi-Feature Index
+ * @param {number} [options.geometryIndex=0] Geometry Index
+ * @param {number} [options.segmentIndex=0] Segment Index
+ * @param {Object} [options.properties={}] Translate Properties to output LineString
+ * @param {BBox} [options.bbox={}] Translate BBox to output LineString
+ * @param {number|string} [options.id={}] Translate Id to output LineString
+ * @returns {Feature<LineString>} 2-vertex GeoJSON Feature LineString
+ * @example
+ * var multiLine = turf.multiLineString([
+ *     [[10, 10], [50, 30], [30, 40]],
+ *     [[-10, -10], [-50, -30], [-30, -40]]
+ * ]);
+ *
+ * // First Segment (defaults are 0)
+ * turf.findSegment(multiLine);
+ * // => Feature<LineString<[[10, 10], [50, 30]]>>
+ *
+ * // First Segment of 2nd Multi Feature
+ * turf.findSegment(multiLine, {multiFeatureIndex: 1});
+ * // => Feature<LineString<[[-10, -10], [-50, -30]]>>
+ *
+ * // Last Segment of Last Multi Feature
+ * turf.findSegment(multiLine, {multiFeatureIndex: -1, segmentIndex: -1});
+ * // => Feature<LineString<[[-50, -30], [-30, -40]]>>
+ */
+function findSegment(geojson, options) {
+    // Optional Parameters
+    options = options || {};
+    if (!helpers.isObject(options)) throw new Error('options is invalid');
+    var featureIndex = options.featureIndex || 0;
+    var multiFeatureIndex = options.multiFeatureIndex || 0;
+    var geometryIndex = options.geometryIndex || 0;
+    var segmentIndex = options.segmentIndex || 0;
+
+    // Find FeatureIndex
+    var properties = options.properties;
+    var geometry;
+
+    switch (geojson.type) {
+    case 'FeatureCollection':
+        if (featureIndex < 0) featureIndex = geojson.features.length + featureIndex;
+        properties = properties || geojson.features[featureIndex].properties;
+        geometry = geojson.features[featureIndex].geometry;
+        break;
+    case 'Feature':
+        properties = properties || geojson.properties;
+        geometry = geojson.geometry;
+        break;
+    case 'Point':
+    case 'MultiPoint':
+        return null;
+    case 'LineString':
+    case 'Polygon':
+    case 'MultiLineString':
+    case 'MultiPolygon':
+        geometry = geojson;
+        break;
+    default:
+        throw new Error('geojson is invalid');
+    }
+
+    // Find SegmentIndex
+    if (geometry === null) return null;
+    var coords = geometry.coordinates;
+    switch (geometry.type) {
+    case 'Point':
+    case 'MultiPoint':
+        return null;
+    case 'LineString':
+        if (segmentIndex < 0) segmentIndex = coords.length + segmentIndex - 1;
+        return helpers.lineString([coords[segmentIndex], coords[segmentIndex + 1]], properties, options);
+    case 'Polygon':
+        if (geometryIndex < 0) geometryIndex = coords.length + geometryIndex;
+        if (segmentIndex < 0) segmentIndex = coords[geometryIndex].length + segmentIndex - 1;
+        return helpers.lineString([coords[geometryIndex][segmentIndex], coords[geometryIndex][segmentIndex + 1]], properties, options);
+    case 'MultiLineString':
+        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
+        if (segmentIndex < 0) segmentIndex = coords[multiFeatureIndex].length + segmentIndex - 1;
+        return helpers.lineString([coords[multiFeatureIndex][segmentIndex], coords[multiFeatureIndex][segmentIndex + 1]], properties, options);
+    case 'MultiPolygon':
+        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
+        if (geometryIndex < 0) geometryIndex = coords[multiFeatureIndex].length + geometryIndex;
+        if (segmentIndex < 0) segmentIndex = coords[multiFeatureIndex][geometryIndex].length - segmentIndex - 1;
+        return helpers.lineString([coords[multiFeatureIndex][geometryIndex][segmentIndex], coords[multiFeatureIndex][geometryIndex][segmentIndex + 1]], properties, options);
+    }
+    throw new Error('geojson is invalid');
+}
+
+/**
+ * Finds a particular Point from a GeoJSON using `@turf/meta` indexes.
+ *
+ * Negative indexes are permitted.
+ *
+ * @param {FeatureCollection|Feature|Geometry} geojson Any GeoJSON Feature or Geometry
+ * @param {Object} [options={}] Optional parameters
+ * @param {number} [options.featureIndex=0] Feature Index
+ * @param {number} [options.multiFeatureIndex=0] Multi-Feature Index
+ * @param {number} [options.geometryIndex=0] Geometry Index
+ * @param {number} [options.coordIndex=0] Coord Index
+ * @param {Object} [options.properties={}] Translate Properties to output Point
+ * @param {BBox} [options.bbox={}] Translate BBox to output Point
+ * @param {number|string} [options.id={}] Translate Id to output Point
+ * @returns {Feature<Point>} 2-vertex GeoJSON Feature Point
+ * @example
+ * var multiLine = turf.multiLineString([
+ *     [[10, 10], [50, 30], [30, 40]],
+ *     [[-10, -10], [-50, -30], [-30, -40]]
+ * ]);
+ *
+ * // First Segment (defaults are 0)
+ * turf.findPoint(multiLine);
+ * // => Feature<Point<[10, 10]>>
+ *
+ * // First Segment of the 2nd Multi-Feature
+ * turf.findPoint(multiLine, {multiFeatureIndex: 1});
+ * // => Feature<Point<[-10, -10]>>
+ *
+ * // Last Segment of last Multi-Feature
+ * turf.findPoint(multiLine, {multiFeatureIndex: -1, coordIndex: -1});
+ * // => Feature<Point<[-30, -40]>>
+ */
+function findPoint(geojson, options) {
+    // Optional Parameters
+    options = options || {};
+    if (!helpers.isObject(options)) throw new Error('options is invalid');
+    var featureIndex = options.featureIndex || 0;
+    var multiFeatureIndex = options.multiFeatureIndex || 0;
+    var geometryIndex = options.geometryIndex || 0;
+    var coordIndex = options.coordIndex || 0;
+
+    // Find FeatureIndex
+    var properties = options.properties;
+    var geometry;
+
+    switch (geojson.type) {
+    case 'FeatureCollection':
+        if (featureIndex < 0) featureIndex = geojson.features.length + featureIndex;
+        properties = properties || geojson.features[featureIndex].properties;
+        geometry = geojson.features[featureIndex].geometry;
+        break;
+    case 'Feature':
+        properties = properties || geojson.properties;
+        geometry = geojson.geometry;
+        break;
+    case 'Point':
+    case 'MultiPoint':
+        return null;
+    case 'LineString':
+    case 'Polygon':
+    case 'MultiLineString':
+    case 'MultiPolygon':
+        geometry = geojson;
+        break;
+    default:
+        throw new Error('geojson is invalid');
+    }
+
+    // Find Coord Index
+    if (geometry === null) return null;
+    var coords = geometry.coordinates;
+    switch (geometry.type) {
+    case 'Point':
+        return helpers.point(coords, properties, options);
+    case 'MultiPoint':
+        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
+        return helpers.point(coords[multiFeatureIndex], properties, options);
+    case 'LineString':
+        if (coordIndex < 0) coordIndex = coords.length + coordIndex;
+        return helpers.point(coords[coordIndex], properties, options);
+    case 'Polygon':
+        if (geometryIndex < 0) geometryIndex = coords.length + geometryIndex;
+        if (coordIndex < 0) coordIndex = coords[geometryIndex].length + coordIndex;
+        return helpers.point(coords[geometryIndex][coordIndex], properties, options);
+    case 'MultiLineString':
+        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
+        if (coordIndex < 0) coordIndex = coords[multiFeatureIndex].length + coordIndex;
+        return helpers.point(coords[multiFeatureIndex][coordIndex], properties, options);
+    case 'MultiPolygon':
+        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
+        if (geometryIndex < 0) geometryIndex = coords[multiFeatureIndex].length + geometryIndex;
+        if (coordIndex < 0) coordIndex = coords[multiFeatureIndex][geometryIndex].length - coordIndex;
+        return helpers.point(coords[multiFeatureIndex][geometryIndex][coordIndex], properties, options);
+    }
+    throw new Error('geojson is invalid');
+}
+
+exports.coordEach = coordEach;
+exports.coordReduce = coordReduce;
+exports.propEach = propEach;
+exports.propReduce = propReduce;
+exports.featureEach = featureEach;
+exports.featureReduce = featureReduce;
+exports.coordAll = coordAll;
+exports.geomEach = geomEach;
+exports.geomReduce = geomReduce;
+exports.flattenEach = flattenEach;
+exports.flattenReduce = flattenReduce;
+exports.segmentEach = segmentEach;
+exports.segmentReduce = segmentReduce;
+exports.lineEach = lineEach;
+exports.lineReduce = lineReduce;
+exports.findSegment = findSegment;
+exports.findPoint = findPoint;
+
+},{"@turf/helpers":4}],6:[function(require,module,exports){
 module.exports = require('./lib/axios');
-},{"./lib/axios":6}],5:[function(require,module,exports){
+},{"./lib/axios":8}],7:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -763,7 +2199,7 @@ module.exports = function xhrAdapter(config) {
       var responseData = !config.responseType || config.responseType === 'text' ? request.responseText : request.response;
       var response = {
         data: responseData,
-        // IE sends 1223 instead of 204 (https://github.com/mzabriskie/axios/issues/201)
+        // IE sends 1223 instead of 204 (https://github.com/axios/axios/issues/201)
         status: request.status === 1223 ? 204 : request.status,
         statusText: request.status === 1223 ? 'No Content' : request.statusText,
         headers: responseHeaders,
@@ -781,7 +2217,7 @@ module.exports = function xhrAdapter(config) {
     request.onerror = function handleError() {
       // Real errors are hidden from us by the browser
       // onerror should only fire if it's a network error
-      reject(createError('Network Error', config));
+      reject(createError('Network Error', config, null, request));
 
       // Clean up request
       request = null;
@@ -789,7 +2225,8 @@ module.exports = function xhrAdapter(config) {
 
     // Handle timeout
     request.ontimeout = function handleTimeout() {
-      reject(createError('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED'));
+      reject(createError('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED',
+        request));
 
       // Clean up request
       request = null;
@@ -834,7 +2271,9 @@ module.exports = function xhrAdapter(config) {
       try {
         request.responseType = config.responseType;
       } catch (e) {
-        if (request.responseType !== 'json') {
+        // Expected DOMException thrown by browsers not compatible XMLHttpRequest Level 2.
+        // But, this can be suppressed for 'json' type as it can be parsed by default 'transformResponse' function.
+        if (config.responseType !== 'json') {
           throw e;
         }
       }
@@ -874,7 +2313,7 @@ module.exports = function xhrAdapter(config) {
 };
 
 }).call(this,require('_process'))
-},{"../core/createError":12,"./../core/settle":15,"./../helpers/btoa":19,"./../helpers/buildURL":20,"./../helpers/cookies":22,"./../helpers/isURLSameOrigin":24,"./../helpers/parseHeaders":26,"./../utils":28,"_process":29}],6:[function(require,module,exports){
+},{"../core/createError":14,"./../core/settle":17,"./../helpers/btoa":21,"./../helpers/buildURL":22,"./../helpers/cookies":24,"./../helpers/isURLSameOrigin":26,"./../helpers/parseHeaders":28,"./../utils":30,"_process":32}],8:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -928,7 +2367,7 @@ module.exports = axios;
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":7,"./cancel/CancelToken":8,"./cancel/isCancel":9,"./core/Axios":10,"./defaults":17,"./helpers/bind":18,"./helpers/spread":27,"./utils":28}],7:[function(require,module,exports){
+},{"./cancel/Cancel":9,"./cancel/CancelToken":10,"./cancel/isCancel":11,"./core/Axios":12,"./defaults":19,"./helpers/bind":20,"./helpers/spread":29,"./utils":30}],9:[function(require,module,exports){
 'use strict';
 
 /**
@@ -949,7 +2388,7 @@ Cancel.prototype.__CANCEL__ = true;
 
 module.exports = Cancel;
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 'use strict';
 
 var Cancel = require('./Cancel');
@@ -1008,22 +2447,20 @@ CancelToken.source = function source() {
 
 module.exports = CancelToken;
 
-},{"./Cancel":7}],9:[function(require,module,exports){
+},{"./Cancel":9}],11:[function(require,module,exports){
 'use strict';
 
 module.exports = function isCancel(value) {
   return !!(value && value.__CANCEL__);
 };
 
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 'use strict';
 
 var defaults = require('./../defaults');
 var utils = require('./../utils');
 var InterceptorManager = require('./InterceptorManager');
 var dispatchRequest = require('./dispatchRequest');
-var isAbsoluteURL = require('./../helpers/isAbsoluteURL');
-var combineURLs = require('./../helpers/combineURLs');
 
 /**
  * Create a new instance of Axios
@@ -1052,12 +2489,8 @@ Axios.prototype.request = function request(config) {
     }, arguments[1]);
   }
 
-  config = utils.merge(defaults, this.defaults, { method: 'get' }, config);
-
-  // Support baseURL config
-  if (config.baseURL && !isAbsoluteURL(config.url)) {
-    config.url = combineURLs(config.baseURL, config.url);
-  }
+  config = utils.merge(defaults, {method: 'get'}, this.defaults, config);
+  config.method = config.method.toLowerCase();
 
   // Hook up interceptors middleware
   var chain = [dispatchRequest, undefined];
@@ -1079,7 +2512,7 @@ Axios.prototype.request = function request(config) {
 };
 
 // Provide aliases for supported request methods
-utils.forEach(['delete', 'get', 'head'], function forEachMethodNoData(method) {
+utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, config) {
     return this.request(utils.merge(config || {}, {
@@ -1102,7 +2535,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"./../defaults":17,"./../helpers/combineURLs":21,"./../helpers/isAbsoluteURL":23,"./../utils":28,"./InterceptorManager":11,"./dispatchRequest":13}],11:[function(require,module,exports){
+},{"./../defaults":19,"./../utils":30,"./InterceptorManager":13,"./dispatchRequest":15}],13:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1156,32 +2589,35 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":28}],12:[function(require,module,exports){
+},{"./../utils":30}],14:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
 
 /**
- * Create an Error with the specified message, config, error code, and response.
+ * Create an Error with the specified message, config, error code, request and response.
  *
  * @param {string} message The error message.
  * @param {Object} config The config.
  * @param {string} [code] The error code (for example, 'ECONNABORTED').
- @ @param {Object} [response] The response.
+ * @param {Object} [request] The request.
+ * @param {Object} [response] The response.
  * @returns {Error} The created error.
  */
-module.exports = function createError(message, config, code, response) {
+module.exports = function createError(message, config, code, request, response) {
   var error = new Error(message);
-  return enhanceError(error, config, code, response);
+  return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":14}],13:[function(require,module,exports){
+},{"./enhanceError":16}],15:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
 var transformData = require('./transformData');
 var isCancel = require('../cancel/isCancel');
 var defaults = require('../defaults');
+var isAbsoluteURL = require('./../helpers/isAbsoluteURL');
+var combineURLs = require('./../helpers/combineURLs');
 
 /**
  * Throws a `Cancel` if cancellation has been requested.
@@ -1200,6 +2636,11 @@ function throwIfCancellationRequested(config) {
  */
 module.exports = function dispatchRequest(config) {
   throwIfCancellationRequested(config);
+
+  // Support baseURL config
+  if (config.baseURL && !isAbsoluteURL(config.url)) {
+    config.url = combineURLs(config.baseURL, config.url);
+  }
 
   // Ensure headers exist
   config.headers = config.headers || {};
@@ -1256,7 +2697,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":9,"../defaults":17,"./../utils":28,"./transformData":16}],14:[function(require,module,exports){
+},{"../cancel/isCancel":11,"../defaults":19,"./../helpers/combineURLs":23,"./../helpers/isAbsoluteURL":25,"./../utils":30,"./transformData":18}],16:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1265,19 +2706,21 @@ module.exports = function dispatchRequest(config) {
  * @param {Error} error The error to update.
  * @param {Object} config The config.
  * @param {string} [code] The error code (for example, 'ECONNABORTED').
- @ @param {Object} [response] The response.
+ * @param {Object} [request] The request.
+ * @param {Object} [response] The response.
  * @returns {Error} The error.
  */
-module.exports = function enhanceError(error, config, code, response) {
+module.exports = function enhanceError(error, config, code, request, response) {
   error.config = config;
   if (code) {
     error.code = code;
   }
+  error.request = request;
   error.response = response;
   return error;
 };
 
-},{}],15:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -1299,12 +2742,13 @@ module.exports = function settle(resolve, reject, response) {
       'Request failed with status code ' + response.status,
       response.config,
       null,
+      response.request,
       response
     ));
   }
 };
 
-},{"./createError":12}],16:[function(require,module,exports){
+},{"./createError":14}],18:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1326,14 +2770,13 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":28}],17:[function(require,module,exports){
+},{"./../utils":30}],19:[function(require,module,exports){
 (function (process){
 'use strict';
 
 var utils = require('./utils');
 var normalizeHeaderName = require('./helpers/normalizeHeaderName');
 
-var PROTECTION_PREFIX = /^\)\]\}',?\n/;
 var DEFAULT_CONTENT_TYPE = {
   'Content-Type': 'application/x-www-form-urlencoded'
 };
@@ -1363,6 +2806,7 @@ var defaults = {
     normalizeHeaderName(headers, 'Content-Type');
     if (utils.isFormData(data) ||
       utils.isArrayBuffer(data) ||
+      utils.isBuffer(data) ||
       utils.isStream(data) ||
       utils.isFile(data) ||
       utils.isBlob(data)
@@ -1386,7 +2830,6 @@ var defaults = {
   transformResponse: [function transformResponse(data) {
     /*eslint no-param-reassign:0*/
     if (typeof data === 'string') {
-      data = data.replace(PROTECTION_PREFIX, '');
       try {
         data = JSON.parse(data);
       } catch (e) { /* Ignore */ }
@@ -1394,6 +2837,10 @@ var defaults = {
     return data;
   }],
 
+  /**
+   * A timeout in milliseconds to abort a request. If set to 0 (default) a
+   * timeout is not created.
+   */
   timeout: 0,
 
   xsrfCookieName: 'XSRF-TOKEN',
@@ -1412,7 +2859,7 @@ defaults.headers = {
   }
 };
 
-utils.forEach(['delete', 'get', 'head'], function forEachMehtodNoData(method) {
+utils.forEach(['delete', 'get', 'head'], function forEachMethodNoData(method) {
   defaults.headers[method] = {};
 });
 
@@ -1423,7 +2870,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = defaults;
 
 }).call(this,require('_process'))
-},{"./adapters/http":5,"./adapters/xhr":5,"./helpers/normalizeHeaderName":25,"./utils":28,"_process":29}],18:[function(require,module,exports){
+},{"./adapters/http":7,"./adapters/xhr":7,"./helpers/normalizeHeaderName":27,"./utils":30,"_process":32}],20:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -1436,7 +2883,7 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 'use strict';
 
 // btoa polyfill for IE<10 courtesy https://github.com/davidchambers/Base64.js
@@ -1474,7 +2921,7 @@ function btoa(input) {
 
 module.exports = btoa;
 
-},{}],20:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1518,9 +2965,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
 
       if (utils.isArray(val)) {
         key = key + '[]';
-      }
-
-      if (!utils.isArray(val)) {
+      } else {
         val = [val];
       }
 
@@ -1544,7 +2989,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   return url;
 };
 
-},{"./../utils":28}],21:[function(require,module,exports){
+},{"./../utils":30}],23:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1555,10 +3000,12 @@ module.exports = function buildURL(url, params, paramsSerializer) {
  * @returns {string} The combined URL
  */
 module.exports = function combineURLs(baseURL, relativeURL) {
-  return baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '');
+  return relativeURL
+    ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+    : baseURL;
 };
 
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1613,7 +3060,7 @@ module.exports = (
   })()
 );
 
-},{"./../utils":28}],23:[function(require,module,exports){
+},{"./../utils":30}],25:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1629,7 +3076,7 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],24:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -1699,7 +3146,7 @@ module.exports = (
   })()
 );
 
-},{"./../utils":28}],25:[function(require,module,exports){
+},{"./../utils":30}],27:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -1713,10 +3160,19 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":28}],26:[function(require,module,exports){
+},{"../utils":30}],28:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
+
+// Headers whose duplicates are ignored by node
+// c.f. https://nodejs.org/api/http.html#http_message_headers
+var ignoreDuplicateOf = [
+  'age', 'authorization', 'content-length', 'content-type', 'etag',
+  'expires', 'from', 'host', 'if-modified-since', 'if-unmodified-since',
+  'last-modified', 'location', 'max-forwards', 'proxy-authorization',
+  'referer', 'retry-after', 'user-agent'
+];
 
 /**
  * Parse headers into an object
@@ -1745,14 +3201,21 @@ module.exports = function parseHeaders(headers) {
     val = utils.trim(line.substr(i + 1));
 
     if (key) {
-      parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
+      if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
+        return;
+      }
+      if (key === 'set-cookie') {
+        parsed[key] = (parsed[key] ? parsed[key] : []).concat([val]);
+      } else {
+        parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
+      }
     }
   });
 
   return parsed;
 };
 
-},{"./../utils":28}],27:[function(require,module,exports){
+},{"./../utils":30}],29:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1781,10 +3244,11 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],28:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
+var isBuffer = require('is-buffer');
 
 /*global toString:true*/
 
@@ -1959,13 +3423,15 @@ function trim(str) {
  *  typeof document -> undefined
  *
  * react-native:
- *  typeof document.createElement -> undefined
+ *  navigator.product -> 'ReactNative'
  */
 function isStandardBrowserEnv() {
+  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+    return false;
+  }
   return (
     typeof window !== 'undefined' &&
-    typeof document !== 'undefined' &&
-    typeof document.createElement === 'function'
+    typeof document !== 'undefined'
   );
 }
 
@@ -1988,7 +3454,7 @@ function forEach(obj, fn) {
   }
 
   // Force an array if not already something iterable
-  if (typeof obj !== 'object' && !isArray(obj)) {
+  if (typeof obj !== 'object') {
     /*eslint no-param-reassign:0*/
     obj = [obj];
   }
@@ -2063,6 +3529,7 @@ function extend(a, b, thisArg) {
 module.exports = {
   isArray: isArray,
   isArrayBuffer: isArrayBuffer,
+  isBuffer: isBuffer,
   isFormData: isFormData,
   isArrayBufferView: isArrayBufferView,
   isString: isString,
@@ -2082,7 +3549,30 @@ module.exports = {
   trim: trim
 };
 
-},{"./helpers/bind":18}],29:[function(require,module,exports){
+},{"./helpers/bind":20,"is-buffer":31}],31:[function(require,module,exports){
+/*!
+ * Determine if an object is a Buffer
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+
+// The _isBuffer check is for Safari 5-7 support, because it's missing
+// Object.prototype.constructor. Remove this eventually
+module.exports = function (obj) {
+  return obj != null && (isBuffer(obj) || isSlowBuffer(obj) || !!obj._isBuffer)
+}
+
+function isBuffer (obj) {
+  return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+}
+
+// For Node v0.10 support. Remove this eventually.
+function isSlowBuffer (obj) {
+  return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
+}
+
+},{}],32:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2268,7 +3758,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],30:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 (function (root, factory) {
 
   // Node.
@@ -3031,7 +4521,7 @@ return new Parser;
   return exports;
 }));
 
-},{"terraformer":31}],31:[function(require,module,exports){
+},{"terraformer":34}],34:[function(require,module,exports){
 (function (root, factory) {
 
   // Node.
@@ -4451,7 +5941,7 @@ return new Parser;
   return exports;
 }));
 
-},{}],32:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 function DOMParser(options){
 	this.options = options ||{locator:{}};
 	
@@ -4704,7 +6194,7 @@ function appendElement (hander,node) {
 	exports.DOMParser = DOMParser;
 //}
 
-},{"./dom":33,"./sax":34}],33:[function(require,module,exports){
+},{"./dom":36,"./sax":37}],36:[function(require,module,exports){
 /*
  * DOM Level 2
  * Object DOMException
@@ -5950,7 +7440,7 @@ try{
 	exports.XMLSerializer = XMLSerializer;
 //}
 
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 //[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 //[5]   	Name	   ::=   	NameStartChar (NameChar)*
@@ -6585,7 +8075,7 @@ function split(source,start){
 exports.XMLReader = XMLReader;
 
 
-},{}],35:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 /*
  * xpath.js
  *
@@ -6593,13 +8083,7 @@ exports.XMLReader = XMLReader;
  *
  * Cameron McCormack <cam (at) mcc.id.au>
  *
- * This work is licensed under the Creative Commons Attribution-ShareAlike
- * License. To view a copy of this license, visit
- *
- *   http://creativecommons.org/licenses/by-sa/2.0/
- *
- * or send a letter to Creative Commons, 559 Nathan Abbott Way, Stanford,
- * California 94305, USA.
+ * This work is licensed under the MIT License.
  *
  * Revision 20: April 26, 2011
  *   Fixed a typo resulting in FIRST_ORDERED_NODE_TYPE results being wrong,
@@ -6695,6 +8179,106 @@ var xpath = (typeof exports === 'undefined') ? {} : exports;
 (function(exports) {
 "use strict";
 
+// functional helpers
+function curry( func ) {
+    var slice = Array.prototype.slice,
+        totalargs = func.length,
+        partial = function( args, fn ) {
+            return function( ) {
+                return fn.apply( this, args.concat( slice.call( arguments ) ) );
+            }
+        },
+        fn = function( ) {
+            var args = slice.call( arguments );
+            return ( args.length < totalargs ) ?
+                partial( args, fn ) :
+                func.apply( this, slice.apply( arguments, [ 0, totalargs ] ) );
+        };
+    return fn;
+}
+
+var forEach = curry(function (f, xs) {
+	for (var i = 0; i < xs.length; i += 1) {
+		f(xs[i], i, xs);
+	}
+});
+
+var reduce = curry(function (f, seed, xs) {
+	var acc = seed;
+
+	forEach(function (x, i) { acc = f(acc, x, i); }, xs);
+
+	return acc;
+});
+
+var map = curry(function (f, xs) { 
+	var mapped = new Array(xs.length);
+	
+	forEach(function (x, i) { mapped[i] = f(x); }, xs);
+
+	return mapped;
+});
+
+var filter = curry(function (f, xs) {
+	var filtered = [];
+	
+	forEach(function (x, i) { if(f(x, i)) { filtered.push(x); } }, xs);
+	
+	return filtered;
+});
+
+function compose() {
+    if (arguments.length === 0) { throw new Error('compose requires at least one argument'); }
+
+    var funcs = Array.prototype.slice.call(arguments).reverse();
+	
+    var f0 = funcs[0];
+    var fRem = funcs.slice(1);
+
+    return function () {
+        return reduce(function (acc, next) {
+            return next(acc);
+        }, f0.apply(null, arguments), fRem);
+    };
+}
+
+var includes = curry(function (values, value) {
+	for (var i = 0; i < values.length; i += 1) {
+		if (values[i] === value){
+			return true;
+		}
+	}
+	
+	return false;
+});
+
+function always(value) { return function () { return value ;} }
+
+var prop = curry(function (name, obj) { return obj[name]; });
+
+function toString (x) { return x.toString(); }
+var join = curry(function (s, xs) { return xs.join(s); });
+var wrap = curry(function (pref, suf, str) { return pref + str + suf; });
+
+function assign(target) { // .length of function is 2
+    var to = Object(target);
+
+    for (var index = 1; index < arguments.length; index++) {
+        var nextSource = arguments[index];
+
+        if (nextSource != null) { // Skip over if undefined or null
+            for (var nextKey in nextSource) {
+                // Avoid bugs when hasOwnProperty is shadowed
+                if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                    to[nextKey] = nextSource[nextKey];
+                }
+            }
+        }
+    }
+
+    return to;
+}
+
 // XPathParser ///////////////////////////////////////////////////////////////
 
 XPathParser.prototype = new Object();
@@ -6762,7 +8346,7 @@ XPathParser.prototype.init = function() {
 	};
 	this.reduceActions[28] = function(rhs) {
 		rhs[0].locationPath = rhs[2];
-		rhs[0].locationPath.steps.unshift(new Step(Step.DESCENDANTORSELF, new NodeTest(NodeTest.NODE, undefined), []));
+		rhs[0].locationPath.steps.unshift(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
 		return rhs[0];
 	};
 	this.reduceActions[29] = function(rhs) {
@@ -6869,50 +8453,49 @@ XPathParser.prototype.init = function() {
 	};
 	this.reduceActions[59] = function(rhs) {
 		if (rhs[0] == "comment") {
-			return new NodeTest(NodeTest.COMMENT, undefined);
+			return NodeTest.commentTest;
 		} else if (rhs[0] == "text") {
-			return new NodeTest(NodeTest.TEXT, undefined);
+			return NodeTest.textTest;
 		} else if (rhs[0] == "processing-instruction") {
-			return new NodeTest(NodeTest.PI, undefined);
+			return NodeTest.anyPiTest;
 		} else if (rhs[0] == "node") {
-			return new NodeTest(NodeTest.NODE, undefined);
+			return NodeTest.nodeTest;
 		}
 		return new NodeTest(-1, undefined);
 	};
 	this.reduceActions[60] = function(rhs) {
-		return new NodeTest(NodeTest.PI, rhs[2]);
+		return new NodeTest.PITest(rhs[2]);
 	};
 	this.reduceActions[61] = function(rhs) {
 		return rhs[1];
 	};
 	this.reduceActions[63] = function(rhs) {
 		rhs[1].absolute = true;
-		rhs[1].steps.unshift(new Step(Step.DESCENDANTORSELF, new NodeTest(NodeTest.NODE, undefined), []));
+		rhs[1].steps.unshift(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
 		return rhs[1];
 	};
 	this.reduceActions[64] = function(rhs) {
-		rhs[0].steps.push(new Step(Step.DESCENDANTORSELF, new NodeTest(NodeTest.NODE, undefined), []));
+		rhs[0].steps.push(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
 		rhs[0].steps.push(rhs[2]);
 		return rhs[0];
 	};
 	this.reduceActions[65] = function(rhs) {
-		return new Step(Step.SELF, new NodeTest(NodeTest.NODE, undefined), []);
+		return new Step(Step.SELF, NodeTest.nodeTest, []);
 	};
 	this.reduceActions[66] = function(rhs) {
-		return new Step(Step.PARENT, new NodeTest(NodeTest.NODE, undefined), []);
+		return new Step(Step.PARENT, NodeTest.nodeTest, []);
 	};
 	this.reduceActions[67] = function(rhs) {
 		return new VariableReference(rhs[1]);
 	};
 	this.reduceActions[68] = function(rhs) {
-		return new NodeTest(NodeTest.NAMETESTANY, undefined);
+		return NodeTest.nameTestAny;
 	};
 	this.reduceActions[69] = function(rhs) {
-		var prefix = rhs[0].substring(0, rhs[0].indexOf(":"));
-		return new NodeTest(NodeTest.NAMETESTPREFIXANY, prefix);
+		return new NodeTest.NameTestPrefixAny(rhs[0].split(':')[0]);
 	};
 	this.reduceActions[70] = function(rhs) {
-		return new NodeTest(NodeTest.NAMETESTQNAME, rhs[0]);
+		return new NodeTest.NameTestQName(rhs[0]);
 	};
 };
 
@@ -7789,22 +9372,26 @@ XPath.prototype.toString = function() {
 	return this.expression.toString();
 };
 
+function setIfUnset(obj, prop, value) {
+	if (!(prop in obj)) {
+		obj[prop] = value;
+	}
+}
+
 XPath.prototype.evaluate = function(c) {
 	c.contextNode = c.expressionContextNode;
 	c.contextSize = 1;
 	c.contextPosition = 1;
-	c.caseInsensitive = false;
-	if (c.contextNode != null) {
-		var doc = c.contextNode;
-		if (doc.nodeType != 9 /*Node.DOCUMENT_NODE*/) {
-			doc = doc.ownerDocument;
-		}
-		try {
-			c.caseInsensitive = doc.implementation.hasFeature("HTML", "2.0");
-		} catch (e) {
-			c.caseInsensitive = true;
-		}
+
+	// [2017-11-25] Removed usage of .implementation.hasFeature() since it does
+	//              not reliably detect HTML DOMs (always returns false in xmldom and true in browsers)
+	if (c.isHtml) {
+		setIfUnset(c, 'caseInsensitive', true);
+		setIfUnset(c, 'allowAnyNamespaceForNoPrefix', true);
 	}
+	
+    setIfUnset(c, 'caseInsensitive', false);
+
 	return this.expression.evaluate(c);
 };
 
@@ -8229,7 +9816,7 @@ BarOperation.prototype.evaluate = function(c) {
 };
 
 BarOperation.prototype.toString = function() {
-	return this.lhs.toString() + " | " + this.rhs.toString();
+	return map(toString, [this.lhs, this.rhs]).join(' | ');
 };
 
 // PathExpr //////////////////////////////////////////////////////////////////
@@ -8262,348 +9849,362 @@ function findRoot(node) {
     return node;
 }
 
+PathExpr.applyPredicates = function (predicates, c, nodes) {
+	return reduce(function (inNodes, pred) {
+		var ctx = c.extend({ contextSize: inNodes.length });
+		
+		return filter(function (node, i) {
+			return PathExpr.predicateMatches(pred, ctx.extend({ contextNode: node, contextPosition: i + 1 }));
+		}, inNodes);
+	}, nodes, predicates);
+};
+
+PathExpr.getRoot = function (xpc, nodes) {
+	var firstNode = nodes[0];
+	
+    if (firstNode.nodeType === 9 /*Node.DOCUMENT_NODE*/) {
+		return firstNode;
+	}
+	
+    if (xpc.virtualRoot) {
+    	return xpc.virtualRoot;
+    }
+		
+	var ownerDoc = firstNode.ownerDocument;
+	
+	if (ownerDoc) {
+		return ownerDoc;
+	}
+			
+    // IE 5.5 doesn't have ownerDocument?
+    var n = firstNode;
+    while (n.parentNode != null) {
+    	n = n.parentNode;
+    }
+    return n;
+}
+
+PathExpr.applyStep = function (step, xpc, node) {
+	var self = this;
+	var newNodes = [];
+    xpc.contextNode = node;
+    
+    switch (step.axis) {
+    	case Step.ANCESTOR:
+    		// look at all the ancestor nodes
+    		if (xpc.contextNode === xpc.virtualRoot) {
+    			break;
+    		}
+    		var m;
+    		if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
+    			m = PathExpr.getOwnerElement(xpc.contextNode);
+    		} else {
+    			m = xpc.contextNode.parentNode;
+    		}
+    		while (m != null) {
+    			if (step.nodeTest.matches(m, xpc)) {
+    				newNodes.push(m);
+    			}
+    			if (m === xpc.virtualRoot) {
+    				break;
+    			}
+    			m = m.parentNode;
+    		}
+    		break;
+    
+    	case Step.ANCESTORORSELF:
+    		// look at all the ancestor nodes and the current node
+    		for (var m = xpc.contextNode; m != null; m = m.nodeType == 2 /*Node.ATTRIBUTE_NODE*/ ? PathExpr.getOwnerElement(m) : m.parentNode) {
+    			if (step.nodeTest.matches(m, xpc)) {
+    				newNodes.push(m);
+    			}
+    			if (m === xpc.virtualRoot) {
+    				break;
+    			}
+    		}
+    		break;
+    
+    	case Step.ATTRIBUTE:
+    		// look at the attributes
+    		var nnm = xpc.contextNode.attributes;
+    		if (nnm != null) {
+    			for (var k = 0; k < nnm.length; k++) {
+    				var m = nnm.item(k);
+    				if (step.nodeTest.matches(m, xpc)) {
+    					newNodes.push(m);
+    				}
+    			}
+    		}
+    		break;
+    
+    	case Step.CHILD:
+    		// look at all child elements
+    		for (var m = xpc.contextNode.firstChild; m != null; m = m.nextSibling) {
+    			if (step.nodeTest.matches(m, xpc)) {
+    				newNodes.push(m);
+    			}
+    		}
+    		break;
+    
+    	case Step.DESCENDANT:
+    		// look at all descendant nodes
+    		var st = [ xpc.contextNode.firstChild ];
+    		while (st.length > 0) {
+    			for (var m = st.pop(); m != null; ) {
+    				if (step.nodeTest.matches(m, xpc)) {
+    					newNodes.push(m);
+    				}
+    				if (m.firstChild != null) {
+    					st.push(m.nextSibling);
+    					m = m.firstChild;
+    				} else {
+    					m = m.nextSibling;
+    				}
+    			}
+    		}
+    		break;
+    
+    	case Step.DESCENDANTORSELF:
+    		// look at self
+    		if (step.nodeTest.matches(xpc.contextNode, xpc)) {
+    			newNodes.push(xpc.contextNode);
+    		}
+    		// look at all descendant nodes
+    		var st = [ xpc.contextNode.firstChild ];
+    		while (st.length > 0) {
+    			for (var m = st.pop(); m != null; ) {
+    				if (step.nodeTest.matches(m, xpc)) {
+    					newNodes.push(m);
+    				}
+    				if (m.firstChild != null) {
+    					st.push(m.nextSibling);
+    					m = m.firstChild;
+    				} else {
+    					m = m.nextSibling;
+    				}
+    			}
+    		}
+    		break;
+    
+    	case Step.FOLLOWING:
+    		if (xpc.contextNode === xpc.virtualRoot) {
+    			break;
+    		}
+    		var st = [];
+    		if (xpc.contextNode.firstChild != null) {
+    			st.unshift(xpc.contextNode.firstChild);
+    		} else {
+    			st.unshift(xpc.contextNode.nextSibling);
+    		}
+    		for (var m = xpc.contextNode.parentNode; m != null && m.nodeType != 9 /*Node.DOCUMENT_NODE*/ && m !== xpc.virtualRoot; m = m.parentNode) {
+    			st.unshift(m.nextSibling);
+    		}
+    		do {
+    			for (var m = st.pop(); m != null; ) {
+    				if (step.nodeTest.matches(m, xpc)) {
+    					newNodes.push(m);
+    				}
+    				if (m.firstChild != null) {
+    					st.push(m.nextSibling);
+    					m = m.firstChild;
+    				} else {
+    					m = m.nextSibling;
+    				}
+    			}
+    		} while (st.length > 0);
+    		break;
+    
+    	case Step.FOLLOWINGSIBLING:
+    		if (xpc.contextNode === xpc.virtualRoot) {
+    			break;
+    		}
+    		for (var m = xpc.contextNode.nextSibling; m != null; m = m.nextSibling) {
+    			if (step.nodeTest.matches(m, xpc)) {
+    				newNodes.push(m);
+    			}
+    		}
+    		break;
+    
+    	case Step.NAMESPACE:
+    		var n = {};
+    		if (xpc.contextNode.nodeType == 1 /*Node.ELEMENT_NODE*/) {
+    			n["xml"] = XPath.XML_NAMESPACE_URI;
+    			n["xmlns"] = XPath.XMLNS_NAMESPACE_URI;
+    			for (var m = xpc.contextNode; m != null && m.nodeType == 1 /*Node.ELEMENT_NODE*/; m = m.parentNode) {
+    				for (var k = 0; k < m.attributes.length; k++) {
+    					var attr = m.attributes.item(k);
+    					var nm = String(attr.name);
+    					if (nm == "xmlns") {
+    						if (n[""] == undefined) {
+    							n[""] = attr.value;
+    						}
+    					} else if (nm.length > 6 && nm.substring(0, 6) == "xmlns:") {
+    						var pre = nm.substring(6, nm.length);
+    						if (n[pre] == undefined) {
+    							n[pre] = attr.value;
+    						}
+    					}
+    				}
+    			}
+    			for (var pre in n) {
+    				var nsn = new XPathNamespace(pre, n[pre], xpc.contextNode);
+    				if (step.nodeTest.matches(nsn, xpc)) {
+    					newNodes.push(nsn);
+    				}
+    			}
+    		}
+    		break;
+    
+    	case Step.PARENT:
+    		m = null;
+    		if (xpc.contextNode !== xpc.virtualRoot) {
+    			if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
+    				m = PathExpr.getOwnerElement(xpc.contextNode);
+    			} else {
+    				m = xpc.contextNode.parentNode;
+    			}
+    		}
+    		if (m != null && step.nodeTest.matches(m, xpc)) {
+    			newNodes.push(m);
+    		}
+    		break;
+    
+    	case Step.PRECEDING:
+    		var st;
+    		if (xpc.virtualRoot != null) {
+    			st = [ xpc.virtualRoot ];
+    		} else {
+                // cannot rely on .ownerDocument because the node may be in a document fragment
+                st = [findRoot(xpc.contextNode)];
+    		}
+    		outer: while (st.length > 0) {
+    			for (var m = st.pop(); m != null; ) {
+    				if (m == xpc.contextNode) {
+    					break outer;
+    				}
+    				if (step.nodeTest.matches(m, xpc)) {
+    					newNodes.unshift(m);
+    				}
+    				if (m.firstChild != null) {
+    					st.push(m.nextSibling);
+    					m = m.firstChild;
+    				} else {
+    					m = m.nextSibling;
+    				}
+    			}
+    		}
+    		break;
+    
+    	case Step.PRECEDINGSIBLING:
+    		if (xpc.contextNode === xpc.virtualRoot) {
+    			break;
+    		}
+    		for (var m = xpc.contextNode.previousSibling; m != null; m = m.previousSibling) {
+    			if (step.nodeTest.matches(m, xpc)) {
+    				newNodes.push(m);
+    			}
+    		}
+    		break;
+    
+    	case Step.SELF:
+    		if (step.nodeTest.matches(xpc.contextNode, xpc)) {
+    			newNodes.push(xpc.contextNode);
+    		}
+    		break;
+    
+    	default:
+    }
+	
+	return newNodes;
+};
+
+PathExpr.applySteps = function (steps, xpc, nodes) {
+	return reduce(function (inNodes, step) {
+		return [].concat.apply([], map(function (node) {
+			return PathExpr.applyPredicates(step.predicates, xpc, PathExpr.applyStep(step, xpc, node));
+		}, inNodes));
+	}, nodes, steps);
+}
+
+PathExpr.prototype.applyFilter = function(c, xpc) {
+	if (!this.filter) {
+		return { nodes: [ c.contextNode ] };
+	}
+	
+	var ns = this.filter.evaluate(c);
+
+	if (!Utilities.instance_of(ns, XNodeSet)) {
+        if (this.filterPredicates != null && this.filterPredicates.length > 0 || this.locationPath != null) {
+		    throw new Error("Path expression filter must evaluate to a nodeset if predicates or location path are used");
+		}
+
+		return { nonNodes: ns };
+	}
+	
+	return { 
+	    nodes: PathExpr.applyPredicates(this.filterPredicates || [], xpc, ns.toUnsortedArray())
+	};
+};
+
+PathExpr.applyLocationPath = function (locationPath, xpc, nodes) {
+	if (!locationPath) {
+		return nodes;
+	}
+	
+	var startNodes = locationPath.absolute ? [ PathExpr.getRoot(xpc, nodes) ] : nodes;
+		
+    return PathExpr.applySteps(locationPath.steps, xpc, startNodes);
+};
 
 PathExpr.prototype.evaluate = function(c) {
-	var nodes;
-	var xpc = new XPathContext();
-	xpc.variableResolver = c.variableResolver;
-	xpc.functionResolver = c.functionResolver;
-	xpc.namespaceResolver = c.namespaceResolver;
-	xpc.expressionContextNode = c.expressionContextNode;
-	xpc.virtualRoot = c.virtualRoot;
-	xpc.caseInsensitive = c.caseInsensitive;
-	if (this.filter == null) {
-		nodes = [ c.contextNode ];
-	} else {
-		var ns = this.filter.evaluate(c);
-		if (!Utilities.instance_of(ns, XNodeSet)) {
-			if (this.filterPredicates != null && this.filterPredicates.length > 0 || this.locationPath != null) {
-				throw new Error("Path expression filter must evaluate to a nodset if predicates or location path are used");
-			}
-			return ns;
-		}
-		nodes = ns.toUnsortedArray();
-		if (this.filterPredicates != null) {
-			// apply each of the predicates in turn
-			for (var j = 0; j < this.filterPredicates.length; j++) {
-				var pred = this.filterPredicates[j];
-				var newNodes = [];
-				xpc.contextSize = nodes.length;
-				for (xpc.contextPosition = 1; xpc.contextPosition <= xpc.contextSize; xpc.contextPosition++) {
-					xpc.contextNode = nodes[xpc.contextPosition - 1];
-					if (this.predicateMatches(pred, xpc)) {
-						newNodes.push(xpc.contextNode);
-					}
-				}
-				nodes = newNodes;
-			}
-		}
-	}
-	if (this.locationPath != null) {
-		if (this.locationPath.absolute) {
-			if (nodes[0].nodeType != 9 /*Node.DOCUMENT_NODE*/) {
-				if (xpc.virtualRoot != null) {
-					nodes = [ xpc.virtualRoot ];
-				} else {
-					if (nodes[0].ownerDocument == null) {
-						// IE 5.5 doesn't have ownerDocument?
-						var n = nodes[0];
-						while (n.parentNode != null) {
-							n = n.parentNode;
-						}
-						nodes = [ n ];
-					} else {
-						nodes = [ nodes[0].ownerDocument ];
-					}
-				}
-			} else {
-				nodes = [ nodes[0] ];
-			}
-		}
-		for (var i = 0; i < this.locationPath.steps.length; i++) {
-			var step = this.locationPath.steps[i];
-			var newNodes = [];
-			for (var j = 0; j < nodes.length; j++) {
-				xpc.contextNode = nodes[j];
-				switch (step.axis) {
-					case Step.ANCESTOR:
-						// look at all the ancestor nodes
-						if (xpc.contextNode === xpc.virtualRoot) {
-							break;
-						}
-						var m;
-						if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
-							m = this.getOwnerElement(xpc.contextNode);
-						} else {
-							m = xpc.contextNode.parentNode;
-						}
-						while (m != null) {
-							if (step.nodeTest.matches(m, xpc)) {
-								newNodes.push(m);
-							}
-							if (m === xpc.virtualRoot) {
-								break;
-							}
-							m = m.parentNode;
-						}
-						break;
-
-					case Step.ANCESTORORSELF:
-						// look at all the ancestor nodes and the current node
-						for (var m = xpc.contextNode; m != null; m = m.nodeType == 2 /*Node.ATTRIBUTE_NODE*/ ? this.getOwnerElement(m) : m.parentNode) {
-							if (step.nodeTest.matches(m, xpc)) {
-								newNodes.push(m);
-							}
-							if (m === xpc.virtualRoot) {
-								break;
-							}
-						}
-						break;
-
-					case Step.ATTRIBUTE:
-						// look at the attributes
-						var nnm = xpc.contextNode.attributes;
-						if (nnm != null) {
-							for (var k = 0; k < nnm.length; k++) {
-								var m = nnm.item(k);
-								if (step.nodeTest.matches(m, xpc)) {
-									newNodes.push(m);
-								}
-							}
-						}
-						break;
-
-					case Step.CHILD:
-						// look at all child elements
-						for (var m = xpc.contextNode.firstChild; m != null; m = m.nextSibling) {
-							if (step.nodeTest.matches(m, xpc)) {
-								newNodes.push(m);
-							}
-						}
-						break;
-
-					case Step.DESCENDANT:
-						// look at all descendant nodes
-						var st = [ xpc.contextNode.firstChild ];
-						while (st.length > 0) {
-							for (var m = st.pop(); m != null; ) {
-								if (step.nodeTest.matches(m, xpc)) {
-									newNodes.push(m);
-								}
-								if (m.firstChild != null) {
-									st.push(m.nextSibling);
-									m = m.firstChild;
-								} else {
-									m = m.nextSibling;
-								}
-							}
-						}
-						break;
-
-					case Step.DESCENDANTORSELF:
-						// look at self
-						if (step.nodeTest.matches(xpc.contextNode, xpc)) {
-							newNodes.push(xpc.contextNode);
-						}
-						// look at all descendant nodes
-						var st = [ xpc.contextNode.firstChild ];
-						while (st.length > 0) {
-							for (var m = st.pop(); m != null; ) {
-								if (step.nodeTest.matches(m, xpc)) {
-									newNodes.push(m);
-								}
-								if (m.firstChild != null) {
-									st.push(m.nextSibling);
-									m = m.firstChild;
-								} else {
-									m = m.nextSibling;
-								}
-							}
-						}
-						break;
-
-					case Step.FOLLOWING:
-						if (xpc.contextNode === xpc.virtualRoot) {
-							break;
-						}
-						var st = [];
-						if (xpc.contextNode.firstChild != null) {
-							st.unshift(xpc.contextNode.firstChild);
-						} else {
-							st.unshift(xpc.contextNode.nextSibling);
-						}
-						for (var m = xpc.contextNode.parentNode; m != null && m.nodeType != 9 /*Node.DOCUMENT_NODE*/ && m !== xpc.virtualRoot; m = m.parentNode) {
-							st.unshift(m.nextSibling);
-						}
-						do {
-							for (var m = st.pop(); m != null; ) {
-								if (step.nodeTest.matches(m, xpc)) {
-									newNodes.push(m);
-								}
-								if (m.firstChild != null) {
-									st.push(m.nextSibling);
-									m = m.firstChild;
-								} else {
-									m = m.nextSibling;
-								}
-							}
-						} while (st.length > 0);
-						break;
-
-					case Step.FOLLOWINGSIBLING:
-						if (xpc.contextNode === xpc.virtualRoot) {
-							break;
-						}
-						for (var m = xpc.contextNode.nextSibling; m != null; m = m.nextSibling) {
-							if (step.nodeTest.matches(m, xpc)) {
-								newNodes.push(m);
-							}
-						}
-						break;
-
-					case Step.NAMESPACE:
-						var n = {};
-						if (xpc.contextNode.nodeType == 1 /*Node.ELEMENT_NODE*/) {
-							n["xml"] = XPath.XML_NAMESPACE_URI;
-							n["xmlns"] = XPath.XMLNS_NAMESPACE_URI;
-							for (var m = xpc.contextNode; m != null && m.nodeType == 1 /*Node.ELEMENT_NODE*/; m = m.parentNode) {
-								for (var k = 0; k < m.attributes.length; k++) {
-									var attr = m.attributes.item(k);
-									var nm = String(attr.name);
-									if (nm == "xmlns") {
-										if (n[""] == undefined) {
-											n[""] = attr.value;
-										}
-									} else if (nm.length > 6 && nm.substring(0, 6) == "xmlns:") {
-										var pre = nm.substring(6, nm.length);
-										if (n[pre] == undefined) {
-											n[pre] = attr.value;
-										}
-									}
-								}
-							}
-							for (var pre in n) {
-								var nsn = new XPathNamespace(pre, n[pre], xpc.contextNode);
-								if (step.nodeTest.matches(nsn, xpc)) {
-									newNodes.push(nsn);
-								}
-							}
-						}
-						break;
-
-					case Step.PARENT:
-						m = null;
-						if (xpc.contextNode !== xpc.virtualRoot) {
-							if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
-								m = this.getOwnerElement(xpc.contextNode);
-							} else {
-								m = xpc.contextNode.parentNode;
-							}
-						}
-						if (m != null && step.nodeTest.matches(m, xpc)) {
-							newNodes.push(m);
-						}
-						break;
-
-					case Step.PRECEDING:
-						var st;
-						if (xpc.virtualRoot != null) {
-							st = [ xpc.virtualRoot ];
-						} else {
-                            // cannot rely on .ownerDocument because the node may be in a document fragment
-                            st = [findRoot(xpc.contextNode)];
-						}
-						outer: while (st.length > 0) {
-							for (var m = st.pop(); m != null; ) {
-								if (m == xpc.contextNode) {
-									break outer;
-								}
-								if (step.nodeTest.matches(m, xpc)) {
-									newNodes.unshift(m);
-								}
-								if (m.firstChild != null) {
-									st.push(m.nextSibling);
-									m = m.firstChild;
-								} else {
-									m = m.nextSibling;
-								}
-							}
-						}
-						break;
-
-					case Step.PRECEDINGSIBLING:
-						if (xpc.contextNode === xpc.virtualRoot) {
-							break;
-						}
-						for (var m = xpc.contextNode.previousSibling; m != null; m = m.previousSibling) {
-							if (step.nodeTest.matches(m, xpc)) {
-								newNodes.push(m);
-							}
-						}
-						break;
-
-					case Step.SELF:
-						if (step.nodeTest.matches(xpc.contextNode, xpc)) {
-							newNodes.push(xpc.contextNode);
-						}
-						break;
-
-					default:
-				}
-			}
-			nodes = newNodes;
-			// apply each of the predicates in turn
-			for (var j = 0; j < step.predicates.length; j++) {
-				var pred = step.predicates[j];
-				var newNodes = [];
-				xpc.contextSize = nodes.length;
-				for (xpc.contextPosition = 1; xpc.contextPosition <= xpc.contextSize; xpc.contextPosition++) {
-					xpc.contextNode = nodes[xpc.contextPosition - 1];
-					if (this.predicateMatches(pred, xpc)) {
-						newNodes.push(xpc.contextNode);
-					} else {
-					}
-				}
-				nodes = newNodes;
-			}
-		}
-	}
+	var xpc = assign(new XPathContext(), c);
+	
+    var filterResult = this.applyFilter(c, xpc);
+	
+	if ('nonNodes' in filterResult) {
+		return filterResult.nonNodes;
+	}	
+	
 	var ns = new XNodeSet();
-	ns.addArray(nodes);
+	ns.addArray(PathExpr.applyLocationPath(this.locationPath, xpc, filterResult.nodes));
 	return ns;
 };
 
-PathExpr.prototype.predicateMatches = function(pred, c) {
+PathExpr.predicateMatches = function(pred, c) {
 	var res = pred.evaluate(c);
-	if (Utilities.instance_of(res, XNumber)) {
-		return c.contextPosition == res.numberValue();
-	}
-	return res.booleanValue();
+	
+	return Utilities.instance_of(res, XNumber)
+		? c.contextPosition == res.numberValue()
+		: res.booleanValue();
 };
+
+PathExpr.predicateString = compose(wrap('[', ']'), toString);
+PathExpr.predicatesString = compose(join(''), map(PathExpr.predicateString));
 
 PathExpr.prototype.toString = function() {
 	if (this.filter != undefined) {
-		var s = this.filter.toString();
+		var filterStr = toString(this.filter);
+
 		if (Utilities.instance_of(this.filter, XString)) {
-			s = "'" + s + "'";
+			return wrap("'", "'", filterStr);
 		}
-		if (this.filterPredicates != undefined) {
-			for (var i = 0; i < this.filterPredicates.length; i++) {
-				s = s + "[" + this.filterPredicates[i].toString() + "]";
-			}
+		if (this.filterPredicates != undefined && this.filterPredicates.length) {
+			return wrap('(', ')', filterStr) + 
+			    PathExpr.predicatesString(this.filterPredicates);
 		}
 		if (this.locationPath != undefined) {
-			if (!this.locationPath.absolute) {
-				s += "/";
-			}
-			s += this.locationPath.toString();
+			return filterStr + 
+			    (this.locationPath.absolute ? '' : '/') +
+				toString(this.locationPath);
 		}
-		return s;
+
+		return filterStr;
 	}
-	return this.locationPath.toString();
+
+	return toString(this.locationPath);
 };
 
-PathExpr.prototype.getOwnerElement = function(n) {
+PathExpr.getOwnerElement = function(n) {
 	// DOM 2 has ownerElement
 	if (n.ownerElement) {
 		return n.ownerElement;
@@ -8651,19 +10252,10 @@ LocationPath.prototype.init = function(abs, steps) {
 };
 
 LocationPath.prototype.toString = function() {
-	var s;
-	if (this.absolute) {
-		s = "/";
-	} else {
-		s = "";
-	}
-	for (var i = 0; i < this.steps.length; i++) {
-		if (i != 0) {
-			s += "/";
-		}
-		s += this.steps[i].toString();
-	}
-	return s;
+	return (
+	    (this.absolute ? '/' : '') +
+		map(toString, this.steps).join('/')
+    );
 };
 
 // Step //////////////////////////////////////////////////////////////////////
@@ -8685,55 +10277,12 @@ Step.prototype.init = function(axis, nodetest, preds) {
 };
 
 Step.prototype.toString = function() {
-	var s;
-	switch (this.axis) {
-		case Step.ANCESTOR:
-			s = "ancestor";
-			break;
-		case Step.ANCESTORORSELF:
-			s = "ancestor-or-self";
-			break;
-		case Step.ATTRIBUTE:
-			s = "attribute";
-			break;
-		case Step.CHILD:
-			s = "child";
-			break;
-		case Step.DESCENDANT:
-			s = "descendant";
-			break;
-		case Step.DESCENDANTORSELF:
-			s = "descendant-or-self";
-			break;
-		case Step.FOLLOWING:
-			s = "following";
-			break;
-		case Step.FOLLOWINGSIBLING:
-			s = "following-sibling";
-			break;
-		case Step.NAMESPACE:
-			s = "namespace";
-			break;
-		case Step.PARENT:
-			s = "parent";
-			break;
-		case Step.PRECEDING:
-			s = "preceding";
-			break;
-		case Step.PRECEDINGSIBLING:
-			s = "preceding-sibling";
-			break;
-		case Step.SELF:
-			s = "self";
-			break;
-	}
-	s += "::";
-	s += this.nodeTest.toString();
-	for (var i = 0; i < this.predicates.length; i++) {
-		s += "[" + this.predicates[i].toString() + "]";
-	}
-	return s;
+	return Step.STEPNAMES[this.axis] +
+        "::" +
+        this.nodeTest.toString() +
+	    PathExpr.predicatesString(this.predicates);
 };
+
 
 Step.ANCESTOR = 0;
 Step.ANCESTORORSELF = 1;
@@ -8749,6 +10298,22 @@ Step.PRECEDING = 10;
 Step.PRECEDINGSIBLING = 11;
 Step.SELF = 12;
 
+Step.STEPNAMES = reduce(function (acc, x) { return acc[x[0]] = x[1], acc; }, {}, [
+	[Step.ANCESTOR, 'ancestor'],
+	[Step.ANCESTORORSELF, 'ancestor-or-self'],
+	[Step.ATTRIBUTE, 'attribute'],
+	[Step.CHILD, 'child'],
+	[Step.DESCENDANT, 'descendant'],
+	[Step.DESCENDANTORSELF, 'descendant-or-self'],
+	[Step.FOLLOWING, 'following'],
+	[Step.FOLLOWINGSIBLING, 'following-sibling'],
+	[Step.NAMESPACE, 'namespace'],
+	[Step.PARENT, 'parent'],
+	[Step.PRECEDING, 'preceding'],
+	[Step.PRECEDINGSIBLING, 'preceding-sibling'],
+	[Step.SELF, 'self']
+  ]);
+  
 // NodeTest //////////////////////////////////////////////////////////////////
 
 NodeTest.prototype = new Object();
@@ -8767,94 +10332,11 @@ NodeTest.prototype.init = function(type, value) {
 };
 
 NodeTest.prototype.toString = function() {
-	switch (this.type) {
-		case NodeTest.NAMETESTANY:
-			return "*";
-		case NodeTest.NAMETESTPREFIXANY:
-			return this.value + ":*";
-		case NodeTest.NAMETESTRESOLVEDANY:
-			return "{" + this.value + "}*";
-		case NodeTest.NAMETESTQNAME:
-			return this.value;
-		case NodeTest.NAMETESTRESOLVEDNAME:
-			return "{" + this.namespaceURI + "}" + this.value;
-		case NodeTest.COMMENT:
-			return "comment()";
-		case NodeTest.TEXT:
-			return "text()";
-		case NodeTest.PI:
-			if (this.value != undefined) {
-				return "processing-instruction(\"" + this.value + "\")";
-			}
-			return "processing-instruction()";
-		case NodeTest.NODE:
-			return "node()";
-	}
 	return "<unknown nodetest type>";
 };
 
 NodeTest.prototype.matches = function (n, xpc) {
-    var nType = n.nodeType;
-
-	switch (this.type) {
-		case NodeTest.NAMETESTANY:
-			if (nType === 2 /*Node.ATTRIBUTE_NODE*/
-					|| nType === 1 /*Node.ELEMENT_NODE*/
-					|| nType === XPathNamespace.XPATH_NAMESPACE_NODE) {
-				return true;
-			}
-			return false;
-		case NodeTest.NAMETESTPREFIXANY:
-			if (nType === 2 /*Node.ATTRIBUTE_NODE*/ || nType === 1 /*Node.ELEMENT_NODE*/) {
-				var ns = xpc.namespaceResolver.getNamespace(this.value, xpc.expressionContextNode);
-				if (ns == null) {
-					throw new Error("Cannot resolve QName " + this.value);
-				}
-				return ns === (n.namespaceURI || '');
-			}
-			return false;
-		case NodeTest.NAMETESTQNAME:
-			if (nType === 2 /*Node.ATTRIBUTE_NODE*/
-					|| nType === 1 /*Node.ELEMENT_NODE*/
-					|| nType === XPathNamespace.XPATH_NAMESPACE_NODE) {
-				var test = Utilities.resolveQName(this.value, xpc.namespaceResolver, xpc.expressionContextNode, false);
-				if (test[0] == null) {
-					throw new Error("Cannot resolve QName " + this.value);
-				}
-
-				test[0] = String(test[0]) || null;
-				test[1] = String(test[1]);
-
-				var node = [
-                    String(n.namespaceURI || '') || null,
-                    // localName will be null if the node was created with DOM1 createElement()
-                    String(n.localName || n.nodeName)
-                ];
-
-				if (xpc.caseInsensitive) {
-					return test[0] === node[0] && test[1].toLowerCase() === node[1].toLowerCase();
-				}
-
-				return test[0] === node[0] && test[1] === node[1];
-			}
-			return false;
-		case NodeTest.COMMENT:
-			return nType === 8 /*Node.COMMENT_NODE*/;
-		case NodeTest.TEXT:
-			return nType === 3 /*Node.TEXT_NODE*/ || nType == 4 /*Node.CDATA_SECTION_NODE*/;
-		case NodeTest.PI:
-			return nType === 7 /*Node.PROCESSING_INSTRUCTION_NODE*/
-				&& (this.value == null || n.nodeName == this.value);
-		case NodeTest.NODE:
-			return nType === 9 /*Node.DOCUMENT_NODE*/
-				|| nType === 1 /*Node.ELEMENT_NODE*/
-				|| nType === 2 /*Node.ATTRIBUTE_NODE*/
-				|| nType === 3 /*Node.TEXT_NODE*/
-				|| nType === 4 /*Node.CDATA_SECTION_NODE*/
-				|| nType === 8 /*Node.COMMENT_NODE*/
-				|| nType === 7 /*Node.PROCESSING_INSTRUCTION_NODE*/;
-	}
-	return false;
+    console.warn('unknown node test type');
 };
 
 NodeTest.NAMETESTANY = 0;
@@ -8864,6 +10346,105 @@ NodeTest.COMMENT = 3;
 NodeTest.TEXT = 4;
 NodeTest.PI = 5;
 NodeTest.NODE = 6;
+
+NodeTest.isNodeType = function (types){
+	return compose(includes(types), prop('nodeType'));
+};
+
+NodeTest.makeNodeTestType = function (type, members, ctor) {
+	var newType = ctor || function () {};
+	
+	newType.prototype = new NodeTest(members.type);
+	newType.prototype.constructor = type;
+	
+	for (var key in members) {
+		newType.prototype[key] = members[key];
+	}
+	
+	return newType;
+};
+// create invariant node test for certain node types
+NodeTest.makeNodeTypeTest = function (type, nodeTypes, stringVal) {
+	return new (NodeTest.makeNodeTestType(type, {
+		matches: NodeTest.isNodeType(nodeTypes),
+		toString: always(stringVal)
+	}))();
+};
+
+NodeTest.hasPrefix = function (node) {
+	return node.prefix || (node.nodeName || node.tagName).indexOf(':') !== -1;
+};
+
+NodeTest.isElementOrAttribute = NodeTest.isNodeType([1, 2]);
+NodeTest.nameSpaceMatches = function (prefix, xpc, n) {
+	var nNamespace = (n.namespaceURI || '');
+	
+	if (!prefix) { 
+	    return !nNamespace || (xpc.allowAnyNamespaceForNoPrefix && !NodeTest.hasPrefix(n)); 
+	}
+	
+    var ns = xpc.namespaceResolver.getNamespace(prefix, xpc.expressionContextNode);
+
+	if (ns == null) {
+        throw new Error("Cannot resolve QName " + prefix);
+    }
+
+    return ns === nNamespace;
+};
+NodeTest.localNameMatches = function (localName, xpc, n) {
+	var nLocalName = (n.localName || n.nodeName);
+	
+	return xpc.caseInsensitive
+	    ? localName.toLowerCase() === nLocalName.toLowerCase()
+		: localName === nLocalName;
+};
+
+NodeTest.NameTestPrefixAny = NodeTest.makeNodeTestType(NodeTest.NAMETESTPREFIXANY, {
+	matches: function (n, xpc){
+        return NodeTest.isElementOrAttribute(n) && 
+		    NodeTest.nameSpaceMatches(this.prefix, xpc, n);
+	},
+	toString: function () {
+		return this.prefix + ":*";
+	}
+}, function (prefix) { this.prefix = prefix; });
+
+NodeTest.NameTestQName = NodeTest.makeNodeTestType(NodeTest.NAMETESTQNAME, {
+	matches: function (n, xpc) {
+		return NodeTest.isNodeType([1, 2, XPathNamespace.XPATH_NAMESPACE_NODE])(n) &&
+		    NodeTest.nameSpaceMatches(this.prefix, xpc, n) &&
+            NodeTest.localNameMatches(this.localName, xpc, n);
+	},
+	toString: function () {
+        return this.name;
+	}
+}, function (name) { 
+    var nameParts = name.split(':');
+	
+	this.name = name;
+	this.prefix = nameParts.length > 1 ? nameParts[0] : null;
+	this.localName = nameParts[nameParts.length > 1 ? 1 : 0];
+});
+
+NodeTest.PITest = NodeTest.makeNodeTestType(NodeTest.PI, {
+	matches: function (n, xpc) {
+		return NodeTest.isNodeType([7])(n) && (n.target || n.nodeName) === this.name;
+	},
+	toString: function () {
+        return wrap('processing-instruction("', '")', this.name);
+	}
+}, function (name) { this.name = name; })
+
+// singletons
+
+// elements, attributes, namespaces
+NodeTest.nameTestAny = NodeTest.makeNodeTypeTest(NodeTest.NAMETESTANY, [1, 2, XPathNamespace.XPATH_NAMESPACE_NODE], '*');
+// text, cdata
+NodeTest.textTest = NodeTest.makeNodeTypeTest(NodeTest.TEXT, [3, 4], 'text()');
+NodeTest.commentTest = NodeTest.makeNodeTypeTest(NodeTest.COMMENT, [8], 'comment()');
+// elements, attributes, text, cdata, PIs, comments, document nodes
+NodeTest.nodeTest = NodeTest.makeNodeTypeTest(NodeTest.NODE, [1, 2, 3, 4, 7, 8, 9], 'node()');
+NodeTest.anyPiTest = NodeTest.makeNodeTypeTest(NodeTest.PI, [7], 'processing-instruction()');
 
 // VariableReference /////////////////////////////////////////////////////////
 
@@ -8935,6 +10516,34 @@ FunctionCall.prototype.evaluate = function(c) {
 
     var a = [c].concat(this.arguments);
 	return f.apply(c.functionResolver.thisArg, a);
+};
+
+// Operators /////////////////////////////////////////////////////////////////
+
+var Operators = new Object();
+
+Operators.equals = function(l, r) {
+	return l.equals(r);
+};
+
+Operators.notequal = function(l, r) {
+	return l.notequal(r);
+};
+
+Operators.lessthan = function(l, r) {
+	return l.lessthan(r);
+};
+
+Operators.greaterthan = function(l, r) {
+	return l.greaterthan(r);
+};
+
+Operators.lessthanorequal = function(l, r) {
+	return l.lessthanorequal(r);
+};
+
+Operators.greaterthanorequal = function(l, r) {
+	return l.greaterthanorequal(r);
 };
 
 // XString ///////////////////////////////////////////////////////////////////
@@ -9016,31 +10625,19 @@ XString.prototype.notequal = function(r) {
 };
 
 XString.prototype.lessthan = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.greaterthanorequal);
-	}
-	return this.number().lessthan(r.number());
+	return this.number().lessthan(r);
 };
 
 XString.prototype.greaterthan = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.lessthanorequal);
-	}
-	return this.number().greaterthan(r.number());
+	return this.number().greaterthan(r);
 };
 
 XString.prototype.lessthanorequal = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.greaterthan);
-	}
-	return this.number().lessthanorequal(r.number());
+	return this.number().lessthanorequal(r);
 };
 
 XString.prototype.greaterthanorequal = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.lessthan);
-	}
-	return this.number().greaterthanorequal(r.number());
+	return this.number().greaterthanorequal(r);
 };
 
 // XNumber ///////////////////////////////////////////////////////////////////
@@ -9066,8 +10663,43 @@ XNumber.prototype.parse = function(s) {
     return this.numberFormat.test(s) ? parseFloat(s) : Number.NaN;
 };
 
+function padSmallNumber(numberStr) {
+	var parts = numberStr.split('e-');
+	var base = parts[0].replace('.', '');
+	var exponent = Number(parts[1]);
+	
+	for (var i = 0; i < exponent - 1; i += 1) {
+		base = '0' + base;
+	}
+	
+	return '0.' + base;
+}
+
+function padLargeNumber(numberStr) {
+	var parts = numberStr.split('e');
+	var base = parts[0].replace('.', '');
+	var exponent = Number(parts[1]);
+	var zerosToAppend = exponent + 1 - base.length;
+	
+	for (var i = 0; i < zerosToAppend; i += 1){
+		base += '0';
+	}
+	
+	return base;
+}
+
 XNumber.prototype.toString = function() {
-	return this.num;
+	var strValue = this.num.toString();
+
+	if (strValue.indexOf('e-') !== -1) {
+		return padSmallNumber(strValue);
+	}
+    
+	if (strValue.indexOf('e') !== -1) {
+		return padLargeNumber(strValue);
+	}
+	
+	return strValue;
 };
 
 XNumber.prototype.evaluate = function(c) {
@@ -9075,7 +10707,9 @@ XNumber.prototype.evaluate = function(c) {
 };
 
 XNumber.prototype.string = function() {
-	return new XString(this.num);
+	
+	
+	return new XString(this.toString());
 };
 
 XNumber.prototype.number = function() {
@@ -9134,7 +10768,7 @@ XNumber.prototype.notequal = function(r) {
 
 XNumber.prototype.lessthan = function(r) {
 	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.greaterthanorequal);
+		return r.compareWithNumber(this, Operators.greaterthan);
 	}
 	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
 		return this.lessthan(r.number());
@@ -9144,7 +10778,7 @@ XNumber.prototype.lessthan = function(r) {
 
 XNumber.prototype.greaterthan = function(r) {
 	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.lessthanorequal);
+		return r.compareWithNumber(this, Operators.lessthan);
 	}
 	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
 		return this.greaterthan(r.number());
@@ -9154,7 +10788,7 @@ XNumber.prototype.greaterthan = function(r) {
 
 XNumber.prototype.lessthanorequal = function(r) {
 	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.greaterthan);
+		return r.compareWithNumber(this, Operators.greaterthanorequal);
 	}
 	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
 		return this.lessthanorequal(r.number());
@@ -9164,7 +10798,7 @@ XNumber.prototype.lessthanorequal = function(r) {
 
 XNumber.prototype.greaterthanorequal = function(r) {
 	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.lessthan);
+		return r.compareWithNumber(this, Operators.lessthanorequal);
 	}
 	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
 		return this.greaterthanorequal(r.number());
@@ -9237,7 +10871,7 @@ XBoolean.prototype.stringValue = function() {
 };
 
 XBoolean.prototype.numberValue = function() {
-	return this.num().numberValue();
+	return this.number().numberValue();
 };
 
 XBoolean.prototype.booleanValue = function() {
@@ -9269,32 +10903,23 @@ XBoolean.prototype.notequal = function(r) {
 };
 
 XBoolean.prototype.lessthan = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.greaterthanorequal);
-	}
-	return this.number().lessthan(r.number());
+	return this.number().lessthan(r);
 };
 
 XBoolean.prototype.greaterthan = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.lessthanorequal);
-	}
-	return this.number().greaterthan(r.number());
+	return this.number().greaterthan(r);
 };
 
 XBoolean.prototype.lessthanorequal = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.greaterthan);
-	}
-	return this.number().lessthanorequal(r.number());
+	return this.number().lessthanorequal(r);
 };
 
 XBoolean.prototype.greaterthanorequal = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this.number(), Operators.lessthan);
-	}
-	return this.number().greaterthanorequal(r.number());
+	return this.number().greaterthanorequal(r);
 };
+
+XBoolean.true_ = new XBoolean(true);
+XBoolean.false_ = new XBoolean(false);
 
 // AVLTree ///////////////////////////////////////////////////////////////////
 
@@ -9628,9 +11253,9 @@ XNodeSet.prototype.add = function(n) {
 };
 
 XNodeSet.prototype.addArray = function(ns) {
-	for (var i = 0; i < ns.length; i += 1) {
-		this.add(ns[i]);
-	}
+	var self = this;
+	
+	forEach(function (x) { self.add(x); }, ns);
 };
 
 /**
@@ -9688,100 +11313,40 @@ XNodeSet.prototype.compareWithBoolean = function(r, o) {
 };
 
 XNodeSet.prototype.compareWithNodeSet = function(r, o) {
-	var a = this.toUnsortedArray();
-	for (var i = 0; i < a.length; i++) {
-		var n = a[i];
-		var l = new XString(this.stringForNode(n));
-		var b = r.toUnsortedArray();
-		for (var j = 0; j < b.length; j++) {
-			var n2 = b[j];
-			var r = new XString(this.stringForNode(n2));
-			var res = o(l, r);
-			if (res.booleanValue()) {
-				return res;
-			}
+	var arr = this.toUnsortedArray();
+	var oInvert = function (lop, rop) { return o(rop, lop); };
+	
+	for (var i = 0; i < arr.length; i++) {
+		var l = new XString(this.stringForNode(arr[i]));
+
+		var res = r.compareWithString(l, oInvert);
+		if (res.booleanValue()) {
+			return res;
 		}
 	}
+	
 	return new XBoolean(false);
 };
 
-XNodeSet.prototype.equals = function(r) {
+XNodeSet.compareWith = curry(function (o, r) {
 	if (Utilities.instance_of(r, XString)) {
-		return this.compareWithString(r, Operators.equals);
+		return this.compareWithString(r, o);
 	}
 	if (Utilities.instance_of(r, XNumber)) {
-		return this.compareWithNumber(r, Operators.equals);
+		return this.compareWithNumber(r, o);
 	}
 	if (Utilities.instance_of(r, XBoolean)) {
-		return this.compareWithBoolean(r, Operators.equals);
+		return this.compareWithBoolean(r, o);
 	}
-	return this.compareWithNodeSet(r, Operators.equals);
-};
+	return this.compareWithNodeSet(r, o);
+});
 
-XNodeSet.prototype.notequal = function(r) {
-	if (Utilities.instance_of(r, XString)) {
-		return this.compareWithString(r, Operators.notequal);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.compareWithNumber(r, Operators.notequal);
-	}
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.compareWithBoolean(r, Operators.notequal);
-	}
-	return this.compareWithNodeSet(r, Operators.notequal);
-};
-
-XNodeSet.prototype.lessthan = function(r) {
-	if (Utilities.instance_of(r, XString)) {
-		return this.compareWithNumber(r.number(), Operators.lessthan);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.compareWithNumber(r, Operators.lessthan);
-	}
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.compareWithBoolean(r, Operators.lessthan);
-	}
-	return this.compareWithNodeSet(r, Operators.lessthan);
-};
-
-XNodeSet.prototype.greaterthan = function(r) {
-	if (Utilities.instance_of(r, XString)) {
-		return this.compareWithNumber(r.number(), Operators.greaterthan);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.compareWithNumber(r, Operators.greaterthan);
-	}
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.compareWithBoolean(r, Operators.greaterthan);
-	}
-	return this.compareWithNodeSet(r, Operators.greaterthan);
-};
-
-XNodeSet.prototype.lessthanorequal = function(r) {
-	if (Utilities.instance_of(r, XString)) {
-		return this.compareWithNumber(r.number(), Operators.lessthanorequal);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.compareWithNumber(r, Operators.lessthanorequal);
-	}
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.compareWithBoolean(r, Operators.lessthanorequal);
-	}
-	return this.compareWithNodeSet(r, Operators.lessthanorequal);
-};
-
-XNodeSet.prototype.greaterthanorequal = function(r) {
-	if (Utilities.instance_of(r, XString)) {
-		return this.compareWithNumber(r.number(), Operators.greaterthanorequal);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.compareWithNumber(r, Operators.greaterthanorequal);
-	}
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.compareWithBoolean(r, Operators.greaterthanorequal);
-	}
-	return this.compareWithNodeSet(r, Operators.greaterthanorequal);
-};
+XNodeSet.prototype.equals = XNodeSet.compareWith(Operators.equals);
+XNodeSet.prototype.notequal = XNodeSet.compareWith(Operators.notequal);
+XNodeSet.prototype.lessthan = XNodeSet.compareWith(Operators.lessthan);
+XNodeSet.prototype.greaterthan = XNodeSet.compareWith(Operators.greaterthan);
+XNodeSet.prototype.lessthanorequal = XNodeSet.compareWith(Operators.lessthanorequal);
+XNodeSet.prototype.greaterthanorequal = XNodeSet.compareWith(Operators.greaterthanorequal);
 
 XNodeSet.prototype.union = function(r) {
 	var ns = new XNodeSet();
@@ -9812,34 +11377,6 @@ XPathNamespace.prototype.toString = function() {
 	return "{ \"" + this.prefix + "\", \"" + this.namespaceURI + "\" }";
 };
 
-// Operators /////////////////////////////////////////////////////////////////
-
-var Operators = new Object();
-
-Operators.equals = function(l, r) {
-	return l.equals(r);
-};
-
-Operators.notequal = function(l, r) {
-	return l.notequal(r);
-};
-
-Operators.lessthan = function(l, r) {
-	return l.lessthan(r);
-};
-
-Operators.greaterthan = function(l, r) {
-	return l.greaterthan(r);
-};
-
-Operators.lessthanorequal = function(l, r) {
-	return l.lessthanorequal(r);
-};
-
-Operators.greaterthanorequal = function(l, r) {
-	return l.greaterthanorequal(r);
-};
-
 // XPathContext //////////////////////////////////////////////////////////////
 
 XPathContext.prototype = new Object();
@@ -9851,6 +11388,10 @@ function XPathContext(vr, nr, fr) {
 	this.namespaceResolver = nr != null ? nr : new NamespaceResolver();
 	this.functionResolver = fr != null ? fr : new FunctionResolver();
 }
+
+XPathContext.prototype.extend = function (newProps) {
+	return assign(new XPathContext(), this, newProps);
+};
 
 // VariableResolver //////////////////////////////////////////////////////////
 
@@ -9943,7 +11484,7 @@ NamespaceResolver.prototype.getNamespace = function(prefix, n) {
 	if (n.nodeType == 9 /*Node.DOCUMENT_NODE*/) {
 		n = n.documentElement;
 	} else if (n.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
-		n = PathExpr.prototype.getOwnerElement(n);
+		n = PathExpr.getOwnerElement(n);
 	} else if (n.nodeType != 1 /*Node.ELEMENT_NODE*/) {
 		n = n.parentNode;
 	}
@@ -9966,19 +11507,19 @@ NamespaceResolver.prototype.getNamespace = function(prefix, n) {
 
 var Functions = new Object();
 
-Functions.last = function() {
-	var c = arguments[0];
+Functions.last = function(c) {
 	if (arguments.length != 1) {
 		throw new Error("Function last expects ()");
 	}
+
 	return new XNumber(c.contextSize);
 };
 
-Functions.position = function() {
-	var c = arguments[0];
+Functions.position = function(c) {
 	if (arguments.length != 1) {
 		throw new Error("Function position expects ()");
 	}
+
 	return new XNumber(c.contextPosition);
 };
 
@@ -10024,16 +11565,17 @@ Functions.id = function() {
 	return ns;
 };
 
-Functions.localName = function() {
-	var c = arguments[0];
+Functions.localName = function(c, eNode) {
 	var n;
+	
 	if (arguments.length == 1) {
 		n = c.contextNode;
 	} else if (arguments.length == 2) {
-		n = arguments[1].evaluate(c).first();
+		n = eNode.evaluate(c).first();
 	} else {
 		throw new Error("Function local-name expects (node-set?)");
 	}
+	
 	if (n == null) {
 		return new XString("");
 	}
@@ -10097,10 +11639,9 @@ Functions.string = function() {
 	throw new Error("Function string expects (object?)");
 };
 
-Functions.concat = function() {
-	var c = arguments[0];
+Functions.concat = function(c) {
 	if (arguments.length < 3) {
-		throw new Error("Function concat expects (string, string, string*)");
+		throw new Error("Function concat expects (string, string[, string]*)");
 	}
 	var s = "";
 	for (var i = 1; i < arguments.length; i++) {
@@ -10213,32 +11754,26 @@ Functions.normalizeSpace = function() {
 	return new XString(t);
 };
 
-Functions.translate = function() {
-	var c = arguments[0];
+Functions.translate = function(c, eValue, eFrom, eTo) {
 	if (arguments.length != 4) {
 		throw new Error("Function translate expects (string, string, string)");
 	}
-	var s1 = arguments[1].evaluate(c).stringValue();
-	var s2 = arguments[2].evaluate(c).stringValue();
-	var s3 = arguments[3].evaluate(c).stringValue();
-	var map = [];
-	for (var i = 0; i < s2.length; i++) {
-		var j = s2.charCodeAt(i);
-		if (map[j] == undefined) {
-			var k = i > s3.length ? "" : s3.charAt(i);
-			map[j] = k;
+
+	var value = eValue.evaluate(c).stringValue();
+	var from = eFrom.evaluate(c).stringValue();
+	var to = eTo.evaluate(c).stringValue();
+	
+	var cMap = reduce(function (acc, ch, i) {
+		if (!(ch in acc)) {
+			acc[ch] = i > to.length ? '' : to[i];
 		}
-	}
-	var t = "";
-	for (var i = 0; i < s1.length; i++) {
-		var c = s1.charCodeAt(i);
-		var r = map[c];
-		if (r == undefined) {
-			t += s1.charAt(i);
-		} else {
-			t += r;
-		}
-	}
+		return acc;
+	}, {}, from);
+
+    var t = join('', map(function (ch) {
+        return ch in cMap ? cMap[ch] : ch;
+    }, value));
+
 	return new XString(t);
 };
 
@@ -10250,26 +11785,25 @@ Functions.boolean_ = function() {
 	return arguments[1].evaluate(c).bool();
 };
 
-Functions.not = function() {
-	var c = arguments[0];
+Functions.not = function(c, eValue) {
 	if (arguments.length != 2) {
 		throw new Error("Function not expects (object)");
 	}
-	return arguments[1].evaluate(c).bool().not();
+	return eValue.evaluate(c).bool().not();
 };
 
 Functions.true_ = function() {
 	if (arguments.length != 1) {
 		throw new Error("Function true expects ()");
 	}
-	return new XBoolean(true);
+	return XBoolean.true_;
 };
 
 Functions.false_ = function() {
 	if (arguments.length != 1) {
 		throw new Error("Function false expects ()");
 	}
-	return new XBoolean(false);
+	return XBoolean.false_;
 };
 
 Functions.lang = function() {
@@ -10286,7 +11820,7 @@ Functions.lang = function() {
 		}
 	}
 	if (lang == null) {
-		return new XBoolean(false);
+		return XBoolean.false_;
 	}
 	var s = arguments[1].evaluate(c).stringValue();
 	return new XBoolean(lang.substring(0, s.length) == s
@@ -10833,8 +12367,29 @@ function XPathExpression(e, r, p) {
 	this.context.namespaceResolver = new XPathNSResolverWrapper(r);
 }
 
+XPathExpression.getOwnerDocument = function (n) {
+	return n.nodeType === 9 /*Node.DOCUMENT_NODE*/ ? n : n.ownerDocument;
+}
+
+XPathExpression.detectHtmlDom = function (n) {
+	if (!n) { return false; }
+	
+	var doc = XPathExpression.getOwnerDocument(n);
+	
+	try {
+		return doc.implementation.hasFeature("HTML", "2.0");
+	} catch (e) {
+		return true;
+	}
+}
+
 XPathExpression.prototype.evaluate = function(n, t, res) {
 	this.context.expressionContextNode = n;
+	// backward compatibility - no reliable way to detect whether the DOM is HTML, but
+	// this library has been using this method up until now, so we will continue to use it
+	// ONLY when using an XPathExpression
+	this.context.caseInsensitive = XPathExpression.detectHtmlDom(n);
+	
 	var result = this.xpath.evaluate(this.context);
 	return new XPathResult(result, t);
 }
@@ -11145,6 +12700,10 @@ installDOM3XPathSupport(exports, new XPathParser());
 
         return defaultVariableResolver;
     }
+	
+	function copyIfPresent(prop, dest, source) {
+		if (prop in source) { dest[prop] = source[prop]; }
+	}
 
     function makeContext(options) {
         var context = new XPathContext();
@@ -11153,7 +12712,9 @@ installDOM3XPathSupport(exports, new XPathParser());
             context.namespaceResolver = makeNSResolver(options.namespaces);
             context.functionResolver = makeFunctionResolver(options.functions);
             context.variableResolver = makeVariableResolver(options.variables);
-            context.expressionContextNode = options.node;
+			context.expressionContextNode = options.node;
+			copyIfPresent('allowAnyNamespaceForNoPrefix', context, options);
+			copyIfPresent('isHtml', context, options);
         } else {
             context.namespaceResolver = defaultNSResolver;
         }
@@ -11280,121 +12841,129 @@ exports.select1 = function(e, doc) {
 // end non-node wrapper
 })(xpath);
 
-},{}],36:[function(require,module,exports){
-var axios = require('axios') ;
+},{}],39:[function(require,module,exports){
+var axios = require('axios');
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
 var clq_filter = require('./internal/cql_filter')
-
-var rp = function(options){
-    var axiosOptions = {
-        'params': options.qs,
-        'headers': options.headers,
-        'responseType': 'text'
-    };
-    if ( options.transform ){
-        axiosOptions.transformResponse = [options.transform] ;
-    }
-    return axios.get(
-        options.uri,
-        axiosOptions
-    ).then(function(response){
-        return response.data;
-    });
-};
 
 /**
  * @classdesc
  * WFS access client for the geoportal
  * @constructor
  */
-var Client = function(options){
+var Client = function (options) {
     // should be removed to allow user/password?
-    if (typeof options.apiKey === 'undefined' ) throw new Error('Required param: apiKey');
+    if (typeof options.apiKey === 'undefined') throw new Error('Required param: apiKey');
     this.url = options.url || 'https://wxs.ign.fr/{apiKey}/geoportail/wfs';
     this.apiKey = options.apiKey || null;
-    this.headers = options.headers || {};    
+    this.headers = options.headers || {};
 };
 
 /**
  * Get WFS URL
  */
-Client.prototype.getUrl = function(){
+Client.prototype.getUrl = function () {
     return this.url.replace('{apiKey}', this.apiKey);
 };
 
+
 /**
  * @private
+ * @returns {Object}
  */
-Client.prototype.getDefaultOptions = function() {
+Client.prototype.getDefaultParams = function () {
     return {
-        uri: this.getUrl(),
-        qs: {
-            service: 'WFS',
-            version: '2.0.0'
-        },
-        headers: this.headers
+        service: 'WFS',
+        version: '2.0.0'
     };
-};
+}
+
+/**
+ * @private
+ * @returns {Object}
+ */
+Client.prototype.getDefaultHeaders = function(){
+    return this.headers;
+}
 
 /**
  * Get typenames according to apiKey
+ * @returns {Promise}
  */
-Client.prototype.getTypeNames = function(){
-    var options = this.getDefaultOptions();
-    options.qs.request = 'GetCapabilities';
-    options.transform = function(body){
-        return getTypeNamesFromCapabilities(body);
-    };
-    return rp(options);
+Client.prototype.getTypeNames = function () {
+    var params = this.getDefaultParams();
+    params.request = 'GetCapabilities';
+    return axios.get(
+        this.getUrl(),
+        {
+            'params': params,
+            'headers': this.getDefaultHeaders(),
+            'responseType': 'text',
+            transformResponse: function (body) {
+                return getTypeNamesFromCapabilities(body);
+            }
+        }
+    ).then(function (response) {
+        return response.data;
+    });
 };
 
 /**
  * Get features for a given type
  * @param {string} typeName - name of type
  * @param {Object} params - define cumulative filters (bbox, geom) and to manage the pagination
+ * @return {Promise}
  */
-Client.prototype.getFeatures = function(typeName, params){
+Client.prototype.getFeatures = function (typeName, params) {
     var params = params || {};
 
-    var options = this.getDefaultOptions();
-    options.qs.request  = 'GetFeature' ;
-    options.qs.typename = typeName ;
-    options.qs.outputFormat = 'application/json';
-    options.qs.srsName = 'CRS:84';
-
-    if ( typeof params._limit !== 'undefined' ){
-        options.qs.count = parseInt(params._limit);
-    }
-    if ( typeof params._start !== 'undefined' ){
-        options.qs.startIndex = parseInt(params._start);
-    }
-
-    options.transform = function(body){
-        try {
-            return JSON.parse(body);
-        }catch(err){
-            // forward xml errors
-            throw {
-                'type': 'error',
-                'message': body
-            };
-        }
-    };
+    var headers = this.getDefaultHeaders();
+    headers['Accept'] = 'application/json';
 
     /*
-     * bbox and attribute filter
+     * GetFeature params 
+     */
+    var queryParams = this.getDefaultParams();
+    queryParams['request']  = 'GetFeature';
+    queryParams['typename'] = typeName;
+    queryParams['outputFormat'] = 'application/json';
+    queryParams['srsName'] = 'CRS:84';
+    if (typeof params._limit !== 'undefined') {
+        queryParams['count'] = params._limit;
+    }
+    if (typeof params._start !== 'undefined') {
+        queryParams['startIndex'] = params._start;
+    }
+    
+    /*
+     * bbox and attribute filter as POST parameter
      */
     var cql_filter = clq_filter(params);
-    if ( cql_filter !== null ){
-        options.qs.cql_filter = cql_filter;
-    }
-    return rp(options);
+    var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
+    return axios.post(this.getUrl(), body, {
+        params: queryParams,
+        headers: headers,
+        responseType: 'text',
+        transformResponse: function (body) {
+            try {
+                return JSON.parse(body);
+            } catch (err) {
+                // forward xml errors
+                throw {
+                    'type': 'error',
+                    'message': body
+                };
+            }
+        }
+    }).then(function (response) {
+        return response.data;
+    });
 };
 
-module.exports = Client ;
+module.exports = Client;
 
-},{"./internal/cql_filter":37,"./internal/getTypeNamesFromCapabilities":38,"axios":4}],37:[function(require,module,exports){
+},{"./internal/cql_filter":40,"./internal/getTypeNamesFromCapabilities":41,"axios":6}],40:[function(require,module,exports){
 
 var WKT = require('terraformer-wkt-parser');
 var flip = require('@turf/flip');
@@ -11452,7 +13021,7 @@ module.exports =  function(params){
     return parts.join(' and ') ;
 };
 
-},{"@turf/flip":2,"terraformer-wkt-parser":30}],38:[function(require,module,exports){
+},{"@turf/flip":3,"terraformer-wkt-parser":33}],41:[function(require,module,exports){
 var xpath = require('xpath')
   , dom = require('xmldom').DOMParser;
 
@@ -11472,5 +13041,5 @@ var getTypeNamesFromCapabilities = function(xml){
 
 module.exports = getTypeNamesFromCapabilities;
 
-},{"xmldom":32,"xpath":35}]},{},[1])(1)
+},{"xmldom":35,"xpath":38}]},{},[1])(1)
 });
