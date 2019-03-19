@@ -27,7 +27,7 @@ La bibliothèque génère des requêtes WFS (GetCapabilities et GetFeatures avec
 ### En contexte NodeJS
 
 
-```
+```js
 var Client = require('geoportal-wfs-client');
 
 var options = {
@@ -41,7 +41,7 @@ var client = new GeoportalWfsClient(options);
 
 ### En contexte navigateur
 
-```
+```js
 <script src="dist/geoportal-wfs-client.js"></script>
 <script type="text/javascript">
 
@@ -58,7 +58,7 @@ Remarque : on ne peut pas forcer le referer depuis le navigateur
 
 ### Exemple d'utilisation
 
-```
+```js
 client.getTypeNames()
     .then(function(typeNames){
         console.log(typeNames);
@@ -71,7 +71,7 @@ client.getTypeNames()
 
 ### Exemple de résultat
 
-```
+```js
 [
     "BDADRESSE_BDD_WLD_WGS84G:adresse",
     "BDADRESSE_BDD_WLD_WGS84G:arrondissement",
@@ -84,7 +84,7 @@ client.getTypeNames()
 
 ### Exemple d'utilisation
 
-```
+```js
 var params = {
     bbox: [5.0,47.1,5.1,47.2],
     code_dep: "21",
@@ -102,7 +102,7 @@ client.getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:divcad",params)
 
 ### Exemple de résultat
 
-```
+```json
 {"type":"FeatureCollection","features":[...]}
 ```
 
@@ -118,7 +118,7 @@ client.getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:divcad",params)
 
 La syntaxe ci-après permet de définir des égalités
 
-```
+```js
 {"<attributeName>":"<attributeValue>"}
 ```
 
