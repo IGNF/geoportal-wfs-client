@@ -1,7 +1,7 @@
 var axios = require('axios');
-
+var rp = require('request-promise');
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
-var clq_filter = require('./internal/cql_filter')
+var clq_filter = require('./internal/cql_filter');
 
 /**
  * @classdesc
@@ -96,25 +96,21 @@ Client.prototype.getFeatures = function (typeName, params) {
      * bbox and attribute filter as POST parameter
      */
     var cql_filter = clq_filter(params);
-    var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
-    return axios.post(this.getUrl(), body, {
-        params: queryParams,
-        headers: headers,
-        responseType: 'text',
-        transformResponse: function (body) {
-            try {
-                return JSON.parse(body);
-            } catch (err) {
-                // forward xml errors
-                throw {
-                    'type': 'error',
-                    'message': body
-                };
-            }
-        }
-    }).then(function (response) {
-        return response.data;
-    });
+    var body = (cql_filter !== null) ? 'cql_filter=' + cql_filter : '';
+    queryParams['cql_filter'] = cql_filter;
+    var options= {
+        uri:this.getUrl(),
+        method:'POST',
+        qs: queryParams,
+        headers: headers
+    };
+    return rp(options)
+		.then(function(result) {
+			return JSON.parse(result);
+		}).catch(function(err) {
+            console.log("err_backend" + err);
+        })
+    
 };
 
 module.exports = Client;
