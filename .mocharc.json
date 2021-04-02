@@ -1,0 +1,6 @@
+{
+    "reporter": "spec",
+    "recursive": true,
+    "ui": "bdd",
+    "timeout": "30000"
+}
