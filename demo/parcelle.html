@@ -7,6 +7,8 @@
     <meta lang="fr" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="stylesheet" href="style.css">
+
     <!-- leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
         integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
@@ -22,7 +24,7 @@
 
     <p>Cliquez sur la carte pour récupérer la parcelle correspondante à partir du WFS Géoportail.</p>
 
-    <div id="map" style="width: 600px; height: 400px;"></div>
+    <div id="map"></div>
 
     <script>
 
@@ -42,7 +44,7 @@
             return url ;
         }
 
-        var map = L.map('map').setView([47.23,6.02], 13);
+        var map = L.map('map').setView([47.23,6.02], 14);
         L.tileLayer(getGeoportalURL('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'), {
             maxZoom: 18,
             attribution: '&copy; <a href="https://www.ign.fr/">IGN</a>',
