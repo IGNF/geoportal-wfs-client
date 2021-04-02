@@ -35,7 +35,7 @@
         * Renvoie l'URL de la couche geoportail
         */
         function getGeoportalURL( layerName ){
-            var url = "http://wxs.ign.fr/"+GEOPORTAL_API_KEY+"/geoportail/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile";
+            var url = "https://wxs.ign.fr/"+GEOPORTAL_API_KEY+"/geoportail/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile";
             url += "&LAYER="+layerName;
             url += "&STYLE=normal&FORMAT=image/png";
             url += "&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}" ;
@@ -45,7 +45,7 @@
         var map = L.map('map').setView([47.23,6.02], 13);
         L.tileLayer(getGeoportalURL('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'), {
             maxZoom: 18,
-            attribution: '&copy; IGN',
+            attribution: '&copy; <a href="https://www.ign.fr/">IGN</a>',
             id: 'ignf/carte'
         }).addTo(map);
 

@@ -23,7 +23,7 @@ La bibliothèque génère des requêtes WFS (GetCapabilities et GetFeatures avec
 
 ## Démonstration
 
-* [demo/parcelle.html](demo/parcelle.html) : récupération de la parcelle au clic sur une carte leaflet.
+[demo/parcelle.html](demo/parcelle.html) illustre la récupération et l'affichage d'une parcelle au clic sur une carte leaflet.
 
 ## Construction du client
 
