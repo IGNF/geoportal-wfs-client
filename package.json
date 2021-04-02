@@ -1,6 +1,6 @@
 {
   "name": "geoportal-wfs-client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Client GeoJSON pour les WFS du géoportail",
   "repository": "IGNF/geoportal-wfs-client",
   "main": "index.js",
@@ -8,6 +8,7 @@
     "index.js": "./dist/geoportal-wfs-client.min.js"
   },
   "scripts": {
+    "build": "grunt",
     "test": "mocha",
     "cover": "istanbul cover _mocha",
     "coveralls": "npm run cover && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
@@ -15,20 +16,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@turf/flip": "^5.1.5",
-    "axios": "^0.18.0",
+    "@turf/flip": "^6.3.0",
+    "axios": "^0.21.1",
     "expect": "^26.6.2",
     "terraformer-wkt-parser": "^1.1.2",
-    "xmldom": "^0.1.27",
-    "xpath": "0.0.27"
+    "xmldom": "^0.5.0",
+    "xpath": "0.0.32"
   },
   "devDependencies": {
     "chai": "^4.3.4",
     "coveralls": "^3.1.0",
-    "grunt": "^1.0.3",
-    "grunt-browserify": "^5.0.0",
-    "grunt-contrib-uglify": "^4.0.0",
-    "grunt-jsdoc": "^2.1.0",
+    "grunt": "^1.3.0",
+    "grunt-browserify": "^6.0.0",
+    "grunt-contrib-uglify": "^5.0.1",
+    "grunt-jsdoc": "^2.4.1",
     "istanbul": "^0.4.5",
     "mocha": "^8.3.2",
     "mocha-lcov-reporter": "^1.3.0"
