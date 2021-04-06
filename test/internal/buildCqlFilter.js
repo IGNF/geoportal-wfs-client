@@ -1,18 +1,18 @@
 const expect = require('chai').expect;
 
-const cql_filter = require('../../src/internal/cql_filter');
+const buildCqlFilter = require('../../src/internal/buildCqlFilter');
 
-describe('testcql_filter', function () {
+describe('test buildCqlFilter', function () {
 
     it('should return null for null filter', function () {
         var input = null;
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.be.null;
     });
 
     it('should return null for empty filter', function () {
         var input = {};
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.be.null;
     });
 
@@ -20,7 +20,7 @@ describe('testcql_filter', function () {
         var input = {
             _start: 10
         };
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.be.null;
     });
 
@@ -28,17 +28,35 @@ describe('testcql_filter', function () {
         var input = {
             _limit: 10
         };
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.be.null;
     });
 
+    it('should encode "bbox" string to filter with coordinate swapping', function () {
+        var input = {
+            'bbox': '0,1,2,3'
+        };
+        var expected = "BBOX(the_geom,1,0,3,2)";
+        var result = buildCqlFilter(input);
+        expect(result).to.equals(expected);
+    });
 
-    it('should encode bbox to filter with coordinate swapping', function () {
+    it('should encode "bbox" array to filter with coordinate swapping', function () {
         var input = {
             'bbox': [0, 1, 2, 3]
         };
         var expected = "BBOX(the_geom,1,0,3,2)";
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
+        expect(result).to.equals(expected);
+    });
+
+    /* _geomFieldName support */
+    it('should encode "bbox" array to filter with coordinate swapping using geomFieldName', function () {
+        var input = {
+            'bbox': [0, 1, 2, 3]
+        };
+        var expected = "BBOX(geom,1,0,3,2)";
+        var result = buildCqlFilter(input,'geom');
         expect(result).to.equals(expected);
     });
 
@@ -50,7 +68,7 @@ describe('testcql_filter', function () {
             }
         };
         var expected = "INTERSECTS(the_geom,POINT (4 3))";
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
 
@@ -62,18 +80,32 @@ describe('testcql_filter', function () {
             })
         };
         var expected = "INTERSECTS(the_geom,POINT (4 3))";
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
 
 
+    it('should encode "geom" (GeoJSON) as "intersects" with coordinate swapping using geomFieldName', function () {
+        var input = {
+            'geom': {
+                'type': 'Point',
+                'coordinates': [3.0, 4.0]
+            }
+        };
+        var expected = "INTERSECTS(geom,POINT (4 3))";
+        var result = buildCqlFilter(input,'geom');
+        expect(result).to.equals(expected);
+    });
+
+
+    /* standard attributes */
 
     it('should encode attribute filters with quotes', function () {
         var input = {
             'code_dept': 12
         };
         var expected = "code_dept='12'";
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
 
@@ -84,7 +116,7 @@ describe('testcql_filter', function () {
             'code_dept': '12'
         };
         var expected = "BBOX(the_geom,1,0,3,2) and code_dept='12'";
-        var result = cql_filter(input);
+        var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
 
