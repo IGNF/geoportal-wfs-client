@@ -13600,7 +13600,7 @@ var xpath = (typeof exports === 'undefined') ? {} : exports;
 })(xpath);
 
 },{}],41:[function(require,module,exports){
-var axios = require('axios');
+const httpClient = require('./internal/httpClient');
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
 var clq_filter = require('./internal/cql_filter')
@@ -13652,7 +13652,7 @@ Client.prototype.getDefaultHeaders = function(){
 Client.prototype.getTypeNames = function () {
     var params = this.getDefaultParams();
     params.request = 'GetCapabilities';
-    return axios.get(
+    return httpClient.get(
         this.getUrl(),
         {
             'params': params,
@@ -13699,7 +13699,7 @@ Client.prototype.getFeatures = function (typeName, params) {
      */
     var cql_filter = clq_filter(params);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
-    return axios.post(this.getUrl(), body, {
+    return httpClient.post(this.getUrl(), body, {
         params: queryParams,
         headers: headers,
         responseType: 'text',
@@ -13721,7 +13721,7 @@ Client.prototype.getFeatures = function (typeName, params) {
 
 module.exports = Client;
 
-},{"./internal/cql_filter":42,"./internal/getTypeNamesFromCapabilities":43,"axios":6}],42:[function(require,module,exports){
+},{"./internal/cql_filter":42,"./internal/getTypeNamesFromCapabilities":43,"./internal/httpClient":44}],42:[function(require,module,exports){
 
 var WKT = require('terraformer-wkt-parser');
 var flip = require('@turf/flip');
@@ -13799,5 +13799,34 @@ var getTypeNamesFromCapabilities = function(xml){
 
 module.exports = getTypeNamesFromCapabilities;
 
-},{"xmldom":36,"xpath":40}]},{},[1])(1)
+},{"xmldom":36,"xpath":40}],44:[function(require,module,exports){
+(function (process){(function (){
+const axios = require('axios');
+
+const axiosGlobalConfig = {};
+
+/*
+ * NodeJS specific code to allow https throw http proxy with axios
+ * (fixes https://github.com/IGNF/geoportal-wfs-client/issues/5)
+ */
+if (typeof window === 'undefined' ){
+  const HttpProxyAgent = require('http-proxy-agent');
+  if ( process.env.HTTP_PROXY ){
+    axiosGlobalConfig.httpAgent = new HttpProxyAgent(process.env.HTTP_PROXY);
+  }
+  const HttpsProxyAgent = require('https-proxy-agent');
+  if ( process.env.HTTPS_PROXY ){
+    axiosGlobalConfig.httpsAgent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
+  }
+  axiosGlobalConfig.proxy = false;
+}
+
+const httpClient = axios.create(axiosGlobalConfig);
+module.exports = httpClient;
+
+
+
+
+}).call(this)}).call(this,require('_process'))
+},{"_process":33,"axios":6,"http-proxy-agent":undefined,"https-proxy-agent":undefined}]},{},[1])(1)
 });

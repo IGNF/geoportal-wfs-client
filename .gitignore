@@ -4,3 +4,5 @@
 # coverage
 /coverage/
 /.coveralls.yml
+
+/.vscode/
