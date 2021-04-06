@@ -23,7 +23,7 @@ La bibliothèque génère des requêtes WFS (GetCapabilities et GetFeatures avec
 
 ## Démonstration
 
-[demo/parcelle.html](demo/parcelle.html) illustre la récupération et l'affichage d'une parcelle au clic sur une carte leaflet.
+Voir [demo/parcelle.html](https://ignf.github.io/geoportal-wfs-client/demo/parcelle.html) qui illustre la récupération et l'affichage d'une parcelle au clic sur une carte leaflet.
 
 ## Construction du client
 
