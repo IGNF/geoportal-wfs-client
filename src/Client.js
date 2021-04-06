@@ -1,4 +1,4 @@
-var axios = require('axios');
+const httpClient = require('./internal/httpClient');
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
 var clq_filter = require('./internal/cql_filter')
@@ -50,7 +50,7 @@ Client.prototype.getDefaultHeaders = function(){
 Client.prototype.getTypeNames = function () {
     var params = this.getDefaultParams();
     params.request = 'GetCapabilities';
-    return axios.get(
+    return httpClient.get(
         this.getUrl(),
         {
             'params': params,
@@ -97,7 +97,7 @@ Client.prototype.getFeatures = function (typeName, params) {
      */
     var cql_filter = clq_filter(params);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
-    return axios.post(this.getUrl(), body, {
+    return httpClient.post(this.getUrl(), body, {
         params: queryParams,
         headers: headers,
         responseType: 'text',

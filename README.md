@@ -21,6 +21,9 @@ Remarque : Cette bibliothèque est réutilisable avec d'autres serveurs WFS (ex 
 
 La bibliothèque génère des requêtes WFS (GetCapabilities et GetFeatures avec cql_filter) en fixant des paramètres (outputFormat=application/json, projection=CRS:84, etc.) et parse les résultats.
 
+## Démonstration
+
+[demo/parcelle.html](demo/parcelle.html) illustre la récupération et l'affichage d'une parcelle au clic sur une carte leaflet.
 
 ## Construction du client
 

@@ -10,7 +10,9 @@ module.exports = function (grunt) {
                 options: {
                     browserifyOptions: {
                         standalone: 'GeoportalWfsClient'
-                    }
+                    },
+                    /* NodeJS specific libraries */
+                    exclude: ['http-proxy-agent','https-proxy-agent']
                 }
             }
         },

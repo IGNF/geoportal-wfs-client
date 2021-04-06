@@ -1,9 +1,9 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.GeoportalWfsClient = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 module.exports = require('./src/Client.js');
 
-},{"./src/Client.js":39}],2:[function(require,module,exports){
-'use strict';
-
+},{"./src/Client.js":41}],2:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Returns a cloned copy of the passed GeoJSON Object, including possible 'Foreign Members'.
  * ~3-5x faster than the common JSON.parse + JSON.stringify combo method.
@@ -17,26 +17,26 @@ module.exports = require('./src/Client.js');
  * var lineCloned = turf.clone(line);
  */
 function clone(geojson) {
-    if (!geojson) throw new Error('geojson is required');
-
+    if (!geojson) {
+        throw new Error("geojson is required");
+    }
     switch (geojson.type) {
-    case 'Feature':
-        return cloneFeature(geojson);
-    case 'FeatureCollection':
-        return cloneFeatureCollection(geojson);
-    case 'Point':
-    case 'LineString':
-    case 'Polygon':
-    case 'MultiPoint':
-    case 'MultiLineString':
-    case 'MultiPolygon':
-    case 'GeometryCollection':
-        return cloneGeometry(geojson);
-    default:
-        throw new Error('unknown GeoJSON type');
+        case "Feature":
+            return cloneFeature(geojson);
+        case "FeatureCollection":
+            return cloneFeatureCollection(geojson);
+        case "Point":
+        case "LineString":
+        case "Polygon":
+        case "MultiPoint":
+        case "MultiLineString":
+        case "MultiPolygon":
+        case "GeometryCollection":
+            return cloneGeometry(geojson);
+        default:
+            throw new Error("unknown GeoJSON type");
     }
 }
-
 /**
  * Clone Feature
  *
@@ -45,16 +45,16 @@ function clone(geojson) {
  * @returns {Feature<any>} cloned Feature
  */
 function cloneFeature(geojson) {
-    var cloned = {type: 'Feature'};
+    var cloned = { type: "Feature" };
     // Preserve Foreign Members
     Object.keys(geojson).forEach(function (key) {
         switch (key) {
-        case 'type':
-        case 'properties':
-        case 'geometry':
-            return;
-        default:
-            cloned[key] = geojson[key];
+            case "type":
+            case "properties":
+            case "geometry":
+                return;
+            default:
+                cloned[key] = geojson[key];
         }
     });
     // Add properties & geometry last
@@ -62,7 +62,6 @@ function cloneFeature(geojson) {
     cloned.geometry = cloneGeometry(geojson.geometry);
     return cloned;
 }
-
 /**
  * Clone Properties
  *
@@ -72,27 +71,33 @@ function cloneFeature(geojson) {
  */
 function cloneProperties(properties) {
     var cloned = {};
-    if (!properties) return cloned;
+    if (!properties) {
+        return cloned;
+    }
     Object.keys(properties).forEach(function (key) {
         var value = properties[key];
-        if (typeof value === 'object') {
+        if (typeof value === "object") {
             if (value === null) {
                 // handle null
                 cloned[key] = null;
-            } else if (value.length) {
+            }
+            else if (Array.isArray(value)) {
                 // handle Array
                 cloned[key] = value.map(function (item) {
                     return item;
                 });
-            } else {
+            }
+            else {
                 // handle generic Object
                 cloned[key] = cloneProperties(value);
             }
-        } else cloned[key] = value;
+        }
+        else {
+            cloned[key] = value;
+        }
     });
     return cloned;
 }
-
 /**
  * Clone Feature Collection
  *
@@ -101,16 +106,15 @@ function cloneProperties(properties) {
  * @returns {FeatureCollection<any>} cloned Feature Collection
  */
 function cloneFeatureCollection(geojson) {
-    var cloned = {type: 'FeatureCollection'};
-
+    var cloned = { type: "FeatureCollection" };
     // Preserve Foreign Members
     Object.keys(geojson).forEach(function (key) {
         switch (key) {
-        case 'type':
-        case 'features':
-            return;
-        default:
-            cloned[key] = geojson[key];
+            case "type":
+            case "features":
+                return;
+            default:
+                cloned[key] = geojson[key];
         }
     });
     // Add features
@@ -119,7 +123,6 @@ function cloneFeatureCollection(geojson) {
     });
     return cloned;
 }
-
 /**
  * Clone Geometry
  *
@@ -128,19 +131,19 @@ function cloneFeatureCollection(geojson) {
  * @returns {Geometry<any>} cloned Geometry
  */
 function cloneGeometry(geometry) {
-    var geom = {type: geometry.type};
-    if (geometry.bbox) geom.bbox = geometry.bbox;
-
-    if (geometry.type === 'GeometryCollection') {
-        geom.geometries = geometry.geometries.map(function (geom) {
-            return cloneGeometry(geom);
+    var geom = { type: geometry.type };
+    if (geometry.bbox) {
+        geom.bbox = geometry.bbox;
+    }
+    if (geometry.type === "GeometryCollection") {
+        geom.geometries = geometry.geometries.map(function (g) {
+            return cloneGeometry(g);
         });
         return geom;
     }
     geom.coordinates = deepSlice(geometry.coordinates);
     return geom;
 }
-
 /**
  * Deep Slice coordinates
  *
@@ -149,14 +152,15 @@ function cloneGeometry(geometry) {
  * @returns {Coordinates} all coordinates sliced
  */
 function deepSlice(coords) {
-    if (typeof coords[0] !== 'object') { return coords.slice(); }
-    return coords.map(function (coord) {
+    var cloned = coords;
+    if (typeof cloned[0] !== "object") {
+        return cloned.slice();
+    }
+    return cloned.map(function (coord) {
         return deepSlice(coord);
     });
 }
-
-module.exports = clone;
-module.exports.default = clone;
+exports.default = clone;
 
 },{}],3:[function(require,module,exports){
 'use strict';
@@ -184,100 +188,109 @@ var clone = _interopDefault(require('@turf/clone'));
  * var addToMap = [serbia, saudiArabia];
  */
 function flip(geojson, options) {
-    // Optional parameters
-    options = options || {};
-    if (!helpers.isObject(options)) throw new Error('options is invalid');
-    var mutate = options.mutate;
+  // Optional parameters
+  options = options || {};
+  if (!helpers.isObject(options)) throw new Error("options is invalid");
+  var mutate = options.mutate;
 
-    if (!geojson) throw new Error('geojson is required');
-    // ensure that we don't modify features in-place and changes to the
-    // output do not change the previous feature, including changes to nested
-    // properties.
-    if (mutate === false || mutate === undefined) geojson = clone(geojson);
+  if (!geojson) throw new Error("geojson is required");
+  // ensure that we don't modify features in-place and changes to the
+  // output do not change the previous feature, including changes to nested
+  // properties.
+  if (mutate === false || mutate === undefined) geojson = clone(geojson);
 
-    meta.coordEach(geojson, function (coord) {
-        var x = coord[0];
-        var y = coord[1];
-        coord[0] = y;
-        coord[1] = x;
-    });
-    return geojson;
+  meta.coordEach(geojson, function (coord) {
+    var x = coord[0];
+    var y = coord[1];
+    coord[0] = y;
+    coord[1] = x;
+  });
+  return geojson;
 }
 
 module.exports = flip;
-module.exports.default = flip;
 
 },{"@turf/clone":2,"@turf/helpers":4,"@turf/meta":5}],4:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * @module helpers
+ */
 /**
  * Earth Radius used with the Harvesine formula and approximates using a spherical (non-ellipsoid) Earth.
+ *
+ * @memberof helpers
+ * @type {number}
  */
-var earthRadius = 6371008.8;
-
+exports.earthRadius = 6371008.8;
 /**
  * Unit of measurement factors using a spherical (non-ellipsoid) earth radius.
+ *
+ * @memberof helpers
+ * @type {Object}
  */
-var factors = {
-    meters: earthRadius,
-    metres: earthRadius,
-    millimeters: earthRadius * 1000,
-    millimetres: earthRadius * 1000,
-    centimeters: earthRadius * 100,
-    centimetres: earthRadius * 100,
-    kilometers: earthRadius / 1000,
-    kilometres: earthRadius / 1000,
-    miles: earthRadius / 1609.344,
-    nauticalmiles: earthRadius / 1852,
-    inches: earthRadius * 39.370,
-    yards: earthRadius / 1.0936,
-    feet: earthRadius * 3.28084,
+exports.factors = {
+    centimeters: exports.earthRadius * 100,
+    centimetres: exports.earthRadius * 100,
+    degrees: exports.earthRadius / 111325,
+    feet: exports.earthRadius * 3.28084,
+    inches: exports.earthRadius * 39.37,
+    kilometers: exports.earthRadius / 1000,
+    kilometres: exports.earthRadius / 1000,
+    meters: exports.earthRadius,
+    metres: exports.earthRadius,
+    miles: exports.earthRadius / 1609.344,
+    millimeters: exports.earthRadius * 1000,
+    millimetres: exports.earthRadius * 1000,
+    nauticalmiles: exports.earthRadius / 1852,
     radians: 1,
-    degrees: earthRadius / 111325,
+    yards: exports.earthRadius / 1.0936,
 };
-
 /**
  * Units of measurement factors based on 1 meter.
+ *
+ * @memberof helpers
+ * @type {Object}
  */
-var unitsFactors = {
-    meters: 1,
-    metres: 1,
-    millimeters: 1000,
-    millimetres: 1000,
+exports.unitsFactors = {
     centimeters: 100,
     centimetres: 100,
+    degrees: 1 / 111325,
+    feet: 3.28084,
+    inches: 39.37,
     kilometers: 1 / 1000,
     kilometres: 1 / 1000,
-    miles: 1 / 1609.344,
-    nauticalmiles: 1 / 1852,
-    inches: 39.370,
-    yards: 1 / 1.0936,
-    feet: 3.28084,
-    radians: 1 / earthRadius,
-    degrees: 1 / 111325,
-};
-
-/**
- * Area of measurement factors based on 1 square meter.
- */
-var areaFactors = {
     meters: 1,
     metres: 1,
-    millimeters: 1000000,
-    millimetres: 1000000,
+    miles: 1 / 1609.344,
+    millimeters: 1000,
+    millimetres: 1000,
+    nauticalmiles: 1 / 1852,
+    radians: 1 / exports.earthRadius,
+    yards: 1 / 1.0936,
+};
+/**
+ * Area of measurement factors based on 1 square meter.
+ *
+ * @memberof helpers
+ * @type {Object}
+ */
+exports.areaFactors = {
+    acres: 0.000247105,
     centimeters: 10000,
     centimetres: 10000,
+    feet: 10.763910417,
+    hectares: 0.0001,
+    inches: 1550.003100006,
     kilometers: 0.000001,
     kilometres: 0.000001,
-    acres: 0.000247105,
+    meters: 1,
+    metres: 1,
     miles: 3.86e-7,
+    millimeters: 1000000,
+    millimetres: 1000000,
     yards: 1.195990046,
-    feet: 10.763910417,
-    inches: 1550.003100006
 };
-
 /**
  * Wraps a GeoJSON {@link Geometry} in a GeoJSON {@link Feature}.
  *
@@ -298,73 +311,55 @@ var areaFactors = {
  *
  * //=feature
  */
-function feature(geometry, properties, options) {
-    // Optional Parameters
-    options = options || {};
-    if (!isObject(options)) throw new Error('options is invalid');
-    var bbox = options.bbox;
-    var id = options.id;
-
-    // Validation
-    if (geometry === undefined) throw new Error('geometry is required');
-    if (properties && properties.constructor !== Object) throw new Error('properties must be an Object');
-    if (bbox) validateBBox(bbox);
-    if (id) validateId(id);
-
-    // Main
-    var feat = {type: 'Feature'};
-    if (id) feat.id = id;
-    if (bbox) feat.bbox = bbox;
+function feature(geom, properties, options) {
+    if (options === void 0) { options = {}; }
+    var feat = { type: "Feature" };
+    if (options.id === 0 || options.id) {
+        feat.id = options.id;
+    }
+    if (options.bbox) {
+        feat.bbox = options.bbox;
+    }
     feat.properties = properties || {};
-    feat.geometry = geometry;
+    feat.geometry = geom;
     return feat;
 }
-
+exports.feature = feature;
 /**
  * Creates a GeoJSON {@link Geometry} from a Geometry string type & coordinates.
  * For GeometryCollection type use `helpers.geometryCollection`
  *
  * @name geometry
  * @param {string} type Geometry Type
- * @param {Array<number>} coordinates Coordinates
+ * @param {Array<any>} coordinates Coordinates
  * @param {Object} [options={}] Optional Parameters
- * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the Geometry
  * @returns {Geometry} a GeoJSON Geometry
  * @example
- * var type = 'Point';
+ * var type = "Point";
  * var coordinates = [110, 50];
- *
  * var geometry = turf.geometry(type, coordinates);
- *
- * //=geometry
+ * // => geometry
  */
-function geometry(type, coordinates, options) {
-    // Optional Parameters
-    options = options || {};
-    if (!isObject(options)) throw new Error('options is invalid');
-    var bbox = options.bbox;
-
-    // Validation
-    if (!type) throw new Error('type is required');
-    if (!coordinates) throw new Error('coordinates is required');
-    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
-    if (bbox) validateBBox(bbox);
-
-    // Main
-    var geom;
+function geometry(type, coordinates, _options) {
+    if (_options === void 0) { _options = {}; }
     switch (type) {
-    case 'Point': geom = point(coordinates).geometry; break;
-    case 'LineString': geom = lineString(coordinates).geometry; break;
-    case 'Polygon': geom = polygon(coordinates).geometry; break;
-    case 'MultiPoint': geom = multiPoint(coordinates).geometry; break;
-    case 'MultiLineString': geom = multiLineString(coordinates).geometry; break;
-    case 'MultiPolygon': geom = multiPolygon(coordinates).geometry; break;
-    default: throw new Error(type + ' is invalid');
+        case "Point":
+            return point(coordinates).geometry;
+        case "LineString":
+            return lineString(coordinates).geometry;
+        case "Polygon":
+            return polygon(coordinates).geometry;
+        case "MultiPoint":
+            return multiPoint(coordinates).geometry;
+        case "MultiLineString":
+            return multiLineString(coordinates).geometry;
+        case "MultiPolygon":
+            return multiPolygon(coordinates).geometry;
+        default:
+            throw new Error(type + " is invalid");
     }
-    if (bbox) geom.bbox = bbox;
-    return geom;
 }
-
+exports.geometry = geometry;
 /**
  * Creates a {@link Point} {@link Feature} from a Position.
  *
@@ -381,17 +376,26 @@ function geometry(type, coordinates, options) {
  * //=point
  */
 function point(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
-    if (coordinates.length < 2) throw new Error('coordinates must be at least 2 numbers long');
-    if (!isNumber(coordinates[0]) || !isNumber(coordinates[1])) throw new Error('coordinates must contain numbers');
-
-    return feature({
-        type: 'Point',
-        coordinates: coordinates
-    }, properties, options);
+    if (options === void 0) { options = {}; }
+    if (!coordinates) {
+        throw new Error("coordinates is required");
+    }
+    if (!Array.isArray(coordinates)) {
+        throw new Error("coordinates must be an Array");
+    }
+    if (coordinates.length < 2) {
+        throw new Error("coordinates must be at least 2 numbers long");
+    }
+    if (!isNumber(coordinates[0]) || !isNumber(coordinates[1])) {
+        throw new Error("coordinates must contain numbers");
+    }
+    var geom = {
+        type: "Point",
+        coordinates: coordinates,
+    };
+    return feature(geom, properties, options);
 }
-
+exports.point = point;
 /**
  * Creates a {@link Point} {@link FeatureCollection} from an Array of Point coordinates.
  *
@@ -399,7 +403,8 @@ function point(coordinates, properties, options) {
  * @param {Array<Array<number>>} coordinates an array of Points
  * @param {Object} [properties={}] Translate these properties to each Feature
  * @param {Object} [options={}] Optional Parameters
- * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the FeatureCollection
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north]
+ * associated with the FeatureCollection
  * @param {string|number} [options.id] Identifier associated with the FeatureCollection
  * @returns {FeatureCollection<Point>} Point Feature
  * @example
@@ -412,14 +417,12 @@ function point(coordinates, properties, options) {
  * //=points
  */
 function points(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
-
+    if (options === void 0) { options = {}; }
     return featureCollection(coordinates.map(function (coords) {
         return point(coords, properties);
     }), options);
 }
-
+exports.points = points;
 /**
  * Creates a {@link Polygon} {@link Feature} from an Array of LinearRings.
  *
@@ -436,28 +439,26 @@ function points(coordinates, properties, options) {
  * //=polygon
  */
 function polygon(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-
-    for (var i = 0; i < coordinates.length; i++) {
-        var ring = coordinates[i];
+    if (options === void 0) { options = {}; }
+    for (var _i = 0, coordinates_1 = coordinates; _i < coordinates_1.length; _i++) {
+        var ring = coordinates_1[_i];
         if (ring.length < 4) {
-            throw new Error('Each LinearRing of a Polygon must have 4 or more Positions.');
+            throw new Error("Each LinearRing of a Polygon must have 4 or more Positions.");
         }
         for (var j = 0; j < ring[ring.length - 1].length; j++) {
             // Check if first point of Polygon contains two numbers
-            if (i === 0 && j === 0 && !isNumber(ring[0][0]) || !isNumber(ring[0][1])) throw new Error('coordinates must contain numbers');
             if (ring[ring.length - 1][j] !== ring[0][j]) {
-                throw new Error('First and last Position are not equivalent.');
+                throw new Error("First and last Position are not equivalent.");
             }
         }
     }
-
-    return feature({
-        type: 'Polygon',
-        coordinates: coordinates
-    }, properties, options);
+    var geom = {
+        type: "Polygon",
+        coordinates: coordinates,
+    };
+    return feature(geom, properties, options);
 }
-
+exports.polygon = polygon;
 /**
  * Creates a {@link Polygon} {@link FeatureCollection} from an Array of Polygon coordinates.
  *
@@ -477,14 +478,12 @@ function polygon(coordinates, properties, options) {
  * //=polygons
  */
 function polygons(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
-
+    if (options === void 0) { options = {}; }
     return featureCollection(coordinates.map(function (coords) {
         return polygon(coords, properties);
     }), options);
 }
-
+exports.polygons = polygons;
 /**
  * Creates a {@link LineString} {@link Feature} from an Array of Positions.
  *
@@ -503,25 +502,26 @@ function polygons(coordinates, properties, options) {
  * //=linestring2
  */
 function lineString(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-    if (coordinates.length < 2) throw new Error('coordinates must be an array of two or more positions');
-    // Check if first point of LineString contains two numbers
-    if (!isNumber(coordinates[0][1]) || !isNumber(coordinates[0][1])) throw new Error('coordinates must contain numbers');
-
-    return feature({
-        type: 'LineString',
-        coordinates: coordinates
-    }, properties, options);
+    if (options === void 0) { options = {}; }
+    if (coordinates.length < 2) {
+        throw new Error("coordinates must be an array of two or more positions");
+    }
+    var geom = {
+        type: "LineString",
+        coordinates: coordinates,
+    };
+    return feature(geom, properties, options);
 }
-
+exports.lineString = lineString;
 /**
  * Creates a {@link LineString} {@link FeatureCollection} from an Array of LineString coordinates.
  *
  * @name lineStrings
- * @param {Array<Array<number>>} coordinates an array of LinearRings
+ * @param {Array<Array<Array<number>>>} coordinates an array of LinearRings
  * @param {Object} [properties={}] an Object of key-value pairs to add as properties
  * @param {Object} [options={}] Optional Parameters
- * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north] associated with the FeatureCollection
+ * @param {Array<number>} [options.bbox] Bounding Box Array [west, south, east, north]
+ * associated with the FeatureCollection
  * @param {string|number} [options.id] Identifier associated with the FeatureCollection
  * @returns {FeatureCollection<LineString>} LineString FeatureCollection
  * @example
@@ -533,14 +533,12 @@ function lineString(coordinates, properties, options) {
  * //=linestrings
  */
 function lineStrings(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-    if (!Array.isArray(coordinates)) throw new Error('coordinates must be an Array');
-
+    if (options === void 0) { options = {}; }
     return featureCollection(coordinates.map(function (coords) {
         return lineString(coords, properties);
     }), options);
 }
-
+exports.lineStrings = lineStrings;
 /**
  * Takes one or more {@link Feature|Features} and creates a {@link FeatureCollection}.
  *
@@ -564,26 +562,18 @@ function lineStrings(coordinates, properties, options) {
  * //=collection
  */
 function featureCollection(features, options) {
-    // Optional Parameters
-    options = options || {};
-    if (!isObject(options)) throw new Error('options is invalid');
-    var bbox = options.bbox;
-    var id = options.id;
-
-    // Validation
-    if (!features) throw new Error('No features passed');
-    if (!Array.isArray(features)) throw new Error('features must be an Array');
-    if (bbox) validateBBox(bbox);
-    if (id) validateId(id);
-
-    // Main
-    var fc = {type: 'FeatureCollection'};
-    if (id) fc.id = id;
-    if (bbox) fc.bbox = bbox;
+    if (options === void 0) { options = {}; }
+    var fc = { type: "FeatureCollection" };
+    if (options.id) {
+        fc.id = options.id;
+    }
+    if (options.bbox) {
+        fc.bbox = options.bbox;
+    }
     fc.features = features;
     return fc;
 }
-
+exports.featureCollection = featureCollection;
 /**
  * Creates a {@link Feature<MultiLineString>} based on a
  * coordinate array. Properties can be added optionally.
@@ -602,14 +592,14 @@ function featureCollection(features, options) {
  * //=multiLine
  */
 function multiLineString(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-
-    return feature({
-        type: 'MultiLineString',
-        coordinates: coordinates
-    }, properties, options);
+    if (options === void 0) { options = {}; }
+    var geom = {
+        type: "MultiLineString",
+        coordinates: coordinates,
+    };
+    return feature(geom, properties, options);
 }
-
+exports.multiLineString = multiLineString;
 /**
  * Creates a {@link Feature<MultiPoint>} based on a
  * coordinate array. Properties can be added optionally.
@@ -628,14 +618,14 @@ function multiLineString(coordinates, properties, options) {
  * //=multiPt
  */
 function multiPoint(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-
-    return feature({
-        type: 'MultiPoint',
-        coordinates: coordinates
-    }, properties, options);
+    if (options === void 0) { options = {}; }
+    var geom = {
+        type: "MultiPoint",
+        coordinates: coordinates,
+    };
+    return feature(geom, properties, options);
 }
-
+exports.multiPoint = multiPoint;
 /**
  * Creates a {@link Feature<MultiPolygon>} based on a
  * coordinate array. Properties can be added optionally.
@@ -655,14 +645,14 @@ function multiPoint(coordinates, properties, options) {
  *
  */
 function multiPolygon(coordinates, properties, options) {
-    if (!coordinates) throw new Error('coordinates is required');
-
-    return feature({
-        type: 'MultiPolygon',
-        coordinates: coordinates
-    }, properties, options);
+    if (options === void 0) { options = {}; }
+    var geom = {
+        type: "MultiPolygon",
+        coordinates: coordinates,
+    };
+    return feature(geom, properties, options);
 }
-
+exports.multiPolygon = multiPolygon;
 /**
  * Creates a {@link Feature<GeometryCollection>} based on a
  * coordinate array. Properties can be added optionally.
@@ -675,28 +665,21 @@ function multiPolygon(coordinates, properties, options) {
  * @param {string|number} [options.id] Identifier associated with the Feature
  * @returns {Feature<GeometryCollection>} a GeoJSON GeometryCollection Feature
  * @example
- * var pt = {
- *     "type": "Point",
- *       "coordinates": [100, 0]
- *     };
- * var line = {
- *     "type": "LineString",
- *     "coordinates": [ [101, 0], [102, 1] ]
- *   };
+ * var pt = turf.geometry("Point", [100, 0]);
+ * var line = turf.geometry("LineString", [[101, 0], [102, 1]]);
  * var collection = turf.geometryCollection([pt, line]);
  *
- * //=collection
+ * // => collection
  */
 function geometryCollection(geometries, properties, options) {
-    if (!geometries) throw new Error('geometries is required');
-    if (!Array.isArray(geometries)) throw new Error('geometries must be an Array');
-
-    return feature({
-        type: 'GeometryCollection',
-        geometries: geometries
-    }, properties, options);
+    if (options === void 0) { options = {}; }
+    var geom = {
+        type: "GeometryCollection",
+        geometries: geometries,
+    };
+    return feature(geom, properties, options);
 }
-
+exports.geometryCollection = geometryCollection;
 /**
  * Round number to precision
  *
@@ -711,61 +694,66 @@ function geometryCollection(geometries, properties, options) {
  * //=120.43
  */
 function round(num, precision) {
-    if (num === undefined || num === null || isNaN(num)) throw new Error('num is required');
-    if (precision && !(precision >= 0)) throw new Error('precision must be a positive number');
+    if (precision === void 0) { precision = 0; }
+    if (precision && !(precision >= 0)) {
+        throw new Error("precision must be a positive number");
+    }
     var multiplier = Math.pow(10, precision || 0);
     return Math.round(num * multiplier) / multiplier;
 }
-
+exports.round = round;
 /**
  * Convert a distance measurement (assuming a spherical Earth) from radians to a more friendly unit.
  * Valid units: miles, nauticalmiles, inches, yards, meters, metres, kilometers, centimeters, feet
  *
  * @name radiansToLength
  * @param {number} radians in radians across the sphere
- * @param {string} [units='kilometers'] can be degrees, radians, miles, or kilometers inches, yards, metres, meters, kilometres, kilometers.
+ * @param {string} [units="kilometers"] can be degrees, radians, miles, inches, yards, metres,
+ * meters, kilometres, kilometers.
  * @returns {number} distance
  */
 function radiansToLength(radians, units) {
-    if (radians === undefined || radians === null) throw new Error('radians is required');
-
-    if (units && typeof units !== 'string') throw new Error('units must be a string');
-    var factor = factors[units || 'kilometers'];
-    if (!factor) throw new Error(units + ' units is invalid');
+    if (units === void 0) { units = "kilometers"; }
+    var factor = exports.factors[units];
+    if (!factor) {
+        throw new Error(units + " units is invalid");
+    }
     return radians * factor;
 }
-
+exports.radiansToLength = radiansToLength;
 /**
  * Convert a distance measurement (assuming a spherical Earth) from a real-world unit into radians
  * Valid units: miles, nauticalmiles, inches, yards, meters, metres, kilometers, centimeters, feet
  *
  * @name lengthToRadians
  * @param {number} distance in real units
- * @param {string} [units='kilometers'] can be degrees, radians, miles, or kilometers inches, yards, metres, meters, kilometres, kilometers.
+ * @param {string} [units="kilometers"] can be degrees, radians, miles, inches, yards, metres,
+ * meters, kilometres, kilometers.
  * @returns {number} radians
  */
 function lengthToRadians(distance, units) {
-    if (distance === undefined || distance === null) throw new Error('distance is required');
-
-    if (units && typeof units !== 'string') throw new Error('units must be a string');
-    var factor = factors[units || 'kilometers'];
-    if (!factor) throw new Error(units + ' units is invalid');
+    if (units === void 0) { units = "kilometers"; }
+    var factor = exports.factors[units];
+    if (!factor) {
+        throw new Error(units + " units is invalid");
+    }
     return distance / factor;
 }
-
+exports.lengthToRadians = lengthToRadians;
 /**
  * Convert a distance measurement (assuming a spherical Earth) from a real-world unit into degrees
  * Valid units: miles, nauticalmiles, inches, yards, meters, metres, centimeters, kilometres, feet
  *
  * @name lengthToDegrees
  * @param {number} distance in real units
- * @param {string} [units='kilometers'] can be degrees, radians, miles, or kilometers inches, yards, metres, meters, kilometres, kilometers.
+ * @param {string} [units="kilometers"] can be degrees, radians, miles, inches, yards, metres,
+ * meters, kilometres, kilometers.
  * @returns {number} degrees
  */
 function lengthToDegrees(distance, units) {
     return radiansToDegrees(lengthToRadians(distance, units));
 }
-
+exports.lengthToDegrees = lengthToDegrees;
 /**
  * Converts any bearing angle from the north line direction (positive clockwise)
  * and returns an angle between 0-360 degrees (positive clockwise), 0 being the north line
@@ -775,13 +763,13 @@ function lengthToDegrees(distance, units) {
  * @returns {number} angle between 0 and 360 degrees
  */
 function bearingToAzimuth(bearing) {
-    if (bearing === null || bearing === undefined) throw new Error('bearing is required');
-
     var angle = bearing % 360;
-    if (angle < 0) angle += 360;
+    if (angle < 0) {
+        angle += 360;
+    }
     return angle;
 }
-
+exports.bearingToAzimuth = bearingToAzimuth;
 /**
  * Converts an angle in radians to degrees
  *
@@ -790,12 +778,10 @@ function bearingToAzimuth(bearing) {
  * @returns {number} degrees between 0 and 360 degrees
  */
 function radiansToDegrees(radians) {
-    if (radians === null || radians === undefined) throw new Error('radians is required');
-
     var degrees = radians % (2 * Math.PI);
-    return degrees * 180 / Math.PI;
+    return (degrees * 180) / Math.PI;
 }
-
+exports.radiansToDegrees = radiansToDegrees;
 /**
  * Converts an angle in degrees to radians
  *
@@ -804,49 +790,53 @@ function radiansToDegrees(radians) {
  * @returns {number} angle in radians
  */
 function degreesToRadians(degrees) {
-    if (degrees === null || degrees === undefined) throw new Error('degrees is required');
-
     var radians = degrees % 360;
-    return radians * Math.PI / 180;
+    return (radians * Math.PI) / 180;
 }
-
+exports.degreesToRadians = degreesToRadians;
 /**
  * Converts a length to the requested unit.
  * Valid units: miles, nauticalmiles, inches, yards, meters, metres, kilometers, centimeters, feet
  *
  * @param {number} length to be converted
- * @param {string} originalUnit of the length
- * @param {string} [finalUnit='kilometers'] returned unit
+ * @param {Units} [originalUnit="kilometers"] of the length
+ * @param {Units} [finalUnit="kilometers"] returned unit
  * @returns {number} the converted length
  */
 function convertLength(length, originalUnit, finalUnit) {
-    if (length === null || length === undefined) throw new Error('length is required');
-    if (!(length >= 0)) throw new Error('length must be a positive number');
-
-    return radiansToLength(lengthToRadians(length, originalUnit), finalUnit || 'kilometers');
+    if (originalUnit === void 0) { originalUnit = "kilometers"; }
+    if (finalUnit === void 0) { finalUnit = "kilometers"; }
+    if (!(length >= 0)) {
+        throw new Error("length must be a positive number");
+    }
+    return radiansToLength(lengthToRadians(length, originalUnit), finalUnit);
 }
-
+exports.convertLength = convertLength;
 /**
  * Converts a area to the requested unit.
- * Valid units: kilometers, kilometres, meters, metres, centimetres, millimeters, acres, miles, yards, feet, inches
+ * Valid units: kilometers, kilometres, meters, metres, centimetres, millimeters, acres, miles, yards, feet, inches, hectares
  * @param {number} area to be converted
- * @param {string} [originalUnit='meters'] of the distance
- * @param {string} [finalUnit='kilometers'] returned unit
- * @returns {number} the converted distance
+ * @param {Units} [originalUnit="meters"] of the distance
+ * @param {Units} [finalUnit="kilometers"] returned unit
+ * @returns {number} the converted area
  */
 function convertArea(area, originalUnit, finalUnit) {
-    if (area === null || area === undefined) throw new Error('area is required');
-    if (!(area >= 0)) throw new Error('area must be a positive number');
-
-    var startFactor = areaFactors[originalUnit || 'meters'];
-    if (!startFactor) throw new Error('invalid original units');
-
-    var finalFactor = areaFactors[finalUnit || 'kilometers'];
-    if (!finalFactor) throw new Error('invalid final units');
-
+    if (originalUnit === void 0) { originalUnit = "meters"; }
+    if (finalUnit === void 0) { finalUnit = "kilometers"; }
+    if (!(area >= 0)) {
+        throw new Error("area must be a positive number");
+    }
+    var startFactor = exports.areaFactors[originalUnit];
+    if (!startFactor) {
+        throw new Error("invalid original units");
+    }
+    var finalFactor = exports.areaFactors[finalUnit];
+    if (!finalFactor) {
+        throw new Error("invalid final units");
+    }
     return (area / startFactor) * finalFactor;
 }
-
+exports.convertArea = convertArea;
 /**
  * isNumber
  *
@@ -861,7 +851,7 @@ function convertArea(area, originalUnit, finalUnit) {
 function isNumber(num) {
     return !isNaN(num) && num !== null && !Array.isArray(num);
 }
-
+exports.isNumber = isNumber;
 /**
  * isObject
  *
@@ -874,9 +864,9 @@ function isNumber(num) {
  * //=false
  */
 function isObject(input) {
-    return (!!input) && (input.constructor === Object);
+    return !!input && input.constructor === Object;
 }
-
+exports.isObject = isObject;
 /**
  * Validate BBox
  *
@@ -899,14 +889,22 @@ function isObject(input) {
  * //=Error
  */
 function validateBBox(bbox) {
-    if (!bbox) throw new Error('bbox is required');
-    if (!Array.isArray(bbox)) throw new Error('bbox must be an Array');
-    if (bbox.length !== 4 && bbox.length !== 6) throw new Error('bbox must be an Array of 4 or 6 numbers');
+    if (!bbox) {
+        throw new Error("bbox is required");
+    }
+    if (!Array.isArray(bbox)) {
+        throw new Error("bbox must be an Array");
+    }
+    if (bbox.length !== 4 && bbox.length !== 6) {
+        throw new Error("bbox must be an Array of 4 or 6 numbers");
+    }
     bbox.forEach(function (num) {
-        if (!isNumber(num)) throw new Error('bbox must only contain numbers');
+        if (!isNumber(num)) {
+            throw new Error("bbox must only contain numbers");
+        }
     });
 }
-
+exports.validateBBox = validateBBox;
 /**
  * Validate Id
  *
@@ -929,76 +927,14 @@ function validateBBox(bbox) {
  * //=Error
  */
 function validateId(id) {
-    if (!id) throw new Error('id is required');
-    if (['string', 'number'].indexOf(typeof id) === -1) throw new Error('id must be a number or a string');
+    if (!id) {
+        throw new Error("id is required");
+    }
+    if (["string", "number"].indexOf(typeof id) === -1) {
+        throw new Error("id must be a number or a string");
+    }
 }
-
-// Deprecated methods
-function radians2degrees() {
-    throw new Error('method has been renamed to `radiansToDegrees`');
-}
-
-function degrees2radians() {
-    throw new Error('method has been renamed to `degreesToRadians`');
-}
-
-function distanceToDegrees() {
-    throw new Error('method has been renamed to `lengthToDegrees`');
-}
-
-function distanceToRadians() {
-    throw new Error('method has been renamed to `lengthToRadians`');
-}
-
-function radiansToDistance() {
-    throw new Error('method has been renamed to `radiansToLength`');
-}
-
-function bearingToAngle() {
-    throw new Error('method has been renamed to `bearingToAzimuth`');
-}
-
-function convertDistance() {
-    throw new Error('method has been renamed to `convertLength`');
-}
-
-exports.earthRadius = earthRadius;
-exports.factors = factors;
-exports.unitsFactors = unitsFactors;
-exports.areaFactors = areaFactors;
-exports.feature = feature;
-exports.geometry = geometry;
-exports.point = point;
-exports.points = points;
-exports.polygon = polygon;
-exports.polygons = polygons;
-exports.lineString = lineString;
-exports.lineStrings = lineStrings;
-exports.featureCollection = featureCollection;
-exports.multiLineString = multiLineString;
-exports.multiPoint = multiPoint;
-exports.multiPolygon = multiPolygon;
-exports.geometryCollection = geometryCollection;
-exports.round = round;
-exports.radiansToLength = radiansToLength;
-exports.lengthToRadians = lengthToRadians;
-exports.lengthToDegrees = lengthToDegrees;
-exports.bearingToAzimuth = bearingToAzimuth;
-exports.radiansToDegrees = radiansToDegrees;
-exports.degreesToRadians = degreesToRadians;
-exports.convertLength = convertLength;
-exports.convertArea = convertArea;
-exports.isNumber = isNumber;
-exports.isObject = isObject;
-exports.validateBBox = validateBBox;
 exports.validateId = validateId;
-exports.radians2degrees = radians2degrees;
-exports.degrees2radians = degrees2radians;
-exports.distanceToDegrees = distanceToDegrees;
-exports.distanceToRadians = distanceToRadians;
-exports.radiansToDistance = radiansToDistance;
-exports.bearingToAngle = bearingToAngle;
-exports.convertDistance = convertDistance;
 
 },{}],5:[function(require,module,exports){
 'use strict';
@@ -1041,100 +977,157 @@ var helpers = require('@turf/helpers');
  * });
  */
 function coordEach(geojson, callback, excludeWrapCoord) {
-    // Handles null Geometry -- Skips this GeoJSON
-    if (geojson === null) return;
-    var j, k, l, geometry, stopG, coords,
-        geometryMaybeCollection,
-        wrapShrink = 0,
-        coordIndex = 0,
-        isGeometryCollection,
-        type = geojson.type,
-        isFeatureCollection = type === 'FeatureCollection',
-        isFeature = type === 'Feature',
-        stop = isFeatureCollection ? geojson.features.length : 1;
+  // Handles null Geometry -- Skips this GeoJSON
+  if (geojson === null) return;
+  var j,
+    k,
+    l,
+    geometry,
+    stopG,
+    coords,
+    geometryMaybeCollection,
+    wrapShrink = 0,
+    coordIndex = 0,
+    isGeometryCollection,
+    type = geojson.type,
+    isFeatureCollection = type === "FeatureCollection",
+    isFeature = type === "Feature",
+    stop = isFeatureCollection ? geojson.features.length : 1;
 
-    // This logic may look a little weird. The reason why it is that way
-    // is because it's trying to be fast. GeoJSON supports multiple kinds
-    // of objects at its root: FeatureCollection, Features, Geometries.
-    // This function has the responsibility of handling all of them, and that
-    // means that some of the `for` loops you see below actually just don't apply
-    // to certain inputs. For instance, if you give this just a
-    // Point geometry, then both loops are short-circuited and all we do
-    // is gradually rename the input until it's called 'geometry'.
-    //
-    // This also aims to allocate as few resources as possible: just a
-    // few numbers and booleans, rather than any temporary arrays as would
-    // be required with the normalization approach.
-    for (var featureIndex = 0; featureIndex < stop; featureIndex++) {
-        geometryMaybeCollection = (isFeatureCollection ? geojson.features[featureIndex].geometry :
-            (isFeature ? geojson.geometry : geojson));
-        isGeometryCollection = (geometryMaybeCollection) ? geometryMaybeCollection.type === 'GeometryCollection' : false;
-        stopG = isGeometryCollection ? geometryMaybeCollection.geometries.length : 1;
+  // This logic may look a little weird. The reason why it is that way
+  // is because it's trying to be fast. GeoJSON supports multiple kinds
+  // of objects at its root: FeatureCollection, Features, Geometries.
+  // This function has the responsibility of handling all of them, and that
+  // means that some of the `for` loops you see below actually just don't apply
+  // to certain inputs. For instance, if you give this just a
+  // Point geometry, then both loops are short-circuited and all we do
+  // is gradually rename the input until it's called 'geometry'.
+  //
+  // This also aims to allocate as few resources as possible: just a
+  // few numbers and booleans, rather than any temporary arrays as would
+  // be required with the normalization approach.
+  for (var featureIndex = 0; featureIndex < stop; featureIndex++) {
+    geometryMaybeCollection = isFeatureCollection
+      ? geojson.features[featureIndex].geometry
+      : isFeature
+      ? geojson.geometry
+      : geojson;
+    isGeometryCollection = geometryMaybeCollection
+      ? geometryMaybeCollection.type === "GeometryCollection"
+      : false;
+    stopG = isGeometryCollection
+      ? geometryMaybeCollection.geometries.length
+      : 1;
 
-        for (var geomIndex = 0; geomIndex < stopG; geomIndex++) {
-            var multiFeatureIndex = 0;
-            var geometryIndex = 0;
-            geometry = isGeometryCollection ?
-                geometryMaybeCollection.geometries[geomIndex] : geometryMaybeCollection;
+    for (var geomIndex = 0; geomIndex < stopG; geomIndex++) {
+      var multiFeatureIndex = 0;
+      var geometryIndex = 0;
+      geometry = isGeometryCollection
+        ? geometryMaybeCollection.geometries[geomIndex]
+        : geometryMaybeCollection;
 
-            // Handles null Geometry -- Skips this geometry
-            if (geometry === null) continue;
-            coords = geometry.coordinates;
-            var geomType = geometry.type;
+      // Handles null Geometry -- Skips this geometry
+      if (geometry === null) continue;
+      coords = geometry.coordinates;
+      var geomType = geometry.type;
 
-            wrapShrink = (excludeWrapCoord && (geomType === 'Polygon' || geomType === 'MultiPolygon')) ? 1 : 0;
+      wrapShrink =
+        excludeWrapCoord &&
+        (geomType === "Polygon" || geomType === "MultiPolygon")
+          ? 1
+          : 0;
 
-            switch (geomType) {
-            case null:
-                break;
-            case 'Point':
-                if (callback(coords, coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
-                coordIndex++;
-                multiFeatureIndex++;
-                break;
-            case 'LineString':
-            case 'MultiPoint':
-                for (j = 0; j < coords.length; j++) {
-                    if (callback(coords[j], coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
-                    coordIndex++;
-                    if (geomType === 'MultiPoint') multiFeatureIndex++;
-                }
-                if (geomType === 'LineString') multiFeatureIndex++;
-                break;
-            case 'Polygon':
-            case 'MultiLineString':
-                for (j = 0; j < coords.length; j++) {
-                    for (k = 0; k < coords[j].length - wrapShrink; k++) {
-                        if (callback(coords[j][k], coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
-                        coordIndex++;
-                    }
-                    if (geomType === 'MultiLineString') multiFeatureIndex++;
-                    if (geomType === 'Polygon') geometryIndex++;
-                }
-                if (geomType === 'Polygon') multiFeatureIndex++;
-                break;
-            case 'MultiPolygon':
-                for (j = 0; j < coords.length; j++) {
-                    if (geomType === 'MultiPolygon') geometryIndex = 0;
-                    for (k = 0; k < coords[j].length; k++) {
-                        for (l = 0; l < coords[j][k].length - wrapShrink; l++) {
-                            if (callback(coords[j][k][l], coordIndex, featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
-                            coordIndex++;
-                        }
-                        geometryIndex++;
-                    }
-                    multiFeatureIndex++;
-                }
-                break;
-            case 'GeometryCollection':
-                for (j = 0; j < geometry.geometries.length; j++)
-                    if (coordEach(geometry.geometries[j], callback, excludeWrapCoord) === false) return false;
-                break;
-            default:
-                throw new Error('Unknown Geometry Type');
+      switch (geomType) {
+        case null:
+          break;
+        case "Point":
+          if (
+            callback(
+              coords,
+              coordIndex,
+              featureIndex,
+              multiFeatureIndex,
+              geometryIndex
+            ) === false
+          )
+            return false;
+          coordIndex++;
+          multiFeatureIndex++;
+          break;
+        case "LineString":
+        case "MultiPoint":
+          for (j = 0; j < coords.length; j++) {
+            if (
+              callback(
+                coords[j],
+                coordIndex,
+                featureIndex,
+                multiFeatureIndex,
+                geometryIndex
+              ) === false
+            )
+              return false;
+            coordIndex++;
+            if (geomType === "MultiPoint") multiFeatureIndex++;
+          }
+          if (geomType === "LineString") multiFeatureIndex++;
+          break;
+        case "Polygon":
+        case "MultiLineString":
+          for (j = 0; j < coords.length; j++) {
+            for (k = 0; k < coords[j].length - wrapShrink; k++) {
+              if (
+                callback(
+                  coords[j][k],
+                  coordIndex,
+                  featureIndex,
+                  multiFeatureIndex,
+                  geometryIndex
+                ) === false
+              )
+                return false;
+              coordIndex++;
             }
-        }
+            if (geomType === "MultiLineString") multiFeatureIndex++;
+            if (geomType === "Polygon") geometryIndex++;
+          }
+          if (geomType === "Polygon") multiFeatureIndex++;
+          break;
+        case "MultiPolygon":
+          for (j = 0; j < coords.length; j++) {
+            geometryIndex = 0;
+            for (k = 0; k < coords[j].length; k++) {
+              for (l = 0; l < coords[j][k].length - wrapShrink; l++) {
+                if (
+                  callback(
+                    coords[j][k][l],
+                    coordIndex,
+                    featureIndex,
+                    multiFeatureIndex,
+                    geometryIndex
+                  ) === false
+                )
+                  return false;
+                coordIndex++;
+              }
+              geometryIndex++;
+            }
+            multiFeatureIndex++;
+          }
+          break;
+        case "GeometryCollection":
+          for (j = 0; j < geometry.geometries.length; j++)
+            if (
+              coordEach(geometry.geometries[j], callback, excludeWrapCoord) ===
+              false
+            )
+              return false;
+          break;
+        default:
+          throw new Error("Unknown Geometry Type");
+      }
     }
+  }
 }
 
 /**
@@ -1188,12 +1181,31 @@ function coordEach(geojson, callback, excludeWrapCoord) {
  * });
  */
 function coordReduce(geojson, callback, initialValue, excludeWrapCoord) {
-    var previousValue = initialValue;
-    coordEach(geojson, function (currentCoord, coordIndex, featureIndex, multiFeatureIndex, geometryIndex) {
-        if (coordIndex === 0 && initialValue === undefined) previousValue = currentCoord;
-        else previousValue = callback(previousValue, currentCoord, coordIndex, featureIndex, multiFeatureIndex, geometryIndex);
-    }, excludeWrapCoord);
-    return previousValue;
+  var previousValue = initialValue;
+  coordEach(
+    geojson,
+    function (
+      currentCoord,
+      coordIndex,
+      featureIndex,
+      multiFeatureIndex,
+      geometryIndex
+    ) {
+      if (coordIndex === 0 && initialValue === undefined)
+        previousValue = currentCoord;
+      else
+        previousValue = callback(
+          previousValue,
+          currentCoord,
+          coordIndex,
+          featureIndex,
+          multiFeatureIndex,
+          geometryIndex
+        );
+    },
+    excludeWrapCoord
+  );
+  return previousValue;
 }
 
 /**
@@ -1223,19 +1235,18 @@ function coordReduce(geojson, callback, initialValue, excludeWrapCoord) {
  * });
  */
 function propEach(geojson, callback) {
-    var i;
-    switch (geojson.type) {
-    case 'FeatureCollection':
-        for (i = 0; i < geojson.features.length; i++) {
-            if (callback(geojson.features[i].properties, i) === false) break;
-        }
-        break;
-    case 'Feature':
-        callback(geojson.properties, 0);
-        break;
-    }
+  var i;
+  switch (geojson.type) {
+    case "FeatureCollection":
+      for (i = 0; i < geojson.features.length; i++) {
+        if (callback(geojson.features[i].properties, i) === false) break;
+      }
+      break;
+    case "Feature":
+      callback(geojson.properties, 0);
+      break;
+  }
 }
-
 
 /**
  * Callback for propReduce
@@ -1282,12 +1293,14 @@ function propEach(geojson, callback) {
  * });
  */
 function propReduce(geojson, callback, initialValue) {
-    var previousValue = initialValue;
-    propEach(geojson, function (currentProperties, featureIndex) {
-        if (featureIndex === 0 && initialValue === undefined) previousValue = currentProperties;
-        else previousValue = callback(previousValue, currentProperties, featureIndex);
-    });
-    return previousValue;
+  var previousValue = initialValue;
+  propEach(geojson, function (currentProperties, featureIndex) {
+    if (featureIndex === 0 && initialValue === undefined)
+      previousValue = currentProperties;
+    else
+      previousValue = callback(previousValue, currentProperties, featureIndex);
+  });
+  return previousValue;
 }
 
 /**
@@ -1318,13 +1331,13 @@ function propReduce(geojson, callback, initialValue) {
  * });
  */
 function featureEach(geojson, callback) {
-    if (geojson.type === 'Feature') {
-        callback(geojson, 0);
-    } else if (geojson.type === 'FeatureCollection') {
-        for (var i = 0; i < geojson.features.length; i++) {
-            if (callback(geojson.features[i], i) === false) break;
-        }
+  if (geojson.type === "Feature") {
+    callback(geojson, 0);
+  } else if (geojson.type === "FeatureCollection") {
+    for (var i = 0; i < geojson.features.length; i++) {
+      if (callback(geojson.features[i], i) === false) break;
     }
+  }
 }
 
 /**
@@ -1370,12 +1383,13 @@ function featureEach(geojson, callback) {
  * });
  */
 function featureReduce(geojson, callback, initialValue) {
-    var previousValue = initialValue;
-    featureEach(geojson, function (currentFeature, featureIndex) {
-        if (featureIndex === 0 && initialValue === undefined) previousValue = currentFeature;
-        else previousValue = callback(previousValue, currentFeature, featureIndex);
-    });
-    return previousValue;
+  var previousValue = initialValue;
+  featureEach(geojson, function (currentFeature, featureIndex) {
+    if (featureIndex === 0 && initialValue === undefined)
+      previousValue = currentFeature;
+    else previousValue = callback(previousValue, currentFeature, featureIndex);
+  });
+  return previousValue;
 }
 
 /**
@@ -1394,11 +1408,11 @@ function featureReduce(geojson, callback, initialValue) {
  * //= [[26, 37], [36, 53]]
  */
 function coordAll(geojson) {
-    var coords = [];
-    coordEach(geojson, function (coord) {
-        coords.push(coord);
-    });
-    return coords;
+  var coords = [];
+  coordEach(geojson, function (coord) {
+    coords.push(coord);
+  });
+  return coords;
 }
 
 /**
@@ -1434,74 +1448,121 @@ function coordAll(geojson) {
  * });
  */
 function geomEach(geojson, callback) {
-    var i, j, g, geometry, stopG,
-        geometryMaybeCollection,
-        isGeometryCollection,
-        featureProperties,
-        featureBBox,
-        featureId,
-        featureIndex = 0,
-        isFeatureCollection = geojson.type === 'FeatureCollection',
-        isFeature = geojson.type === 'Feature',
-        stop = isFeatureCollection ? geojson.features.length : 1;
+  var i,
+    j,
+    g,
+    geometry,
+    stopG,
+    geometryMaybeCollection,
+    isGeometryCollection,
+    featureProperties,
+    featureBBox,
+    featureId,
+    featureIndex = 0,
+    isFeatureCollection = geojson.type === "FeatureCollection",
+    isFeature = geojson.type === "Feature",
+    stop = isFeatureCollection ? geojson.features.length : 1;
 
-    // This logic may look a little weird. The reason why it is that way
-    // is because it's trying to be fast. GeoJSON supports multiple kinds
-    // of objects at its root: FeatureCollection, Features, Geometries.
-    // This function has the responsibility of handling all of them, and that
-    // means that some of the `for` loops you see below actually just don't apply
-    // to certain inputs. For instance, if you give this just a
-    // Point geometry, then both loops are short-circuited and all we do
-    // is gradually rename the input until it's called 'geometry'.
-    //
-    // This also aims to allocate as few resources as possible: just a
-    // few numbers and booleans, rather than any temporary arrays as would
-    // be required with the normalization approach.
-    for (i = 0; i < stop; i++) {
+  // This logic may look a little weird. The reason why it is that way
+  // is because it's trying to be fast. GeoJSON supports multiple kinds
+  // of objects at its root: FeatureCollection, Features, Geometries.
+  // This function has the responsibility of handling all of them, and that
+  // means that some of the `for` loops you see below actually just don't apply
+  // to certain inputs. For instance, if you give this just a
+  // Point geometry, then both loops are short-circuited and all we do
+  // is gradually rename the input until it's called 'geometry'.
+  //
+  // This also aims to allocate as few resources as possible: just a
+  // few numbers and booleans, rather than any temporary arrays as would
+  // be required with the normalization approach.
+  for (i = 0; i < stop; i++) {
+    geometryMaybeCollection = isFeatureCollection
+      ? geojson.features[i].geometry
+      : isFeature
+      ? geojson.geometry
+      : geojson;
+    featureProperties = isFeatureCollection
+      ? geojson.features[i].properties
+      : isFeature
+      ? geojson.properties
+      : {};
+    featureBBox = isFeatureCollection
+      ? geojson.features[i].bbox
+      : isFeature
+      ? geojson.bbox
+      : undefined;
+    featureId = isFeatureCollection
+      ? geojson.features[i].id
+      : isFeature
+      ? geojson.id
+      : undefined;
+    isGeometryCollection = geometryMaybeCollection
+      ? geometryMaybeCollection.type === "GeometryCollection"
+      : false;
+    stopG = isGeometryCollection
+      ? geometryMaybeCollection.geometries.length
+      : 1;
 
-        geometryMaybeCollection = (isFeatureCollection ? geojson.features[i].geometry :
-            (isFeature ? geojson.geometry : geojson));
-        featureProperties = (isFeatureCollection ? geojson.features[i].properties :
-            (isFeature ? geojson.properties : {}));
-        featureBBox = (isFeatureCollection ? geojson.features[i].bbox :
-            (isFeature ? geojson.bbox : undefined));
-        featureId = (isFeatureCollection ? geojson.features[i].id :
-            (isFeature ? geojson.id : undefined));
-        isGeometryCollection = (geometryMaybeCollection) ? geometryMaybeCollection.type === 'GeometryCollection' : false;
-        stopG = isGeometryCollection ? geometryMaybeCollection.geometries.length : 1;
+    for (g = 0; g < stopG; g++) {
+      geometry = isGeometryCollection
+        ? geometryMaybeCollection.geometries[g]
+        : geometryMaybeCollection;
 
-        for (g = 0; g < stopG; g++) {
-            geometry = isGeometryCollection ?
-                geometryMaybeCollection.geometries[g] : geometryMaybeCollection;
-
-            // Handle null Geometry
-            if (geometry === null) {
-                if (callback(null, featureIndex, featureProperties, featureBBox, featureId) === false) return false;
-                continue;
-            }
-            switch (geometry.type) {
-            case 'Point':
-            case 'LineString':
-            case 'MultiPoint':
-            case 'Polygon':
-            case 'MultiLineString':
-            case 'MultiPolygon': {
-                if (callback(geometry, featureIndex, featureProperties, featureBBox, featureId) === false) return false;
-                break;
-            }
-            case 'GeometryCollection': {
-                for (j = 0; j < geometry.geometries.length; j++) {
-                    if (callback(geometry.geometries[j], featureIndex, featureProperties, featureBBox, featureId) === false) return false;
-                }
-                break;
-            }
-            default:
-                throw new Error('Unknown Geometry Type');
-            }
+      // Handle null Geometry
+      if (geometry === null) {
+        if (
+          callback(
+            null,
+            featureIndex,
+            featureProperties,
+            featureBBox,
+            featureId
+          ) === false
+        )
+          return false;
+        continue;
+      }
+      switch (geometry.type) {
+        case "Point":
+        case "LineString":
+        case "MultiPoint":
+        case "Polygon":
+        case "MultiLineString":
+        case "MultiPolygon": {
+          if (
+            callback(
+              geometry,
+              featureIndex,
+              featureProperties,
+              featureBBox,
+              featureId
+            ) === false
+          )
+            return false;
+          break;
         }
-        // Only increase `featureIndex` per each feature
-        featureIndex++;
+        case "GeometryCollection": {
+          for (j = 0; j < geometry.geometries.length; j++) {
+            if (
+              callback(
+                geometry.geometries[j],
+                featureIndex,
+                featureProperties,
+                featureBBox,
+                featureId
+              ) === false
+            )
+              return false;
+          }
+          break;
+        }
+        default:
+          throw new Error("Unknown Geometry Type");
+      }
     }
+    // Only increase `featureIndex` per each feature
+    featureIndex++;
+  }
 }
 
 /**
@@ -1553,12 +1614,30 @@ function geomEach(geojson, callback) {
  * });
  */
 function geomReduce(geojson, callback, initialValue) {
-    var previousValue = initialValue;
-    geomEach(geojson, function (currentGeometry, featureIndex, featureProperties, featureBBox, featureId) {
-        if (featureIndex === 0 && initialValue === undefined) previousValue = currentGeometry;
-        else previousValue = callback(previousValue, currentGeometry, featureIndex, featureProperties, featureBBox, featureId);
-    });
-    return previousValue;
+  var previousValue = initialValue;
+  geomEach(
+    geojson,
+    function (
+      currentGeometry,
+      featureIndex,
+      featureProperties,
+      featureBBox,
+      featureId
+    ) {
+      if (featureIndex === 0 && initialValue === undefined)
+        previousValue = currentGeometry;
+      else
+        previousValue = callback(
+          previousValue,
+          currentGeometry,
+          featureIndex,
+          featureProperties,
+          featureBBox,
+          featureId
+        );
+    }
+  );
+  return previousValue;
 }
 
 /**
@@ -1590,42 +1669,57 @@ function geomReduce(geojson, callback, initialValue) {
  * });
  */
 function flattenEach(geojson, callback) {
-    geomEach(geojson, function (geometry, featureIndex, properties, bbox, id) {
-        // Callback for single geometry
-        var type = (geometry === null) ? null : geometry.type;
-        switch (type) {
-        case null:
-        case 'Point':
-        case 'LineString':
-        case 'Polygon':
-            if (callback(helpers.feature(geometry, properties, {bbox: bbox, id: id}), featureIndex, 0) === false) return false;
-            return;
-        }
+  geomEach(geojson, function (geometry, featureIndex, properties, bbox, id) {
+    // Callback for single geometry
+    var type = geometry === null ? null : geometry.type;
+    switch (type) {
+      case null:
+      case "Point":
+      case "LineString":
+      case "Polygon":
+        if (
+          callback(
+            helpers.feature(geometry, properties, { bbox: bbox, id: id }),
+            featureIndex,
+            0
+          ) === false
+        )
+          return false;
+        return;
+    }
 
-        var geomType;
+    var geomType;
 
-        // Callback for multi-geometry
-        switch (type) {
-        case 'MultiPoint':
-            geomType = 'Point';
-            break;
-        case 'MultiLineString':
-            geomType = 'LineString';
-            break;
-        case 'MultiPolygon':
-            geomType = 'Polygon';
-            break;
-        }
+    // Callback for multi-geometry
+    switch (type) {
+      case "MultiPoint":
+        geomType = "Point";
+        break;
+      case "MultiLineString":
+        geomType = "LineString";
+        break;
+      case "MultiPolygon":
+        geomType = "Polygon";
+        break;
+    }
 
-        for (var multiFeatureIndex = 0; multiFeatureIndex < geometry.coordinates.length; multiFeatureIndex++) {
-            var coordinate = geometry.coordinates[multiFeatureIndex];
-            var geom = {
-                type: geomType,
-                coordinates: coordinate
-            };
-            if (callback(helpers.feature(geom, properties), featureIndex, multiFeatureIndex) === false) return false;
-        }
-    });
+    for (
+      var multiFeatureIndex = 0;
+      multiFeatureIndex < geometry.coordinates.length;
+      multiFeatureIndex++
+    ) {
+      var coordinate = geometry.coordinates[multiFeatureIndex];
+      var geom = {
+        type: geomType,
+        coordinates: coordinate,
+      };
+      if (
+        callback(helpers.feature(geom, properties), featureIndex, multiFeatureIndex) ===
+        false
+      )
+        return false;
+    }
+  });
 }
 
 /**
@@ -1673,12 +1767,26 @@ function flattenEach(geojson, callback) {
  * });
  */
 function flattenReduce(geojson, callback, initialValue) {
-    var previousValue = initialValue;
-    flattenEach(geojson, function (currentFeature, featureIndex, multiFeatureIndex) {
-        if (featureIndex === 0 && multiFeatureIndex === 0 && initialValue === undefined) previousValue = currentFeature;
-        else previousValue = callback(previousValue, currentFeature, featureIndex, multiFeatureIndex);
-    });
-    return previousValue;
+  var previousValue = initialValue;
+  flattenEach(
+    geojson,
+    function (currentFeature, featureIndex, multiFeatureIndex) {
+      if (
+        featureIndex === 0 &&
+        multiFeatureIndex === 0 &&
+        initialValue === undefined
+      )
+        previousValue = currentFeature;
+      else
+        previousValue = callback(
+          previousValue,
+          currentFeature,
+          featureIndex,
+          multiFeatureIndex
+        );
+    }
+  );
+  return previousValue;
 }
 
 /**
@@ -1719,29 +1827,65 @@ function flattenReduce(geojson, callback, initialValue) {
  * });
  */
 function segmentEach(geojson, callback) {
-    flattenEach(geojson, function (feature$$1, featureIndex, multiFeatureIndex) {
-        var segmentIndex = 0;
+  flattenEach(geojson, function (feature, featureIndex, multiFeatureIndex) {
+    var segmentIndex = 0;
 
-        // Exclude null Geometries
-        if (!feature$$1.geometry) return;
-        // (Multi)Point geometries do not contain segments therefore they are ignored during this operation.
-        var type = feature$$1.geometry.type;
-        if (type === 'Point' || type === 'MultiPoint') return;
+    // Exclude null Geometries
+    if (!feature.geometry) return;
+    // (Multi)Point geometries do not contain segments therefore they are ignored during this operation.
+    var type = feature.geometry.type;
+    if (type === "Point" || type === "MultiPoint") return;
 
-        // Generate 2-vertex line segments
-        var previousCoords;
-        if (coordEach(feature$$1, function (currentCoord, coordIndex, featureIndexCoord, mutliPartIndexCoord, geometryIndex) {
-            // Simulating a meta.coordReduce() since `reduce` operations cannot be stopped by returning `false`
-            if (previousCoords === undefined) {
-                previousCoords = currentCoord;
-                return;
-            }
-            var currentSegment = helpers.lineString([previousCoords, currentCoord], feature$$1.properties);
-            if (callback(currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex) === false) return false;
-            segmentIndex++;
+    // Generate 2-vertex line segments
+    var previousCoords;
+    var previousFeatureIndex = 0;
+    var previousMultiIndex = 0;
+    var prevGeomIndex = 0;
+    if (
+      coordEach(
+        feature,
+        function (
+          currentCoord,
+          coordIndex,
+          featureIndexCoord,
+          multiPartIndexCoord,
+          geometryIndex
+        ) {
+          // Simulating a meta.coordReduce() since `reduce` operations cannot be stopped by returning `false`
+          if (
+            previousCoords === undefined ||
+            featureIndex > previousFeatureIndex ||
+            multiPartIndexCoord > previousMultiIndex ||
+            geometryIndex > prevGeomIndex
+          ) {
             previousCoords = currentCoord;
-        }) === false) return false;
-    });
+            previousFeatureIndex = featureIndex;
+            previousMultiIndex = multiPartIndexCoord;
+            prevGeomIndex = geometryIndex;
+            segmentIndex = 0;
+            return;
+          }
+          var currentSegment = helpers.lineString(
+            [previousCoords, currentCoord],
+            feature.properties
+          );
+          if (
+            callback(
+              currentSegment,
+              featureIndex,
+              multiFeatureIndex,
+              geometryIndex,
+              segmentIndex
+            ) === false
+          )
+            return false;
+          segmentIndex++;
+          previousCoords = currentCoord;
+        }
+      ) === false
+    )
+      return false;
+  });
 }
 
 /**
@@ -1786,7 +1930,7 @@ function segmentEach(geojson, callback) {
  *   //= featureIndex
  *   //= multiFeatureIndex
  *   //= geometryIndex
- *   //= segmentInex
+ *   //= segmentIndex
  *   return currentSegment
  * });
  *
@@ -1798,14 +1942,32 @@ function segmentEach(geojson, callback) {
  * }, initialValue);
  */
 function segmentReduce(geojson, callback, initialValue) {
-    var previousValue = initialValue;
-    var started = false;
-    segmentEach(geojson, function (currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex) {
-        if (started === false && initialValue === undefined) previousValue = currentSegment;
-        else previousValue = callback(previousValue, currentSegment, featureIndex, multiFeatureIndex, geometryIndex, segmentIndex);
-        started = true;
-    });
-    return previousValue;
+  var previousValue = initialValue;
+  var started = false;
+  segmentEach(
+    geojson,
+    function (
+      currentSegment,
+      featureIndex,
+      multiFeatureIndex,
+      geometryIndex,
+      segmentIndex
+    ) {
+      if (started === false && initialValue === undefined)
+        previousValue = currentSegment;
+      else
+        previousValue = callback(
+          previousValue,
+          currentSegment,
+          featureIndex,
+          multiFeatureIndex,
+          geometryIndex,
+          segmentIndex
+        );
+      started = true;
+    }
+  );
+  return previousValue;
 }
 
 /**
@@ -1839,24 +2001,37 @@ function segmentReduce(geojson, callback, initialValue) {
  * });
  */
 function lineEach(geojson, callback) {
-    // validation
-    if (!geojson) throw new Error('geojson is required');
+  // validation
+  if (!geojson) throw new Error("geojson is required");
 
-    flattenEach(geojson, function (feature$$1, featureIndex, multiFeatureIndex) {
-        if (feature$$1.geometry === null) return;
-        var type = feature$$1.geometry.type;
-        var coords = feature$$1.geometry.coordinates;
-        switch (type) {
-        case 'LineString':
-            if (callback(feature$$1, featureIndex, multiFeatureIndex, 0, 0) === false) return false;
-            break;
-        case 'Polygon':
-            for (var geometryIndex = 0; geometryIndex < coords.length; geometryIndex++) {
-                if (callback(helpers.lineString(coords[geometryIndex], feature$$1.properties), featureIndex, multiFeatureIndex, geometryIndex) === false) return false;
-            }
-            break;
+  flattenEach(geojson, function (feature, featureIndex, multiFeatureIndex) {
+    if (feature.geometry === null) return;
+    var type = feature.geometry.type;
+    var coords = feature.geometry.coordinates;
+    switch (type) {
+      case "LineString":
+        if (callback(feature, featureIndex, multiFeatureIndex, 0, 0) === false)
+          return false;
+        break;
+      case "Polygon":
+        for (
+          var geometryIndex = 0;
+          geometryIndex < coords.length;
+          geometryIndex++
+        ) {
+          if (
+            callback(
+              helpers.lineString(coords[geometryIndex], feature.properties),
+              featureIndex,
+              multiFeatureIndex,
+              geometryIndex
+            ) === false
+          )
+            return false;
         }
-    });
+        break;
+    }
+  });
 }
 
 /**
@@ -1906,12 +2081,23 @@ function lineEach(geojson, callback) {
  * });
  */
 function lineReduce(geojson, callback, initialValue) {
-    var previousValue = initialValue;
-    lineEach(geojson, function (currentLine, featureIndex, multiFeatureIndex, geometryIndex) {
-        if (featureIndex === 0 && initialValue === undefined) previousValue = currentLine;
-        else previousValue = callback(previousValue, currentLine, featureIndex, multiFeatureIndex, geometryIndex);
-    });
-    return previousValue;
+  var previousValue = initialValue;
+  lineEach(
+    geojson,
+    function (currentLine, featureIndex, multiFeatureIndex, geometryIndex) {
+      if (featureIndex === 0 && initialValue === undefined)
+        previousValue = currentLine;
+      else
+        previousValue = callback(
+          previousValue,
+          currentLine,
+          featureIndex,
+          multiFeatureIndex,
+          geometryIndex
+        );
+    }
+  );
+  return previousValue;
 }
 
 /**
@@ -1949,66 +2135,99 @@ function lineReduce(geojson, callback, initialValue) {
  * // => Feature<LineString<[[-50, -30], [-30, -40]]>>
  */
 function findSegment(geojson, options) {
-    // Optional Parameters
-    options = options || {};
-    if (!helpers.isObject(options)) throw new Error('options is invalid');
-    var featureIndex = options.featureIndex || 0;
-    var multiFeatureIndex = options.multiFeatureIndex || 0;
-    var geometryIndex = options.geometryIndex || 0;
-    var segmentIndex = options.segmentIndex || 0;
+  // Optional Parameters
+  options = options || {};
+  if (!helpers.isObject(options)) throw new Error("options is invalid");
+  var featureIndex = options.featureIndex || 0;
+  var multiFeatureIndex = options.multiFeatureIndex || 0;
+  var geometryIndex = options.geometryIndex || 0;
+  var segmentIndex = options.segmentIndex || 0;
 
-    // Find FeatureIndex
-    var properties = options.properties;
-    var geometry;
+  // Find FeatureIndex
+  var properties = options.properties;
+  var geometry;
 
-    switch (geojson.type) {
-    case 'FeatureCollection':
-        if (featureIndex < 0) featureIndex = geojson.features.length + featureIndex;
-        properties = properties || geojson.features[featureIndex].properties;
-        geometry = geojson.features[featureIndex].geometry;
-        break;
-    case 'Feature':
-        properties = properties || geojson.properties;
-        geometry = geojson.geometry;
-        break;
-    case 'Point':
-    case 'MultiPoint':
-        return null;
-    case 'LineString':
-    case 'Polygon':
-    case 'MultiLineString':
-    case 'MultiPolygon':
-        geometry = geojson;
-        break;
+  switch (geojson.type) {
+    case "FeatureCollection":
+      if (featureIndex < 0)
+        featureIndex = geojson.features.length + featureIndex;
+      properties = properties || geojson.features[featureIndex].properties;
+      geometry = geojson.features[featureIndex].geometry;
+      break;
+    case "Feature":
+      properties = properties || geojson.properties;
+      geometry = geojson.geometry;
+      break;
+    case "Point":
+    case "MultiPoint":
+      return null;
+    case "LineString":
+    case "Polygon":
+    case "MultiLineString":
+    case "MultiPolygon":
+      geometry = geojson;
+      break;
     default:
-        throw new Error('geojson is invalid');
-    }
+      throw new Error("geojson is invalid");
+  }
 
-    // Find SegmentIndex
-    if (geometry === null) return null;
-    var coords = geometry.coordinates;
-    switch (geometry.type) {
-    case 'Point':
-    case 'MultiPoint':
-        return null;
-    case 'LineString':
-        if (segmentIndex < 0) segmentIndex = coords.length + segmentIndex - 1;
-        return helpers.lineString([coords[segmentIndex], coords[segmentIndex + 1]], properties, options);
-    case 'Polygon':
-        if (geometryIndex < 0) geometryIndex = coords.length + geometryIndex;
-        if (segmentIndex < 0) segmentIndex = coords[geometryIndex].length + segmentIndex - 1;
-        return helpers.lineString([coords[geometryIndex][segmentIndex], coords[geometryIndex][segmentIndex + 1]], properties, options);
-    case 'MultiLineString':
-        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
-        if (segmentIndex < 0) segmentIndex = coords[multiFeatureIndex].length + segmentIndex - 1;
-        return helpers.lineString([coords[multiFeatureIndex][segmentIndex], coords[multiFeatureIndex][segmentIndex + 1]], properties, options);
-    case 'MultiPolygon':
-        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
-        if (geometryIndex < 0) geometryIndex = coords[multiFeatureIndex].length + geometryIndex;
-        if (segmentIndex < 0) segmentIndex = coords[multiFeatureIndex][geometryIndex].length - segmentIndex - 1;
-        return helpers.lineString([coords[multiFeatureIndex][geometryIndex][segmentIndex], coords[multiFeatureIndex][geometryIndex][segmentIndex + 1]], properties, options);
-    }
-    throw new Error('geojson is invalid');
+  // Find SegmentIndex
+  if (geometry === null) return null;
+  var coords = geometry.coordinates;
+  switch (geometry.type) {
+    case "Point":
+    case "MultiPoint":
+      return null;
+    case "LineString":
+      if (segmentIndex < 0) segmentIndex = coords.length + segmentIndex - 1;
+      return helpers.lineString(
+        [coords[segmentIndex], coords[segmentIndex + 1]],
+        properties,
+        options
+      );
+    case "Polygon":
+      if (geometryIndex < 0) geometryIndex = coords.length + geometryIndex;
+      if (segmentIndex < 0)
+        segmentIndex = coords[geometryIndex].length + segmentIndex - 1;
+      return helpers.lineString(
+        [
+          coords[geometryIndex][segmentIndex],
+          coords[geometryIndex][segmentIndex + 1],
+        ],
+        properties,
+        options
+      );
+    case "MultiLineString":
+      if (multiFeatureIndex < 0)
+        multiFeatureIndex = coords.length + multiFeatureIndex;
+      if (segmentIndex < 0)
+        segmentIndex = coords[multiFeatureIndex].length + segmentIndex - 1;
+      return helpers.lineString(
+        [
+          coords[multiFeatureIndex][segmentIndex],
+          coords[multiFeatureIndex][segmentIndex + 1],
+        ],
+        properties,
+        options
+      );
+    case "MultiPolygon":
+      if (multiFeatureIndex < 0)
+        multiFeatureIndex = coords.length + multiFeatureIndex;
+      if (geometryIndex < 0)
+        geometryIndex = coords[multiFeatureIndex].length + geometryIndex;
+      if (segmentIndex < 0)
+        segmentIndex =
+          coords[multiFeatureIndex][geometryIndex].length - segmentIndex - 1;
+      return helpers.lineString(
+        [
+          coords[multiFeatureIndex][geometryIndex][segmentIndex],
+          coords[multiFeatureIndex][geometryIndex][segmentIndex + 1],
+        ],
+        properties,
+        options
+      );
+  }
+  throw new Error("geojson is invalid");
 }
 
 /**
@@ -2045,68 +2264,81 @@ function findSegment(geojson, options) {
  * // => Feature<Point<[-30, -40]>>
  */
 function findPoint(geojson, options) {
-    // Optional Parameters
-    options = options || {};
-    if (!helpers.isObject(options)) throw new Error('options is invalid');
-    var featureIndex = options.featureIndex || 0;
-    var multiFeatureIndex = options.multiFeatureIndex || 0;
-    var geometryIndex = options.geometryIndex || 0;
-    var coordIndex = options.coordIndex || 0;
+  // Optional Parameters
+  options = options || {};
+  if (!helpers.isObject(options)) throw new Error("options is invalid");
+  var featureIndex = options.featureIndex || 0;
+  var multiFeatureIndex = options.multiFeatureIndex || 0;
+  var geometryIndex = options.geometryIndex || 0;
+  var coordIndex = options.coordIndex || 0;
 
-    // Find FeatureIndex
-    var properties = options.properties;
-    var geometry;
+  // Find FeatureIndex
+  var properties = options.properties;
+  var geometry;
 
-    switch (geojson.type) {
-    case 'FeatureCollection':
-        if (featureIndex < 0) featureIndex = geojson.features.length + featureIndex;
-        properties = properties || geojson.features[featureIndex].properties;
-        geometry = geojson.features[featureIndex].geometry;
-        break;
-    case 'Feature':
-        properties = properties || geojson.properties;
-        geometry = geojson.geometry;
-        break;
-    case 'Point':
-    case 'MultiPoint':
-        return null;
-    case 'LineString':
-    case 'Polygon':
-    case 'MultiLineString':
-    case 'MultiPolygon':
-        geometry = geojson;
-        break;
+  switch (geojson.type) {
+    case "FeatureCollection":
+      if (featureIndex < 0)
+        featureIndex = geojson.features.length + featureIndex;
+      properties = properties || geojson.features[featureIndex].properties;
+      geometry = geojson.features[featureIndex].geometry;
+      break;
+    case "Feature":
+      properties = properties || geojson.properties;
+      geometry = geojson.geometry;
+      break;
+    case "Point":
+    case "MultiPoint":
+      return null;
+    case "LineString":
+    case "Polygon":
+    case "MultiLineString":
+    case "MultiPolygon":
+      geometry = geojson;
+      break;
     default:
-        throw new Error('geojson is invalid');
-    }
+      throw new Error("geojson is invalid");
+  }
 
-    // Find Coord Index
-    if (geometry === null) return null;
-    var coords = geometry.coordinates;
-    switch (geometry.type) {
-    case 'Point':
-        return helpers.point(coords, properties, options);
-    case 'MultiPoint':
-        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
-        return helpers.point(coords[multiFeatureIndex], properties, options);
-    case 'LineString':
-        if (coordIndex < 0) coordIndex = coords.length + coordIndex;
-        return helpers.point(coords[coordIndex], properties, options);
-    case 'Polygon':
-        if (geometryIndex < 0) geometryIndex = coords.length + geometryIndex;
-        if (coordIndex < 0) coordIndex = coords[geometryIndex].length + coordIndex;
-        return helpers.point(coords[geometryIndex][coordIndex], properties, options);
-    case 'MultiLineString':
-        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
-        if (coordIndex < 0) coordIndex = coords[multiFeatureIndex].length + coordIndex;
-        return helpers.point(coords[multiFeatureIndex][coordIndex], properties, options);
-    case 'MultiPolygon':
-        if (multiFeatureIndex < 0) multiFeatureIndex = coords.length + multiFeatureIndex;
-        if (geometryIndex < 0) geometryIndex = coords[multiFeatureIndex].length + geometryIndex;
-        if (coordIndex < 0) coordIndex = coords[multiFeatureIndex][geometryIndex].length - coordIndex;
-        return helpers.point(coords[multiFeatureIndex][geometryIndex][coordIndex], properties, options);
-    }
-    throw new Error('geojson is invalid');
+  // Find Coord Index
+  if (geometry === null) return null;
+  var coords = geometry.coordinates;
+  switch (geometry.type) {
+    case "Point":
+      return helpers.point(coords, properties, options);
+    case "MultiPoint":
+      if (multiFeatureIndex < 0)
+        multiFeatureIndex = coords.length + multiFeatureIndex;
+      return helpers.point(coords[multiFeatureIndex], properties, options);
+    case "LineString":
+      if (coordIndex < 0) coordIndex = coords.length + coordIndex;
+      return helpers.point(coords[coordIndex], properties, options);
+    case "Polygon":
+      if (geometryIndex < 0) geometryIndex = coords.length + geometryIndex;
+      if (coordIndex < 0)
+        coordIndex = coords[geometryIndex].length + coordIndex;
+      return helpers.point(coords[geometryIndex][coordIndex], properties, options);
+    case "MultiLineString":
+      if (multiFeatureIndex < 0)
+        multiFeatureIndex = coords.length + multiFeatureIndex;
+      if (coordIndex < 0)
+        coordIndex = coords[multiFeatureIndex].length + coordIndex;
+      return helpers.point(coords[multiFeatureIndex][coordIndex], properties, options);
+    case "MultiPolygon":
+      if (multiFeatureIndex < 0)
+        multiFeatureIndex = coords.length + multiFeatureIndex;
+      if (geometryIndex < 0)
+        geometryIndex = coords[multiFeatureIndex].length + geometryIndex;
+      if (coordIndex < 0)
+        coordIndex =
+          coords[multiFeatureIndex][geometryIndex].length - coordIndex;
+      return helpers.point(
+        coords[multiFeatureIndex][geometryIndex][coordIndex],
+        properties,
+        options
+      );
+  }
+  throw new Error("geojson is invalid");
 }
 
 exports.coordEach = coordEach;
@@ -2130,16 +2362,16 @@ exports.findPoint = findPoint;
 },{"@turf/helpers":4}],6:[function(require,module,exports){
 module.exports = require('./lib/axios');
 },{"./lib/axios":8}],7:[function(require,module,exports){
-(function (process){
 'use strict';
 
 var utils = require('./../utils');
 var settle = require('./../core/settle');
+var cookies = require('./../helpers/cookies');
 var buildURL = require('./../helpers/buildURL');
+var buildFullPath = require('../core/buildFullPath');
 var parseHeaders = require('./../helpers/parseHeaders');
 var isURLSameOrigin = require('./../helpers/isURLSameOrigin');
 var createError = require('../core/createError');
-var btoa = (typeof window !== 'undefined' && window.btoa && window.btoa.bind(window)) || require('./../helpers/btoa');
 
 module.exports = function xhrAdapter(config) {
   return new Promise(function dispatchXhrRequest(resolve, reject) {
@@ -2151,38 +2383,23 @@ module.exports = function xhrAdapter(config) {
     }
 
     var request = new XMLHttpRequest();
-    var loadEvent = 'onreadystatechange';
-    var xDomain = false;
-
-    // For IE 8/9 CORS support
-    // Only supports POST and GET calls and doesn't returns the response headers.
-    // DON'T do this for testing b/c XMLHttpRequest is mocked, not XDomainRequest.
-    if (process.env.NODE_ENV !== 'test' &&
-        typeof window !== 'undefined' &&
-        window.XDomainRequest && !('withCredentials' in request) &&
-        !isURLSameOrigin(config.url)) {
-      request = new window.XDomainRequest();
-      loadEvent = 'onload';
-      xDomain = true;
-      request.onprogress = function handleProgress() {};
-      request.ontimeout = function handleTimeout() {};
-    }
 
     // HTTP basic authentication
     if (config.auth) {
       var username = config.auth.username || '';
-      var password = config.auth.password || '';
+      var password = config.auth.password ? unescape(encodeURIComponent(config.auth.password)) : '';
       requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);
     }
 
-    request.open(config.method.toUpperCase(), buildURL(config.url, config.params, config.paramsSerializer), true);
+    var fullPath = buildFullPath(config.baseURL, config.url);
+    request.open(config.method.toUpperCase(), buildURL(fullPath, config.params, config.paramsSerializer), true);
 
     // Set the request timeout in MS
     request.timeout = config.timeout;
 
     // Listen for ready state
-    request[loadEvent] = function handleLoad() {
-      if (!request || (request.readyState !== 4 && !xDomain)) {
+    request.onreadystatechange = function handleLoad() {
+      if (!request || request.readyState !== 4) {
         return;
       }
 
@@ -2199,15 +2416,26 @@ module.exports = function xhrAdapter(config) {
       var responseData = !config.responseType || config.responseType === 'text' ? request.responseText : request.response;
       var response = {
         data: responseData,
-        // IE sends 1223 instead of 204 (https://github.com/axios/axios/issues/201)
-        status: request.status === 1223 ? 204 : request.status,
-        statusText: request.status === 1223 ? 'No Content' : request.statusText,
+        status: request.status,
+        statusText: request.statusText,
         headers: responseHeaders,
         config: config,
         request: request
       };
 
       settle(resolve, reject, response);
+
+      // Clean up request
+      request = null;
+    };
+
+    // Handle browser request cancellation (as opposed to a manual cancellation)
+    request.onabort = function handleAbort() {
+      if (!request) {
+        return;
+      }
+
+      reject(createError('Request aborted', config, 'ECONNABORTED', request));
 
       // Clean up request
       request = null;
@@ -2225,7 +2453,11 @@ module.exports = function xhrAdapter(config) {
 
     // Handle timeout
     request.ontimeout = function handleTimeout() {
-      reject(createError('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED',
+      var timeoutErrorMessage = 'timeout of ' + config.timeout + 'ms exceeded';
+      if (config.timeoutErrorMessage) {
+        timeoutErrorMessage = config.timeoutErrorMessage;
+      }
+      reject(createError(timeoutErrorMessage, config, 'ECONNABORTED',
         request));
 
       // Clean up request
@@ -2236,12 +2468,10 @@ module.exports = function xhrAdapter(config) {
     // This is only done if running in a standard browser environment.
     // Specifically not if we're in a web worker, or react-native.
     if (utils.isStandardBrowserEnv()) {
-      var cookies = require('./../helpers/cookies');
-
       // Add xsrf header
-      var xsrfValue = (config.withCredentials || isURLSameOrigin(config.url)) && config.xsrfCookieName ?
-          cookies.read(config.xsrfCookieName) :
-          undefined;
+      var xsrfValue = (config.withCredentials || isURLSameOrigin(fullPath)) && config.xsrfCookieName ?
+        cookies.read(config.xsrfCookieName) :
+        undefined;
 
       if (xsrfValue) {
         requestHeaders[config.xsrfHeaderName] = xsrfValue;
@@ -2262,8 +2492,8 @@ module.exports = function xhrAdapter(config) {
     }
 
     // Add withCredentials to request if needed
-    if (config.withCredentials) {
-      request.withCredentials = true;
+    if (!utils.isUndefined(config.withCredentials)) {
+      request.withCredentials = !!config.withCredentials;
     }
 
     // Add responseType to request if needed
@@ -2303,7 +2533,7 @@ module.exports = function xhrAdapter(config) {
       });
     }
 
-    if (requestData === undefined) {
+    if (!requestData) {
       requestData = null;
     }
 
@@ -2312,13 +2542,13 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-}).call(this,require('_process'))
-},{"../core/createError":14,"./../core/settle":17,"./../helpers/btoa":21,"./../helpers/buildURL":22,"./../helpers/cookies":24,"./../helpers/isURLSameOrigin":26,"./../helpers/parseHeaders":28,"./../utils":30,"_process":32}],8:[function(require,module,exports){
+},{"../core/buildFullPath":14,"../core/createError":15,"./../core/settle":19,"./../helpers/buildURL":23,"./../helpers/cookies":25,"./../helpers/isURLSameOrigin":28,"./../helpers/parseHeaders":30,"./../utils":32}],8:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
 var bind = require('./helpers/bind');
 var Axios = require('./core/Axios');
+var mergeConfig = require('./core/mergeConfig');
 var defaults = require('./defaults');
 
 /**
@@ -2348,7 +2578,7 @@ axios.Axios = Axios;
 
 // Factory for creating new instances
 axios.create = function create(instanceConfig) {
-  return createInstance(utils.merge(defaults, instanceConfig));
+  return createInstance(mergeConfig(axios.defaults, instanceConfig));
 };
 
 // Expose Cancel & CancelToken
@@ -2362,12 +2592,15 @@ axios.all = function all(promises) {
 };
 axios.spread = require('./helpers/spread');
 
+// Expose isAxiosError
+axios.isAxiosError = require('./helpers/isAxiosError');
+
 module.exports = axios;
 
 // Allow use of default import syntax in TypeScript
 module.exports.default = axios;
 
-},{"./cancel/Cancel":9,"./cancel/CancelToken":10,"./cancel/isCancel":11,"./core/Axios":12,"./defaults":19,"./helpers/bind":20,"./helpers/spread":29,"./utils":30}],9:[function(require,module,exports){
+},{"./cancel/Cancel":9,"./cancel/CancelToken":10,"./cancel/isCancel":11,"./core/Axios":12,"./core/mergeConfig":18,"./defaults":21,"./helpers/bind":22,"./helpers/isAxiosError":27,"./helpers/spread":31,"./utils":32}],9:[function(require,module,exports){
 'use strict';
 
 /**
@@ -2457,10 +2690,11 @@ module.exports = function isCancel(value) {
 },{}],12:[function(require,module,exports){
 'use strict';
 
-var defaults = require('./../defaults');
 var utils = require('./../utils');
+var buildURL = require('../helpers/buildURL');
 var InterceptorManager = require('./InterceptorManager');
 var dispatchRequest = require('./dispatchRequest');
+var mergeConfig = require('./mergeConfig');
 
 /**
  * Create a new instance of Axios
@@ -2484,13 +2718,22 @@ Axios.prototype.request = function request(config) {
   /*eslint no-param-reassign:0*/
   // Allow for axios('example/url'[, config]) a la fetch API
   if (typeof config === 'string') {
-    config = utils.merge({
-      url: arguments[0]
-    }, arguments[1]);
+    config = arguments[1] || {};
+    config.url = arguments[0];
+  } else {
+    config = config || {};
   }
 
-  config = utils.merge(defaults, {method: 'get'}, this.defaults, config);
-  config.method = config.method.toLowerCase();
+  config = mergeConfig(this.defaults, config);
+
+  // Set config.method
+  if (config.method) {
+    config.method = config.method.toLowerCase();
+  } else if (this.defaults.method) {
+    config.method = this.defaults.method.toLowerCase();
+  } else {
+    config.method = 'get';
+  }
 
   // Hook up interceptors middleware
   var chain = [dispatchRequest, undefined];
@@ -2511,13 +2754,19 @@ Axios.prototype.request = function request(config) {
   return promise;
 };
 
+Axios.prototype.getUri = function getUri(config) {
+  config = mergeConfig(this.defaults, config);
+  return buildURL(config.url, config.params, config.paramsSerializer).replace(/^\?/, '');
+};
+
 // Provide aliases for supported request methods
 utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, config) {
-    return this.request(utils.merge(config || {}, {
+    return this.request(mergeConfig(config || {}, {
       method: method,
-      url: url
+      url: url,
+      data: (config || {}).data
     }));
   };
 });
@@ -2525,7 +2774,7 @@ utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData
 utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, data, config) {
-    return this.request(utils.merge(config || {}, {
+    return this.request(mergeConfig(config || {}, {
       method: method,
       url: url,
       data: data
@@ -2535,7 +2784,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = Axios;
 
-},{"./../defaults":19,"./../utils":30,"./InterceptorManager":13,"./dispatchRequest":15}],13:[function(require,module,exports){
+},{"../helpers/buildURL":23,"./../utils":32,"./InterceptorManager":13,"./dispatchRequest":16,"./mergeConfig":18}],13:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -2589,7 +2838,29 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 
 module.exports = InterceptorManager;
 
-},{"./../utils":30}],14:[function(require,module,exports){
+},{"./../utils":32}],14:[function(require,module,exports){
+'use strict';
+
+var isAbsoluteURL = require('../helpers/isAbsoluteURL');
+var combineURLs = require('../helpers/combineURLs');
+
+/**
+ * Creates a new URL by combining the baseURL with the requestedURL,
+ * only when the requestedURL is not already an absolute URL.
+ * If the requestURL is absolute, this function returns the requestedURL untouched.
+ *
+ * @param {string} baseURL The base URL
+ * @param {string} requestedURL Absolute or relative URL to combine
+ * @returns {string} The combined full path
+ */
+module.exports = function buildFullPath(baseURL, requestedURL) {
+  if (baseURL && !isAbsoluteURL(requestedURL)) {
+    return combineURLs(baseURL, requestedURL);
+  }
+  return requestedURL;
+};
+
+},{"../helpers/combineURLs":24,"../helpers/isAbsoluteURL":26}],15:[function(require,module,exports){
 'use strict';
 
 var enhanceError = require('./enhanceError');
@@ -2609,15 +2880,13 @@ module.exports = function createError(message, config, code, request, response) 
   return enhanceError(error, config, code, request, response);
 };
 
-},{"./enhanceError":16}],15:[function(require,module,exports){
+},{"./enhanceError":17}],16:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
 var transformData = require('./transformData');
 var isCancel = require('../cancel/isCancel');
 var defaults = require('../defaults');
-var isAbsoluteURL = require('./../helpers/isAbsoluteURL');
-var combineURLs = require('./../helpers/combineURLs');
 
 /**
  * Throws a `Cancel` if cancellation has been requested.
@@ -2637,11 +2906,6 @@ function throwIfCancellationRequested(config) {
 module.exports = function dispatchRequest(config) {
   throwIfCancellationRequested(config);
 
-  // Support baseURL config
-  if (config.baseURL && !isAbsoluteURL(config.url)) {
-    config.url = combineURLs(config.baseURL, config.url);
-  }
-
   // Ensure headers exist
   config.headers = config.headers || {};
 
@@ -2656,7 +2920,7 @@ module.exports = function dispatchRequest(config) {
   config.headers = utils.merge(
     config.headers.common || {},
     config.headers[config.method] || {},
-    config.headers || {}
+    config.headers
   );
 
   utils.forEach(
@@ -2697,7 +2961,7 @@ module.exports = function dispatchRequest(config) {
   });
 };
 
-},{"../cancel/isCancel":11,"../defaults":19,"./../helpers/combineURLs":23,"./../helpers/isAbsoluteURL":25,"./../utils":30,"./transformData":18}],16:[function(require,module,exports){
+},{"../cancel/isCancel":11,"../defaults":21,"./../utils":32,"./transformData":20}],17:[function(require,module,exports){
 'use strict';
 
 /**
@@ -2715,12 +2979,122 @@ module.exports = function enhanceError(error, config, code, request, response) {
   if (code) {
     error.code = code;
   }
+
   error.request = request;
   error.response = response;
+  error.isAxiosError = true;
+
+  error.toJSON = function toJSON() {
+    return {
+      // Standard
+      message: this.message,
+      name: this.name,
+      // Microsoft
+      description: this.description,
+      number: this.number,
+      // Mozilla
+      fileName: this.fileName,
+      lineNumber: this.lineNumber,
+      columnNumber: this.columnNumber,
+      stack: this.stack,
+      // Axios
+      config: this.config,
+      code: this.code
+    };
+  };
   return error;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
+'use strict';
+
+var utils = require('../utils');
+
+/**
+ * Config-specific merge-function which creates a new config-object
+ * by merging two configuration objects together.
+ *
+ * @param {Object} config1
+ * @param {Object} config2
+ * @returns {Object} New object resulting from merging config2 to config1
+ */
+module.exports = function mergeConfig(config1, config2) {
+  // eslint-disable-next-line no-param-reassign
+  config2 = config2 || {};
+  var config = {};
+
+  var valueFromConfig2Keys = ['url', 'method', 'data'];
+  var mergeDeepPropertiesKeys = ['headers', 'auth', 'proxy', 'params'];
+  var defaultToConfig2Keys = [
+    'baseURL', 'transformRequest', 'transformResponse', 'paramsSerializer',
+    'timeout', 'timeoutMessage', 'withCredentials', 'adapter', 'responseType', 'xsrfCookieName',
+    'xsrfHeaderName', 'onUploadProgress', 'onDownloadProgress', 'decompress',
+    'maxContentLength', 'maxBodyLength', 'maxRedirects', 'transport', 'httpAgent',
+    'httpsAgent', 'cancelToken', 'socketPath', 'responseEncoding'
+  ];
+  var directMergeKeys = ['validateStatus'];
+
+  function getMergedValue(target, source) {
+    if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
+      return utils.merge(target, source);
+    } else if (utils.isPlainObject(source)) {
+      return utils.merge({}, source);
+    } else if (utils.isArray(source)) {
+      return source.slice();
+    }
+    return source;
+  }
+
+  function mergeDeepProperties(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(config1[prop], config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
+    }
+  }
+
+  utils.forEach(valueFromConfig2Keys, function valueFromConfig2(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(undefined, config2[prop]);
+    }
+  });
+
+  utils.forEach(mergeDeepPropertiesKeys, mergeDeepProperties);
+
+  utils.forEach(defaultToConfig2Keys, function defaultToConfig2(prop) {
+    if (!utils.isUndefined(config2[prop])) {
+      config[prop] = getMergedValue(undefined, config2[prop]);
+    } else if (!utils.isUndefined(config1[prop])) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
+    }
+  });
+
+  utils.forEach(directMergeKeys, function merge(prop) {
+    if (prop in config2) {
+      config[prop] = getMergedValue(config1[prop], config2[prop]);
+    } else if (prop in config1) {
+      config[prop] = getMergedValue(undefined, config1[prop]);
+    }
+  });
+
+  var axiosKeys = valueFromConfig2Keys
+    .concat(mergeDeepPropertiesKeys)
+    .concat(defaultToConfig2Keys)
+    .concat(directMergeKeys);
+
+  var otherKeys = Object
+    .keys(config1)
+    .concat(Object.keys(config2))
+    .filter(function filterAxiosKeys(key) {
+      return axiosKeys.indexOf(key) === -1;
+    });
+
+  utils.forEach(otherKeys, mergeDeepProperties);
+
+  return config;
+};
+
+},{"../utils":32}],19:[function(require,module,exports){
 'use strict';
 
 var createError = require('./createError');
@@ -2734,7 +3108,6 @@ var createError = require('./createError');
  */
 module.exports = function settle(resolve, reject, response) {
   var validateStatus = response.config.validateStatus;
-  // Note: status is not exposed by XDomainRequest
   if (!response.status || !validateStatus || validateStatus(response.status)) {
     resolve(response);
   } else {
@@ -2748,7 +3121,7 @@ module.exports = function settle(resolve, reject, response) {
   }
 };
 
-},{"./createError":14}],18:[function(require,module,exports){
+},{"./createError":15}],20:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -2770,8 +3143,8 @@ module.exports = function transformData(data, headers, fns) {
   return data;
 };
 
-},{"./../utils":30}],19:[function(require,module,exports){
-(function (process){
+},{"./../utils":32}],21:[function(require,module,exports){
+(function (process){(function (){
 'use strict';
 
 var utils = require('./utils');
@@ -2792,7 +3165,7 @@ function getDefaultAdapter() {
   if (typeof XMLHttpRequest !== 'undefined') {
     // For browsers use XHR adapter
     adapter = require('./adapters/xhr');
-  } else if (typeof process !== 'undefined') {
+  } else if (typeof process !== 'undefined' && Object.prototype.toString.call(process) === '[object process]') {
     // For node use HTTP adapter
     adapter = require('./adapters/http');
   }
@@ -2803,6 +3176,7 @@ var defaults = {
   adapter: getDefaultAdapter(),
 
   transformRequest: [function transformRequest(data, headers) {
+    normalizeHeaderName(headers, 'Accept');
     normalizeHeaderName(headers, 'Content-Type');
     if (utils.isFormData(data) ||
       utils.isArrayBuffer(data) ||
@@ -2847,6 +3221,7 @@ var defaults = {
   xsrfHeaderName: 'X-XSRF-TOKEN',
 
   maxContentLength: -1,
+  maxBodyLength: -1,
 
   validateStatus: function validateStatus(status) {
     return status >= 200 && status < 300;
@@ -2869,8 +3244,8 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = defaults;
 
-}).call(this,require('_process'))
-},{"./adapters/http":7,"./adapters/xhr":7,"./helpers/normalizeHeaderName":27,"./utils":30,"_process":32}],20:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'))
+},{"./adapters/http":7,"./adapters/xhr":7,"./helpers/normalizeHeaderName":29,"./utils":32,"_process":33}],22:[function(require,module,exports){
 'use strict';
 
 module.exports = function bind(fn, thisArg) {
@@ -2883,52 +3258,13 @@ module.exports = function bind(fn, thisArg) {
   };
 };
 
-},{}],21:[function(require,module,exports){
-'use strict';
-
-// btoa polyfill for IE<10 courtesy https://github.com/davidchambers/Base64.js
-
-var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-
-function E() {
-  this.message = 'String contains an invalid character';
-}
-E.prototype = new Error;
-E.prototype.code = 5;
-E.prototype.name = 'InvalidCharacterError';
-
-function btoa(input) {
-  var str = String(input);
-  var output = '';
-  for (
-    // initialize result and counter
-    var block, charCode, idx = 0, map = chars;
-    // if the next str index does not exist:
-    //   change the mapping table to "="
-    //   check if d has no fractional digits
-    str.charAt(idx | 0) || (map = '=', idx % 1);
-    // "8 - idx % 1 * 8" generates the sequence 2, 4, 6, 8
-    output += map.charAt(63 & block >> 8 - idx % 1 * 8)
-  ) {
-    charCode = str.charCodeAt(idx += 3 / 4);
-    if (charCode > 0xFF) {
-      throw new E();
-    }
-    block = block << 8 | charCode;
-  }
-  return output;
-}
-
-module.exports = btoa;
-
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
 
 function encode(val) {
   return encodeURIComponent(val).
-    replace(/%40/gi, '@').
     replace(/%3A/gi, ':').
     replace(/%24/g, '$').
     replace(/%2C/gi, ',').
@@ -2983,13 +3319,18 @@ module.exports = function buildURL(url, params, paramsSerializer) {
   }
 
   if (serializedParams) {
+    var hashmarkIndex = url.indexOf('#');
+    if (hashmarkIndex !== -1) {
+      url = url.slice(0, hashmarkIndex);
+    }
+
     url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
   }
 
   return url;
 };
 
-},{"./../utils":30}],23:[function(require,module,exports){
+},{"./../utils":32}],24:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3005,7 +3346,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
     : baseURL;
 };
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -3014,53 +3355,53 @@ module.exports = (
   utils.isStandardBrowserEnv() ?
 
   // Standard browser envs support document.cookie
-  (function standardBrowserEnv() {
-    return {
-      write: function write(name, value, expires, path, domain, secure) {
-        var cookie = [];
-        cookie.push(name + '=' + encodeURIComponent(value));
+    (function standardBrowserEnv() {
+      return {
+        write: function write(name, value, expires, path, domain, secure) {
+          var cookie = [];
+          cookie.push(name + '=' + encodeURIComponent(value));
 
-        if (utils.isNumber(expires)) {
-          cookie.push('expires=' + new Date(expires).toGMTString());
+          if (utils.isNumber(expires)) {
+            cookie.push('expires=' + new Date(expires).toGMTString());
+          }
+
+          if (utils.isString(path)) {
+            cookie.push('path=' + path);
+          }
+
+          if (utils.isString(domain)) {
+            cookie.push('domain=' + domain);
+          }
+
+          if (secure === true) {
+            cookie.push('secure');
+          }
+
+          document.cookie = cookie.join('; ');
+        },
+
+        read: function read(name) {
+          var match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+          return (match ? decodeURIComponent(match[3]) : null);
+        },
+
+        remove: function remove(name) {
+          this.write(name, '', Date.now() - 86400000);
         }
-
-        if (utils.isString(path)) {
-          cookie.push('path=' + path);
-        }
-
-        if (utils.isString(domain)) {
-          cookie.push('domain=' + domain);
-        }
-
-        if (secure === true) {
-          cookie.push('secure');
-        }
-
-        document.cookie = cookie.join('; ');
-      },
-
-      read: function read(name) {
-        var match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-        return (match ? decodeURIComponent(match[3]) : null);
-      },
-
-      remove: function remove(name) {
-        this.write(name, '', Date.now() - 86400000);
-      }
-    };
-  })() :
+      };
+    })() :
 
   // Non standard browser env (web workers, react-native) lack needed support.
-  (function nonStandardBrowserEnv() {
-    return {
-      write: function write() {},
-      read: function read() { return null; },
-      remove: function remove() {}
-    };
-  })()
+    (function nonStandardBrowserEnv() {
+      return {
+        write: function write() {},
+        read: function read() { return null; },
+        remove: function remove() {}
+      };
+    })()
 );
 
-},{"./../utils":30}],25:[function(require,module,exports){
+},{"./../utils":32}],26:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3076,7 +3417,20 @@ module.exports = function isAbsoluteURL(url) {
   return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
+'use strict';
+
+/**
+ * Determines whether the payload is an error thrown by Axios
+ *
+ * @param {*} payload The value to test
+ * @returns {boolean} True if the payload is an error thrown by Axios, otherwise false
+ */
+module.exports = function isAxiosError(payload) {
+  return (typeof payload === 'object') && (payload.isAxiosError === true);
+};
+
+},{}],28:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -3086,67 +3440,67 @@ module.exports = (
 
   // Standard browser envs have full support of the APIs needed to test
   // whether the request URL is of the same origin as current location.
-  (function standardBrowserEnv() {
-    var msie = /(msie|trident)/i.test(navigator.userAgent);
-    var urlParsingNode = document.createElement('a');
-    var originURL;
+    (function standardBrowserEnv() {
+      var msie = /(msie|trident)/i.test(navigator.userAgent);
+      var urlParsingNode = document.createElement('a');
+      var originURL;
 
-    /**
+      /**
     * Parse a URL to discover it's components
     *
     * @param {String} url The URL to be parsed
     * @returns {Object}
     */
-    function resolveURL(url) {
-      var href = url;
+      function resolveURL(url) {
+        var href = url;
 
-      if (msie) {
+        if (msie) {
         // IE needs attribute set twice to normalize properties
+          urlParsingNode.setAttribute('href', href);
+          href = urlParsingNode.href;
+        }
+
         urlParsingNode.setAttribute('href', href);
-        href = urlParsingNode.href;
+
+        // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
+        return {
+          href: urlParsingNode.href,
+          protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
+          host: urlParsingNode.host,
+          search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
+          hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
+          hostname: urlParsingNode.hostname,
+          port: urlParsingNode.port,
+          pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
+            urlParsingNode.pathname :
+            '/' + urlParsingNode.pathname
+        };
       }
 
-      urlParsingNode.setAttribute('href', href);
+      originURL = resolveURL(window.location.href);
 
-      // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
-      return {
-        href: urlParsingNode.href,
-        protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
-        host: urlParsingNode.host,
-        search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
-        hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
-        hostname: urlParsingNode.hostname,
-        port: urlParsingNode.port,
-        pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
-                  urlParsingNode.pathname :
-                  '/' + urlParsingNode.pathname
-      };
-    }
-
-    originURL = resolveURL(window.location.href);
-
-    /**
+      /**
     * Determine if a URL shares the same origin as the current location
     *
     * @param {String} requestURL The URL to test
     * @returns {boolean} True if URL shares the same origin, otherwise false
     */
-    return function isURLSameOrigin(requestURL) {
-      var parsed = (utils.isString(requestURL)) ? resolveURL(requestURL) : requestURL;
-      return (parsed.protocol === originURL.protocol &&
+      return function isURLSameOrigin(requestURL) {
+        var parsed = (utils.isString(requestURL)) ? resolveURL(requestURL) : requestURL;
+        return (parsed.protocol === originURL.protocol &&
             parsed.host === originURL.host);
-    };
-  })() :
+      };
+    })() :
 
   // Non standard browser envs (web workers, react-native) lack needed support.
-  (function nonStandardBrowserEnv() {
-    return function isURLSameOrigin() {
-      return true;
-    };
-  })()
+    (function nonStandardBrowserEnv() {
+      return function isURLSameOrigin() {
+        return true;
+      };
+    })()
 );
 
-},{"./../utils":30}],27:[function(require,module,exports){
+},{"./../utils":32}],29:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -3160,7 +3514,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
   });
 };
 
-},{"../utils":30}],28:[function(require,module,exports){
+},{"../utils":32}],30:[function(require,module,exports){
 'use strict';
 
 var utils = require('./../utils');
@@ -3215,7 +3569,7 @@ module.exports = function parseHeaders(headers) {
   return parsed;
 };
 
-},{"./../utils":30}],29:[function(require,module,exports){
+},{"./../utils":32}],31:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3244,11 +3598,10 @@ module.exports = function spread(callback) {
   };
 };
 
-},{}],30:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 'use strict';
 
 var bind = require('./helpers/bind');
-var isBuffer = require('is-buffer');
 
 /*global toString:true*/
 
@@ -3264,6 +3617,27 @@ var toString = Object.prototype.toString;
  */
 function isArray(val) {
   return toString.call(val) === '[object Array]';
+}
+
+/**
+ * Determine if a value is undefined
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if the value is undefined, otherwise false
+ */
+function isUndefined(val) {
+  return typeof val === 'undefined';
+}
+
+/**
+ * Determine if a value is a Buffer
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if value is a Buffer, otherwise false
+ */
+function isBuffer(val) {
+  return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor)
+    && typeof val.constructor.isBuffer === 'function' && val.constructor.isBuffer(val);
 }
 
 /**
@@ -3323,16 +3697,6 @@ function isNumber(val) {
 }
 
 /**
- * Determine if a value is undefined
- *
- * @param {Object} val The value to test
- * @returns {boolean} True if the value is undefined, otherwise false
- */
-function isUndefined(val) {
-  return typeof val === 'undefined';
-}
-
-/**
  * Determine if a value is an Object
  *
  * @param {Object} val The value to test
@@ -3340,6 +3704,21 @@ function isUndefined(val) {
  */
 function isObject(val) {
   return val !== null && typeof val === 'object';
+}
+
+/**
+ * Determine if a value is a plain Object
+ *
+ * @param {Object} val The value to test
+ * @return {boolean} True if value is a plain Object, otherwise false
+ */
+function isPlainObject(val) {
+  if (toString.call(val) !== '[object Object]') {
+    return false;
+  }
+
+  var prototype = Object.getPrototypeOf(val);
+  return prototype === null || prototype === Object.prototype;
 }
 
 /**
@@ -3424,9 +3803,13 @@ function trim(str) {
  *
  * react-native:
  *  navigator.product -> 'ReactNative'
+ * nativescript
+ *  navigator.product -> 'NativeScript' or 'NS'
  */
 function isStandardBrowserEnv() {
-  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+  if (typeof navigator !== 'undefined' && (navigator.product === 'ReactNative' ||
+                                           navigator.product === 'NativeScript' ||
+                                           navigator.product === 'NS')) {
     return false;
   }
   return (
@@ -3494,8 +3877,12 @@ function forEach(obj, fn) {
 function merge(/* obj1, obj2, obj3, ... */) {
   var result = {};
   function assignValue(val, key) {
-    if (typeof result[key] === 'object' && typeof val === 'object') {
+    if (isPlainObject(result[key]) && isPlainObject(val)) {
       result[key] = merge(result[key], val);
+    } else if (isPlainObject(val)) {
+      result[key] = merge({}, val);
+    } else if (isArray(val)) {
+      result[key] = val.slice();
     } else {
       result[key] = val;
     }
@@ -3526,6 +3913,19 @@ function extend(a, b, thisArg) {
   return a;
 }
 
+/**
+ * Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
+ *
+ * @param {string} content with BOM
+ * @return {string} content value without BOM
+ */
+function stripBOM(content) {
+  if (content.charCodeAt(0) === 0xFEFF) {
+    content = content.slice(1);
+  }
+  return content;
+}
+
 module.exports = {
   isArray: isArray,
   isArrayBuffer: isArrayBuffer,
@@ -3535,6 +3935,7 @@ module.exports = {
   isString: isString,
   isNumber: isNumber,
   isObject: isObject,
+  isPlainObject: isPlainObject,
   isUndefined: isUndefined,
   isDate: isDate,
   isFile: isFile,
@@ -3546,33 +3947,11 @@ module.exports = {
   forEach: forEach,
   merge: merge,
   extend: extend,
-  trim: trim
+  trim: trim,
+  stripBOM: stripBOM
 };
 
-},{"./helpers/bind":20,"is-buffer":31}],31:[function(require,module,exports){
-/*!
- * Determine if an object is a Buffer
- *
- * @author   Feross Aboukhadijeh <https://feross.org>
- * @license  MIT
- */
-
-// The _isBuffer check is for Safari 5-7 support, because it's missing
-// Object.prototype.constructor. Remove this eventually
-module.exports = function (obj) {
-  return obj != null && (isBuffer(obj) || isSlowBuffer(obj) || !!obj._isBuffer)
-}
-
-function isBuffer (obj) {
-  return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
-}
-
-// For Node v0.10 support. Remove this eventually.
-function isSlowBuffer (obj) {
-  return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
-}
-
-},{}],32:[function(require,module,exports){
+},{"./helpers/bind":22}],33:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -3758,7 +4137,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 (function (root, factory) {
 
   // Node.
@@ -3777,13 +4156,13 @@ process.umask = function() { return 0; };
 
   /* Jison generated parser */
 var parser = (function(){
-var parser = {trace: function trace() { },
+var parser = {trace: function trace () { },
 yy: {},
 symbols_: {"error":2,"expressions":3,"point":4,"EOF":5,"linestring":6,"polygon":7,"multipoint":8,"multilinestring":9,"multipolygon":10,"coordinate":11,"DOUBLE_TOK":12,"ptarray":13,"COMMA":14,"ring_list":15,"ring":16,"(":17,")":18,"POINT":19,"Z":20,"ZM":21,"M":22,"EMPTY":23,"point_untagged":24,"polygon_list":25,"polygon_untagged":26,"point_list":27,"LINESTRING":28,"POLYGON":29,"MULTIPOINT":30,"MULTILINESTRING":31,"MULTIPOLYGON":32,"$accept":0,"$end":1},
 terminals_: {2:"error",5:"EOF",12:"DOUBLE_TOK",14:"COMMA",17:"(",18:")",19:"POINT",20:"Z",21:"ZM",22:"M",23:"EMPTY",28:"LINESTRING",29:"POLYGON",30:"MULTIPOINT",31:"MULTILINESTRING",32:"MULTIPOLYGON"},
 productions_: [0,[3,2],[3,2],[3,2],[3,2],[3,2],[3,2],[11,2],[11,3],[11,4],[13,3],[13,1],[15,3],[15,1],[16,3],[4,4],[4,5],[4,5],[4,5],[4,2],[24,1],[24,3],[25,3],[25,1],[26,3],[27,3],[27,1],[6,4],[6,5],[6,5],[6,5],[6,2],[7,4],[7,5],[7,5],[7,5],[7,2],[8,4],[8,5],[8,5],[8,5],[8,2],[9,4],[9,5],[9,5],[9,5],[9,2],[10,4],[10,5],[10,5],[10,5],[10,2]],
 performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$,_$
-/**/) {
+) {
 
 var $0 = $.length - 1;
 switch (yystate) {
@@ -3893,7 +4272,7 @@ break;
 },
 table: [{3:1,4:2,6:3,7:4,8:5,9:6,10:7,19:[1,8],28:[1,9],29:[1,10],30:[1,11],31:[1,12],32:[1,13]},{1:[3]},{5:[1,14]},{5:[1,15]},{5:[1,16]},{5:[1,17]},{5:[1,18]},{5:[1,19]},{17:[1,20],20:[1,21],21:[1,22],22:[1,23],23:[1,24]},{17:[1,25],20:[1,26],21:[1,28],22:[1,27],23:[1,29]},{17:[1,30],20:[1,31],21:[1,33],22:[1,32],23:[1,34]},{17:[1,35],20:[1,36],21:[1,38],22:[1,37],23:[1,39]},{17:[1,40],20:[1,41],21:[1,43],22:[1,42],23:[1,44]},{17:[1,45],20:[1,46],21:[1,48],22:[1,47],23:[1,49]},{1:[2,1]},{1:[2,2]},{1:[2,3]},{1:[2,4]},{1:[2,5]},{1:[2,6]},{11:51,12:[1,52],13:50},{17:[1,53]},{17:[1,54]},{17:[1,55]},{5:[2,19]},{11:58,12:[1,52],17:[1,59],24:57,27:56},{17:[1,60]},{17:[1,61]},{17:[1,62]},{5:[2,31]},{15:63,16:64,17:[1,65]},{17:[1,66]},{17:[1,67]},{17:[1,68]},{5:[2,36]},{11:58,12:[1,52],17:[1,59],24:57,27:69},{17:[1,70]},{17:[1,71]},{17:[1,72]},{5:[2,41]},{15:73,16:64,17:[1,65]},{17:[1,74]},{17:[1,75]},{17:[1,76]},{5:[2,46]},{17:[1,79],25:77,26:78},{17:[1,80]},{17:[1,81]},{17:[1,82]},{5:[2,51]},{14:[1,84],18:[1,83]},{14:[2,11],18:[2,11]},{12:[1,85]},{11:51,12:[1,52],13:86},{11:51,12:[1,52],13:87},{11:51,12:[1,52],13:88},{14:[1,90],18:[1,89]},{14:[2,26],18:[2,26]},{14:[2,20],18:[2,20]},{11:91,12:[1,52]},{11:58,12:[1,52],17:[1,59],24:57,27:92},{11:58,12:[1,52],17:[1,59],24:57,27:93},{11:58,12:[1,52],17:[1,59],24:57,27:94},{14:[1,96],18:[1,95]},{14:[2,13],18:[2,13]},{11:51,12:[1,52],13:97},{15:98,16:64,17:[1,65]},{15:99,16:64,17:[1,65]},{15:100,16:64,17:[1,65]},{14:[1,90],18:[1,101]},{11:58,12:[1,52],17:[1,59],24:57,27:102},{11:58,12:[1,52],17:[1,59],24:57,27:103},{11:58,12:[1,52],17:[1,59],24:57,27:104},{14:[1,96],18:[1,105]},{15:106,16:64,17:[1,65]},{15:107,16:64,17:[1,65]},{15:108,16:64,17:[1,65]},{14:[1,110],18:[1,109]},{14:[2,23],18:[2,23]},{15:111,16:64,17:[1,65]},{17:[1,79],25:112,26:78},{17:[1,79],25:113,26:78},{17:[1,79],25:114,26:78},{5:[2,15]},{11:115,12:[1,52]},{12:[1,116],14:[2,7],18:[2,7]},{14:[1,84],18:[1,117]},{14:[1,84],18:[1,118]},{14:[1,84],18:[1,119]},{5:[2,27]},{11:58,12:[1,52],17:[1,59],24:120},{18:[1,121]},{14:[1,90],18:[1,122]},{14:[1,90],18:[1,123]},{14:[1,90],18:[1,124]},{5:[2,32]},{16:125,17:[1,65]},{14:[1,84],18:[1,126]},{14:[1,96],18:[1,127]},{14:[1,96],18:[1,128]},{14:[1,96],18:[1,129]},{5:[2,37]},{14:[1,90],18:[1,130]},{14:[1,90],18:[1,131]},{14:[1,90],18:[1,132]},{5:[2,42]},{14:[1,96],18:[1,133]},{14:[1,96],18:[1,134]},{14:[1,96],18:[1,135]},{5:[2,47]},{17:[1,79],26:136},{14:[1,96],18:[1,137]},{14:[1,110],18:[1,138]},{14:[1,110],18:[1,139]},{14:[1,110],18:[1,140]},{14:[2,10],18:[2,10]},{12:[1,141],14:[2,8],18:[2,8]},{5:[2,16]},{5:[2,17]},{5:[2,18]},{14:[2,25],18:[2,25]},{14:[2,21],18:[2,21]},{5:[2,28]},{5:[2,29]},{5:[2,30]},{14:[2,12],18:[2,12]},{14:[2,14],18:[2,14]},{5:[2,33]},{5:[2,34]},{5:[2,35]},{5:[2,38]},{5:[2,39]},{5:[2,40]},{5:[2,43]},{5:[2,44]},{5:[2,45]},{14:[2,22],18:[2,22]},{14:[2,24],18:[2,24]},{5:[2,48]},{5:[2,49]},{5:[2,50]},{14:[2,9],18:[2,9]}],
 defaultActions: {14:[2,1],15:[2,2],16:[2,3],17:[2,4],18:[2,5],19:[2,6],24:[2,19],29:[2,31],34:[2,36],39:[2,41],44:[2,46],49:[2,51],83:[2,15],89:[2,27],95:[2,32],101:[2,37],105:[2,42],109:[2,47],117:[2,16],118:[2,17],119:[2,18],122:[2,28],123:[2,29],124:[2,30],127:[2,33],128:[2,34],129:[2,35],130:[2,38],131:[2,39],132:[2,40],133:[2,43],134:[2,44],135:[2,45],138:[2,48],139:[2,49],140:[2,50]},
-parseError: function parseError(str, hash) {
+parseError: function parseError (str, hash) {
     throw new Error(str);
 },
 parse: function parse(input) {
@@ -4145,7 +4524,7 @@ next:function () {
                     {text: "", token: null, line: this.yylineno});
         }
     },
-lex:function lex() {
+lex:function lex () {
         var r = this.next();
         if (typeof r !== 'undefined') {
             return r;
@@ -4153,24 +4532,24 @@ lex:function lex() {
             return this.lex();
         }
     },
-begin:function begin(condition) {
+begin:function begin (condition) {
         this.conditionStack.push(condition);
     },
-popState:function popState() {
+popState:function popState () {
         return this.conditionStack.pop();
     },
-_currentRules:function _currentRules() {
+_currentRules:function _currentRules () {
         return this.conditions[this.conditionStack[this.conditionStack.length-1]].rules;
     },
 topState:function () {
         return this.conditionStack[this.conditionStack.length-2];
     },
-pushState:function begin(condition) {
+pushState:function begin (condition) {
         this.begin(condition);
     }});
 lexer.options = {};
 lexer.performAction = function anonymous(yy,yy_,$avoiding_name_collisions,YY_START
-/**/) {
+) {
 
 var YYSTATE=YY_START
 switch($avoiding_name_collisions) {
@@ -4457,7 +4836,7 @@ return new Parser;
   function multiPolygonToWKTMultiPolygon (primitive) {
     var ret = 'MULTIPOLYGON ';
 
-    if (primitive.coordinates === undefined || primitive.coordinates.length === 0 || primitive.coordinates[0].length === 0) {
+    if (primitive.coordinates === undefined || primitive.coordinates.length === 0 || primitive.coordinates[0].length === 0 || primitive.coordinates[0][0].length === 0) {
       ret += 'EMPTY';
 
       return ret;
@@ -4506,12 +4885,17 @@ return new Parser;
         return multiLineStringToWKTMultiLineString(primitive);
       case 'MultiPolygon':
         return multiPolygonToWKTMultiPolygon(primitive);
+      case 'GeometryCollection':
+        var ret = 'GEOMETRYCOLLECTION';
+        var parts = [ ];
+        for (i = 0; i < primitive.geometries.length; i++){
+          parts.push(convert(primitive.geometries[i]));
+        }
+        return ret + '(' + parts.join(', ') + ')';
       default:
         throw Error ("Unknown Type: " + primitive.type);
     }
   }
-
-
 
   exports.parser  = parser;
   exports.Parser  = parser.Parser;
@@ -4521,7 +4905,7 @@ return new Parser;
   return exports;
 }));
 
-},{"terraformer":34}],34:[function(require,module,exports){
+},{"terraformer":35}],35:[function(require,module,exports){
 (function (root, factory) {
 
   // Node.
@@ -4535,6 +4919,8 @@ return new Parser;
   }
 
 }(this, function(){
+  "use strict";
+
   var exports = {},
       EarthRadius = 6378137,
       DegreesPerRadian = 57.295779513082320,
@@ -5277,7 +5663,7 @@ return new Parser;
   };
 
   Primitive.prototype.within = function(primitive) {
-    var coordinates, i, contains;
+    var coordinates, i, j, contains;
 
     // if we are passed a feature, use the polygon inside instead
     if (primitive.type === 'Feature') {
@@ -5681,7 +6067,7 @@ return new Parser;
     return this.coordinates.length > 1;
   };
   Polygon.prototype.holes = function() {
-    holes = [];
+    var holes = [];
     if (this.hasHoles()) {
       for (var i = 1; i < this.coordinates.length; i++) {
         holes.push(new Polygon([this.coordinates[i]]));
@@ -5941,11 +6327,11 @@ return new Parser;
   return exports;
 }));
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 function DOMParser(options){
 	this.options = options ||{locator:{}};
-	
 }
+
 DOMParser.prototype.parseFromString = function(source,mimeType){
 	var options = this.options;
 	var sax =  new XMLReader();
@@ -5953,20 +6339,19 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	var errorHandler = options.errorHandler;
 	var locator = options.locator;
 	var defaultNSMap = options.xmlns||{};
-	var entityMap = {'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"}
+	var isHTML = /\/x?html?$/.test(mimeType);//mimeType.toLowerCase().indexOf('html') > -1;
+  	var entityMap = isHTML?htmlEntity.entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"};
 	if(locator){
 		domBuilder.setDocumentLocator(locator)
 	}
-	
+
 	sax.errorHandler = buildErrorHandler(errorHandler,domBuilder,locator);
 	sax.domBuilder = options.domBuilder || domBuilder;
-	if(/\/x?html?$/.test(mimeType)){
-		entityMap.nbsp = '\xa0';
-		entityMap.copy = '\xa9';
+	if(isHTML){
 		defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
 	}
 	defaultNSMap.xml = defaultNSMap.xml || 'http://www.w3.org/XML/1998/namespace';
-	if(source){
+	if(source && typeof source === 'string'){
 		sax.parse(source,defaultNSMap,entityMap);
 	}else{
 		sax.errorHandler.error("invalid doc source");
@@ -6002,8 +6387,8 @@ function buildErrorHandler(errorImpl,domBuilder,locator){
 /**
  * +ContentHandler+ErrorHandler
  * +LexicalHandler+EntityResolver2
- * -DeclHandler-DTDHandler 
- * 
+ * -DeclHandler-DTDHandler
+ *
  * DefaultHandler:EntityResolver, DTDHandler, ContentHandler, ErrorHandler
  * DefaultHandler2:DefaultHandler,LexicalHandler, DeclHandler, EntityResolver2
  * @link http://www.saxproject.org/apidoc/org/xml/sax/helpers/DefaultHandler.html
@@ -6018,7 +6403,7 @@ function position(locator,node){
 /**
  * @see org.xml.sax.ContentHandler#startDocument
  * @link http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html
- */ 
+ */
 DOMHandler.prototype = {
 	startDocument : function() {
     	this.doc = new DOMImplementation().createDocument(null, null, null);
@@ -6032,7 +6417,7 @@ DOMHandler.prototype = {
 	    var len = attrs.length;
 	    appendElement(this, el);
 	    this.currentElement = el;
-	    
+
 		this.locator && position(this.locator,el)
 	    for (var i = 0 ; i < len; i++) {
 	        var namespaceURI = attrs.getURI(i);
@@ -6095,7 +6480,7 @@ DOMHandler.prototype = {
 	    this.locator && position(this.locator,comm)
 	    appendElement(this, comm);
 	},
-	
+
 	startCDATA:function() {
 	    //used in characters() methods
 	    this.cdata = true;
@@ -6103,7 +6488,7 @@ DOMHandler.prototype = {
 	endCDATA:function() {
 	    this.cdata = false;
 	},
-	
+
 	startDTD:function(name, publicId, systemId) {
 		var impl = this.doc.implementation;
 	    if (impl && impl.createDocumentType) {
@@ -6123,8 +6508,7 @@ DOMHandler.prototype = {
 		console.error('[xmldom error]\t'+error,_locator(this.locator));
 	},
 	fatalError:function(error) {
-		console.error('[xmldom fatalError]\t'+error,_locator(this.locator));
-	    throw error;
+		throw new ParseError(error, this.locator);
 	}
 }
 function _locator(l){
@@ -6188,20 +6572,17 @@ function appendElement (hander,node) {
 }//appendChild and setAttributeNS are preformance key
 
 //if(typeof require == 'function'){
-	var XMLReader = require('./sax').XMLReader;
-	var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
-	exports.XMLSerializer = require('./dom').XMLSerializer ;
-	exports.DOMParser = DOMParser;
+var htmlEntity = require('./entities');
+var sax = require('./sax');
+var XMLReader = sax.XMLReader;
+var ParseError = sax.ParseError;
+var DOMImplementation = exports.DOMImplementation = require('./dom').DOMImplementation;
+exports.XMLSerializer = require('./dom').XMLSerializer ;
+exports.DOMParser = DOMParser;
+exports.__DOMHandler = DOMHandler;
 //}
 
-},{"./dom":36,"./sax":37}],36:[function(require,module,exports){
-/*
- * DOM Level 2
- * Object DOMException
- * @see http://www.w3.org/TR/REC-DOM-Level-1/ecma-script-language-binding.html
- * @see http://www.w3.org/TR/2000/REC-DOM-Level-2-Core-20001113/ecma-script-binding.html
- */
-
+},{"./dom":37,"./entities":38,"./sax":39}],37:[function(require,module,exports){
 function copy(src,dest){
 	for(var p in src){
 		dest[p] = src[p];
@@ -6213,10 +6594,6 @@ function copy(src,dest){
  */
 function _extends(Class,Super){
 	var pt = Class.prototype;
-	if(Object.create){
-		var ppt = Object.create(Super.prototype)
-		pt.__proto__ = ppt;
-	}
 	if(!(pt instanceof Super)){
 		function t(){};
 		t.prototype = Super.prototype;
@@ -6267,7 +6644,12 @@ var INVALID_MODIFICATION_ERR 	= ExceptionCode.INVALID_MODIFICATION_ERR 	= ((Exce
 var NAMESPACE_ERR            	= ExceptionCode.NAMESPACE_ERR           	= ((ExceptionMessage[14]="Invalid namespace"),14);
 var INVALID_ACCESS_ERR       	= ExceptionCode.INVALID_ACCESS_ERR      	= ((ExceptionMessage[15]="Invalid access"),15);
 
-
+/**
+ * DOM Level 2
+ * Object DOMException
+ * @see http://www.w3.org/TR/2000/REC-DOM-Level-2-Core-20001113/ecma-script-binding.html
+ * @see http://www.w3.org/TR/REC-DOM-Level-1/ecma-script-language-binding.html
+ */
 function DOMException(code, message) {
 	if(message instanceof Error){
 		var error = message;
@@ -6809,6 +7191,21 @@ Document.prototype = {
 		return rtv;
 	},
 	
+	getElementsByClassName: function(className) {
+		var pattern = new RegExp("(^|\\s)" + className + "(\\s|$)");
+		return new LiveNodeList(this, function(base) {
+			var ls = [];
+			_visitNode(base.documentElement, function(node) {
+				if(node !== base && node.nodeType == ELEMENT_NODE) {
+					if(pattern.test(node.getAttribute('class'))) {
+						ls.push(node);
+					}
+				}
+			});
+			return ls;
+		});
+	},
+	
 	//document factory method:
 	createElement :	function(tagName){
 		var node = new Element();
@@ -7113,7 +7510,7 @@ XMLSerializer.prototype.serializeToString = function(node,isHtml,nodeFilter){
 Node.prototype.toString = nodeSerializeToString;
 function nodeSerializeToString(isHtml,nodeFilter){
 	var buf = [];
-	var refNode = this.nodeType == 9?this.documentElement:this;
+	var refNode = this.nodeType == 9 && this.documentElement || this;
 	var prefix = refNode.prefix;
 	var uri = refNode.namespaceURI;
 	
@@ -7252,9 +7649,27 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		}
 		return;
 	case ATTRIBUTE_NODE:
-		return buf.push(' ',node.name,'="',node.value.replace(/[<&"]/g,_xmlEncoder),'"');
+		return buf.push(' ',node.name,'="',node.value.replace(/[&"]/g,_xmlEncoder),'"');
 	case TEXT_NODE:
-		return buf.push(node.data.replace(/[<&]/g,_xmlEncoder));
+		/**
+		 * The ampersand character (&) and the left angle bracket (<) must not appear in their literal form,
+		 * except when used as markup delimiters, or within a comment, a processing instruction, or a CDATA section.
+		 * If they are needed elsewhere, they must be escaped using either numeric character references or the strings
+		 * `&amp;` and `&lt;` respectively.
+		 * The right angle bracket (>) may be represented using the string " &gt; ", and must, for compatibility,
+		 * be escaped using either `&gt;` or a character reference when it appears in the string `]]>` in content,
+		 * when that string is not marking the end of a CDATA section.
+		 *
+		 * In the content of elements, character data is any string of characters
+		 * which does not contain the start-delimiter of any markup
+		 * and does not include the CDATA-section-close delimiter, `]]>`.
+		 *
+		 * @see https://www.w3.org/TR/xml/#NT-CharData
+		 */
+		return buf.push(node.data
+			.replace(/[<&]/g,_xmlEncoder)
+			.replace(/]]>/g, ']]&gt;')
+		);
 	case CDATA_SECTION_NODE:
 		return buf.push( '<![CDATA[',node.data,']]>');
 	case COMMENT_NODE:
@@ -7264,13 +7679,13 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		var sysid = node.systemId;
 		buf.push('<!DOCTYPE ',node.name);
 		if(pubid){
-			buf.push(' PUBLIC "',pubid);
+			buf.push(' PUBLIC ', pubid);
 			if (sysid && sysid!='.') {
-				buf.push( '" "',sysid);
+				buf.push(' ', sysid);
 			}
-			buf.push('">');
+			buf.push('>');
 		}else if(sysid && sysid!='.'){
-			buf.push(' SYSTEM "',sysid,'">');
+			buf.push(' SYSTEM ', sysid, '>');
 		}else{
 			var sub = node.internalSubset;
 			if(sub){
@@ -7436,11 +7851,258 @@ try{
 }
 
 //if(typeof require == 'function'){
+	exports.Node = Node;
+	exports.DOMException = DOMException;
 	exports.DOMImplementation = DOMImplementation;
 	exports.XMLSerializer = XMLSerializer;
 //}
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
+exports.entityMap = {
+       lt: '<',
+       gt: '>',
+       amp: '&',
+       quot: '"',
+       apos: "'",
+       Agrave: "À",
+       Aacute: "Á",
+       Acirc: "Â",
+       Atilde: "Ã",
+       Auml: "Ä",
+       Aring: "Å",
+       AElig: "Æ",
+       Ccedil: "Ç",
+       Egrave: "È",
+       Eacute: "É",
+       Ecirc: "Ê",
+       Euml: "Ë",
+       Igrave: "Ì",
+       Iacute: "Í",
+       Icirc: "Î",
+       Iuml: "Ï",
+       ETH: "Ð",
+       Ntilde: "Ñ",
+       Ograve: "Ò",
+       Oacute: "Ó",
+       Ocirc: "Ô",
+       Otilde: "Õ",
+       Ouml: "Ö",
+       Oslash: "Ø",
+       Ugrave: "Ù",
+       Uacute: "Ú",
+       Ucirc: "Û",
+       Uuml: "Ü",
+       Yacute: "Ý",
+       THORN: "Þ",
+       szlig: "ß",
+       agrave: "à",
+       aacute: "á",
+       acirc: "â",
+       atilde: "ã",
+       auml: "ä",
+       aring: "å",
+       aelig: "æ",
+       ccedil: "ç",
+       egrave: "è",
+       eacute: "é",
+       ecirc: "ê",
+       euml: "ë",
+       igrave: "ì",
+       iacute: "í",
+       icirc: "î",
+       iuml: "ï",
+       eth: "ð",
+       ntilde: "ñ",
+       ograve: "ò",
+       oacute: "ó",
+       ocirc: "ô",
+       otilde: "õ",
+       ouml: "ö",
+       oslash: "ø",
+       ugrave: "ù",
+       uacute: "ú",
+       ucirc: "û",
+       uuml: "ü",
+       yacute: "ý",
+       thorn: "þ",
+       yuml: "ÿ",
+       nbsp: "\u00a0",
+       iexcl: "¡",
+       cent: "¢",
+       pound: "£",
+       curren: "¤",
+       yen: "¥",
+       brvbar: "¦",
+       sect: "§",
+       uml: "¨",
+       copy: "©",
+       ordf: "ª",
+       laquo: "«",
+       not: "¬",
+       shy: "­­",
+       reg: "®",
+       macr: "¯",
+       deg: "°",
+       plusmn: "±",
+       sup2: "²",
+       sup3: "³",
+       acute: "´",
+       micro: "µ",
+       para: "¶",
+       middot: "·",
+       cedil: "¸",
+       sup1: "¹",
+       ordm: "º",
+       raquo: "»",
+       frac14: "¼",
+       frac12: "½",
+       frac34: "¾",
+       iquest: "¿",
+       times: "×",
+       divide: "÷",
+       forall: "∀",
+       part: "∂",
+       exist: "∃",
+       empty: "∅",
+       nabla: "∇",
+       isin: "∈",
+       notin: "∉",
+       ni: "∋",
+       prod: "∏",
+       sum: "∑",
+       minus: "−",
+       lowast: "∗",
+       radic: "√",
+       prop: "∝",
+       infin: "∞",
+       ang: "∠",
+       and: "∧",
+       or: "∨",
+       cap: "∩",
+       cup: "∪",
+       'int': "∫",
+       there4: "∴",
+       sim: "∼",
+       cong: "≅",
+       asymp: "≈",
+       ne: "≠",
+       equiv: "≡",
+       le: "≤",
+       ge: "≥",
+       sub: "⊂",
+       sup: "⊃",
+       nsub: "⊄",
+       sube: "⊆",
+       supe: "⊇",
+       oplus: "⊕",
+       otimes: "⊗",
+       perp: "⊥",
+       sdot: "⋅",
+       Alpha: "Α",
+       Beta: "Β",
+       Gamma: "Γ",
+       Delta: "Δ",
+       Epsilon: "Ε",
+       Zeta: "Ζ",
+       Eta: "Η",
+       Theta: "Θ",
+       Iota: "Ι",
+       Kappa: "Κ",
+       Lambda: "Λ",
+       Mu: "Μ",
+       Nu: "Ν",
+       Xi: "Ξ",
+       Omicron: "Ο",
+       Pi: "Π",
+       Rho: "Ρ",
+       Sigma: "Σ",
+       Tau: "Τ",
+       Upsilon: "Υ",
+       Phi: "Φ",
+       Chi: "Χ",
+       Psi: "Ψ",
+       Omega: "Ω",
+       alpha: "α",
+       beta: "β",
+       gamma: "γ",
+       delta: "δ",
+       epsilon: "ε",
+       zeta: "ζ",
+       eta: "η",
+       theta: "θ",
+       iota: "ι",
+       kappa: "κ",
+       lambda: "λ",
+       mu: "μ",
+       nu: "ν",
+       xi: "ξ",
+       omicron: "ο",
+       pi: "π",
+       rho: "ρ",
+       sigmaf: "ς",
+       sigma: "σ",
+       tau: "τ",
+       upsilon: "υ",
+       phi: "φ",
+       chi: "χ",
+       psi: "ψ",
+       omega: "ω",
+       thetasym: "ϑ",
+       upsih: "ϒ",
+       piv: "ϖ",
+       OElig: "Œ",
+       oelig: "œ",
+       Scaron: "Š",
+       scaron: "š",
+       Yuml: "Ÿ",
+       fnof: "ƒ",
+       circ: "ˆ",
+       tilde: "˜",
+       ensp: " ",
+       emsp: " ",
+       thinsp: " ",
+       zwnj: "‌",
+       zwj: "‍",
+       lrm: "‎",
+       rlm: "‏",
+       ndash: "–",
+       mdash: "—",
+       lsquo: "‘",
+       rsquo: "’",
+       sbquo: "‚",
+       ldquo: "“",
+       rdquo: "”",
+       bdquo: "„",
+       dagger: "†",
+       Dagger: "‡",
+       bull: "•",
+       hellip: "…",
+       permil: "‰",
+       prime: "′",
+       Prime: "″",
+       lsaquo: "‹",
+       rsaquo: "›",
+       oline: "‾",
+       euro: "€",
+       trade: "™",
+       larr: "←",
+       uarr: "↑",
+       rarr: "→",
+       darr: "↓",
+       harr: "↔",
+       crarr: "↵",
+       lceil: "⌈",
+       rceil: "⌉",
+       lfloor: "⌊",
+       rfloor: "⌋",
+       loz: "◊",
+       spades: "♠",
+       clubs: "♣",
+       hearts: "♥",
+       diams: "♦"
+};
+
+},{}],39:[function(require,module,exports){
 //[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 //[5]   	Name	   ::=   	NameStartChar (NameChar)*
@@ -7460,6 +8122,21 @@ var S_ATTR_NOQUOT_VALUE = 4;//attr value(no quot value only)
 var S_ATTR_END = 5;//attr value end and no space(quot end)
 var S_TAG_SPACE = 6;//(attr value end || tag end ) && (space offer)
 var S_TAG_CLOSE = 7;//closed el<el />
+
+/**
+ * Creates an error that will not be caught by XMLReader aka the SAX parser.
+ *
+ * @param {string} message
+ * @param {any?} locator Optional, can provide details about the location in the source
+ * @constructor
+ */
+function ParseError(message, locator) {
+	this.message = message
+	this.locator = locator
+	if(Error.captureStackTrace) Error.captureStackTrace(this, ParseError);
+}
+ParseError.prototype = new Error();
+ParseError.prototype.name = ParseError.name
 
 function XMLReader(){
 	
@@ -7569,7 +8246,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 						}
 					}
 					if(!endMatch){
-		            	errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+		            	errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName ); // No known test case
 					}
 		        }else{
 		        	parseStack.push(config)
@@ -7630,10 +8307,11 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				}
 			}
 		}catch(e){
+			if (e instanceof ParseError) {
+				throw e;
+			}
 			errorHandler.error('element parse error: '+e)
-			//errorHandler.error('element parse error: '+e);
 			end = -1;
-			//throw e;
 		}
 		if(end>start){
 			start = end;
@@ -7654,6 +8332,16 @@ function copyLocator(f,t){
  * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
  */
 function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,errorHandler){
+
+	/**
+	 * @param {string} qname
+	 * @param {string} value
+	 * @param {number} startIndex
+	 */
+	function addAttribute(qname, value, startIndex) {
+		if (qname in el.attributeNames) errorHandler.fatalError('Attribute ' + qname + ' redefined')
+		el.addValue(qname, value, startIndex)
+	}
 	var attrName;
 	var value;
 	var p = ++start;
@@ -7669,7 +8357,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				s = S_EQ;
 			}else{
 				//fatalError: equal must after attrName or space after attrName
-				throw new Error('attribute equal must after attrName');
+				throw new Error('attribute equal must after attrName'); // No known test case
 			}
 			break;
 		case '\'':
@@ -7684,7 +8372,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				p = source.indexOf(c,start)
 				if(p>0){
 					value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
-					el.add(attrName,value,start-1);
+					addAttribute(attrName, value, start-1);
 					s = S_ATTR_END;
 				}else{
 					//fatalError: no end quot match
@@ -7693,14 +8381,14 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 			}else if(s == S_ATTR_NOQUOT_VALUE){
 				value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
 				//console.log(attrName,value,start,p)
-				el.add(attrName,value,start);
+				addAttribute(attrName, value, start);
 				//console.dir(el)
 				errorHandler.warning('attribute "'+attrName+'" missed start quot('+c+')!!');
 				start = p+1;
 				s = S_ATTR_END
 			}else{
 				//fatalError: no equal before
-				throw new Error('attribute value must after "="');
+				throw new Error('attribute value must after "="'); // No known test case
 			}
 			break;
 		case '/':
@@ -7718,11 +8406,10 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				break;
 			//case S_EQ:
 			default:
-				throw new Error("attribute invalid close char('/')")
+				throw new Error("attribute invalid close char('/')") // No known test case
 			}
 			break;
 		case ''://end document
-			//throw new Error('unexpected end of input')
 			errorHandler.error('unexpected end of input');
 			if(s == S_TAG){
 				el.setTagName(source.slice(start,p));
@@ -7748,13 +8435,13 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 					value = attrName;
 				}
 				if(s == S_ATTR_NOQUOT_VALUE){
-					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
-					el.add(attrName,value.replace(/&#?\w+;/g,entityReplacer),start)
+					errorHandler.warning('attribute "'+value+'" missed quot(")!');
+					addAttribute(attrName, value.replace(/&#?\w+;/g,entityReplacer), start)
 				}else{
 					if(currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !value.match(/^(?:disabled|checked|selected)$/i)){
 						errorHandler.warning('attribute "'+value+'" missed value!! "'+value+'" instead!!')
 					}
-					el.add(value,value,start)
+					addAttribute(value, value, start)
 				}
 				break;
 			case S_EQ:
@@ -7779,7 +8466,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				case S_ATTR_NOQUOT_VALUE:
 					var value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
 					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
-					el.add(attrName,value,start)
+					addAttribute(attrName, value, start)
 				case S_ATTR_END:
 					s = S_TAG_SPACE;
 					break;
@@ -7802,7 +8489,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 					if(currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !attrName.match(/^(?:disabled|checked|selected)$/i)){
 						errorHandler.warning('attribute "'+attrName+'" missed value!! "'+attrName+'" instead2!!')
 					}
-					el.add(attrName,attrName,start);
+					addAttribute(attrName, attrName, start);
 					start = p;
 					s = S_ATTR;
 					break;
@@ -7974,11 +8661,18 @@ function parseDCC(source,start,domBuilder,errorHandler){//sure start with '<!'
 		var len = matchs.length;
 		if(len>1 && /!doctype/i.test(matchs[0][0])){
 			var name = matchs[1][0];
-			var pubid = len>3 && /^public$/i.test(matchs[2][0]) && matchs[3][0]
-			var sysid = len>4 && matchs[4][0];
+			var pubid = false;
+			var sysid = false;
+			if(len>3){
+				if(/^public$/i.test(matchs[2][0])){
+					pubid = matchs[3][0];
+					sysid = len>4 && matchs[4][0];
+				}else if(/^system$/i.test(matchs[2][0])){
+					sysid = matchs[3][0];
+				}
+			}
 			var lastMatch = matchs[len-1]
-			domBuilder.startDTD(name,pubid && pubid.replace(/^(['"])(.*?)\1$/,'$2'),
-					sysid && sysid.replace(/^(['"])(.*?)\1$/,'$2'));
+			domBuilder.startDTD(name, pubid, sysid);
 			domBuilder.endDTD();
 			
 			return lastMatch.index+lastMatch[0].length
@@ -8004,11 +8698,8 @@ function parseInstruction(source,start,domBuilder){
 	return -1;
 }
 
-/**
- * @param source
- */
-function ElementAttributes(source){
-	
+function ElementAttributes(){
+	this.attributeNames = {}
 }
 ElementAttributes.prototype = {
 	setTagName:function(tagName){
@@ -8017,10 +8708,11 @@ ElementAttributes.prototype = {
 		}
 		this.tagName = tagName
 	},
-	add:function(qName,value,offset){
+	addValue:function(qName, value, offset) {
 		if(!tagNamePattern.test(qName)){
 			throw new Error('invalid attribute:'+qName)
 		}
+		this.attributeNames[qName] = this.length;
 		this[this.length++] = {qName:qName,value:value,offset:offset}
 	},
 	length:0,
@@ -8043,23 +8735,6 @@ ElementAttributes.prototype = {
 
 
 
-
-function _set_proto_(thiz,parent){
-	thiz.__proto__ = parent;
-	return thiz;
-}
-if(!(_set_proto_({},_set_proto_.prototype) instanceof _set_proto_)){
-	_set_proto_ = function(thiz,parent){
-		function p(){};
-		p.prototype = parent;
-		p = new p();
-		for(parent in thiz){
-			p[parent] = thiz[parent];
-		}
-		return p;
-	}
-}
-
 function split(source,start){
 	var match;
 	var buf = [];
@@ -8073,9 +8748,9 @@ function split(source,start){
 }
 
 exports.XMLReader = XMLReader;
+exports.ParseError = ParseError;
 
-
-},{}],38:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 /*
  * xpath.js
  *
@@ -8092,7 +8767,7 @@ exports.XMLReader = XMLReader;
  * Revision 19: November 29, 2005
  *   Nodesets now store their nodes in a height balanced tree, increasing
  *   performance for the common case of selecting nodes in document order,
- *   thanks to S閎astien Cramatte <contact (at) zeninteractif.com>.
+ *   thanks to Sébastien Cramatte <contact (at) zeninteractif.com>.
  *   AVL tree code adapted from Raimund Neumann <rnova (at) gmx.net>.
  *
  * Revision 18: October 27, 2005
@@ -8104,7 +8779,7 @@ exports.XMLReader = XMLReader;
  * Revision 17: October 25, 2005
  *   Some core XPath function fixes and a patch to avoid crashing certain
  *   versions of MSXML in PathExpr.prototype.getOwnerElement, thanks to
- *   S閎astien Cramatte <contact (at) zeninteractif.com>.
+ *   Sébastien Cramatte <contact (at) zeninteractif.com>.
  *
  * Revision 16: September 22, 2005
  *   Workarounds for some IE 5.5 deficiencies.
@@ -8176,4673 +8851,4756 @@ exports.XMLReader = XMLReader;
 // non-node wrapper
 var xpath = (typeof exports === 'undefined') ? {} : exports;
 
-(function(exports) {
-"use strict";
+(function (exports) {
+    "use strict";
 
-// functional helpers
-function curry( func ) {
-    var slice = Array.prototype.slice,
-        totalargs = func.length,
-        partial = function( args, fn ) {
-            return function( ) {
-                return fn.apply( this, args.concat( slice.call( arguments ) ) );
+    // functional helpers
+    function curry(func) {
+        var slice = Array.prototype.slice,
+            totalargs = func.length,
+            partial = function (args, fn) {
+                return function () {
+                    return fn.apply(this, args.concat(slice.call(arguments)));
+                }
+            },
+            fn = function () {
+                var args = slice.call(arguments);
+                return (args.length < totalargs) ?
+                    partial(args, fn) :
+                    func.apply(this, slice.apply(arguments, [0, totalargs]));
+            };
+        return fn;
+    }
+
+    var forEach = function (f, xs) {
+        for (var i = 0; i < xs.length; i += 1) {
+            f(xs[i], i, xs);
+        }
+    };
+
+    var reduce = function (f, seed, xs) {
+        var acc = seed;
+
+        forEach(function (x, i) { acc = f(acc, x, i); }, xs);
+
+        return acc;
+    };
+
+    var map = function (f, xs) {
+        var mapped = new Array(xs.length);
+
+        forEach(function (x, i) { mapped[i] = f(x); }, xs);
+
+        return mapped;
+    };
+
+    var filter = function (f, xs) {
+        var filtered = [];
+
+        forEach(function (x, i) { if (f(x, i)) { filtered.push(x); } }, xs);
+
+        return filtered;
+    };
+
+    var includes = function (values, value) {
+        for (var i = 0; i < values.length; i += 1) {
+            if (values[i] === value) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    function always(value) { return function () { return value; } }
+
+    function toString(x) { return x.toString(); }
+    var join = function (s, xs) { return xs.join(s); };
+    var wrap = function (pref, suf, str) { return pref + str + suf; };
+
+    var prototypeConcat = Array.prototype.concat;
+
+    // .apply() fails above a certain number of arguments - https://github.com/goto100/xpath/pull/98
+    var MAX_ARGUMENT_LENGTH = 32767;
+
+    function flatten(arr) {
+        var result = [];
+
+        for (var start = 0; start < arr.length; start += MAX_ARGUMENT_LENGTH) {
+            var chunk = arr.slice(start, start + MAX_ARGUMENT_LENGTH);
+            
+            result = prototypeConcat.apply(result, chunk);
+        }
+        
+        return result;
+    }
+
+    function assign(target, varArgs) { // .length of function is 2
+        var to = Object(target);
+
+        for (var index = 1; index < arguments.length; index++) {
+            var nextSource = arguments[index];
+
+            if (nextSource != null) { // Skip over if undefined or null
+                for (var nextKey in nextSource) {
+                    // Avoid bugs when hasOwnProperty is shadowed
+                    if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                        to[nextKey] = nextSource[nextKey];
+                    }
+                }
+            }
+        }
+
+        return to;
+    }
+
+    // XPathParser ///////////////////////////////////////////////////////////////
+
+    XPathParser.prototype = new Object();
+    XPathParser.prototype.constructor = XPathParser;
+    XPathParser.superclass = Object.prototype;
+
+    function XPathParser() {
+        this.init();
+    }
+
+    XPathParser.prototype.init = function () {
+        this.reduceActions = [];
+
+        this.reduceActions[3] = function (rhs) {
+            return new OrOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[5] = function (rhs) {
+            return new AndOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[7] = function (rhs) {
+            return new EqualsOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[8] = function (rhs) {
+            return new NotEqualOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[10] = function (rhs) {
+            return new LessThanOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[11] = function (rhs) {
+            return new GreaterThanOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[12] = function (rhs) {
+            return new LessThanOrEqualOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[13] = function (rhs) {
+            return new GreaterThanOrEqualOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[15] = function (rhs) {
+            return new PlusOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[16] = function (rhs) {
+            return new MinusOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[18] = function (rhs) {
+            return new MultiplyOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[19] = function (rhs) {
+            return new DivOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[20] = function (rhs) {
+            return new ModOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[22] = function (rhs) {
+            return new UnaryMinusOperation(rhs[1]);
+        };
+        this.reduceActions[24] = function (rhs) {
+            return new BarOperation(rhs[0], rhs[2]);
+        };
+        this.reduceActions[25] = function (rhs) {
+            return new PathExpr(undefined, undefined, rhs[0]);
+        };
+        this.reduceActions[27] = function (rhs) {
+            rhs[0].locationPath = rhs[2];
+            return rhs[0];
+        };
+        this.reduceActions[28] = function (rhs) {
+            rhs[0].locationPath = rhs[2];
+            rhs[0].locationPath.steps.unshift(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
+            return rhs[0];
+        };
+        this.reduceActions[29] = function (rhs) {
+            return new PathExpr(rhs[0], [], undefined);
+        };
+        this.reduceActions[30] = function (rhs) {
+            if (Utilities.instance_of(rhs[0], PathExpr)) {
+                if (rhs[0].filterPredicates == undefined) {
+                    rhs[0].filterPredicates = [];
+                }
+                rhs[0].filterPredicates.push(rhs[1]);
+                return rhs[0];
+            } else {
+                return new PathExpr(rhs[0], [rhs[1]], undefined);
+            }
+        };
+        this.reduceActions[32] = function (rhs) {
+            return rhs[1];
+        };
+        this.reduceActions[33] = function (rhs) {
+            return new XString(rhs[0]);
+        };
+        this.reduceActions[34] = function (rhs) {
+            return new XNumber(rhs[0]);
+        };
+        this.reduceActions[36] = function (rhs) {
+            return new FunctionCall(rhs[0], []);
+        };
+        this.reduceActions[37] = function (rhs) {
+            return new FunctionCall(rhs[0], rhs[2]);
+        };
+        this.reduceActions[38] = function (rhs) {
+            return [rhs[0]];
+        };
+        this.reduceActions[39] = function (rhs) {
+            rhs[2].unshift(rhs[0]);
+            return rhs[2];
+        };
+        this.reduceActions[43] = function (rhs) {
+            return new LocationPath(true, []);
+        };
+        this.reduceActions[44] = function (rhs) {
+            rhs[1].absolute = true;
+            return rhs[1];
+        };
+        this.reduceActions[46] = function (rhs) {
+            return new LocationPath(false, [rhs[0]]);
+        };
+        this.reduceActions[47] = function (rhs) {
+            rhs[0].steps.push(rhs[2]);
+            return rhs[0];
+        };
+        this.reduceActions[49] = function (rhs) {
+            return new Step(rhs[0], rhs[1], []);
+        };
+        this.reduceActions[50] = function (rhs) {
+            return new Step(Step.CHILD, rhs[0], []);
+        };
+        this.reduceActions[51] = function (rhs) {
+            return new Step(rhs[0], rhs[1], rhs[2]);
+        };
+        this.reduceActions[52] = function (rhs) {
+            return new Step(Step.CHILD, rhs[0], rhs[1]);
+        };
+        this.reduceActions[54] = function (rhs) {
+            return [rhs[0]];
+        };
+        this.reduceActions[55] = function (rhs) {
+            rhs[1].unshift(rhs[0]);
+            return rhs[1];
+        };
+        this.reduceActions[56] = function (rhs) {
+            if (rhs[0] == "ancestor") {
+                return Step.ANCESTOR;
+            } else if (rhs[0] == "ancestor-or-self") {
+                return Step.ANCESTORORSELF;
+            } else if (rhs[0] == "attribute") {
+                return Step.ATTRIBUTE;
+            } else if (rhs[0] == "child") {
+                return Step.CHILD;
+            } else if (rhs[0] == "descendant") {
+                return Step.DESCENDANT;
+            } else if (rhs[0] == "descendant-or-self") {
+                return Step.DESCENDANTORSELF;
+            } else if (rhs[0] == "following") {
+                return Step.FOLLOWING;
+            } else if (rhs[0] == "following-sibling") {
+                return Step.FOLLOWINGSIBLING;
+            } else if (rhs[0] == "namespace") {
+                return Step.NAMESPACE;
+            } else if (rhs[0] == "parent") {
+                return Step.PARENT;
+            } else if (rhs[0] == "preceding") {
+                return Step.PRECEDING;
+            } else if (rhs[0] == "preceding-sibling") {
+                return Step.PRECEDINGSIBLING;
+            } else if (rhs[0] == "self") {
+                return Step.SELF;
+            }
+            return -1;
+        };
+        this.reduceActions[57] = function (rhs) {
+            return Step.ATTRIBUTE;
+        };
+        this.reduceActions[59] = function (rhs) {
+            if (rhs[0] == "comment") {
+                return NodeTest.commentTest;
+            } else if (rhs[0] == "text") {
+                return NodeTest.textTest;
+            } else if (rhs[0] == "processing-instruction") {
+                return NodeTest.anyPiTest;
+            } else if (rhs[0] == "node") {
+                return NodeTest.nodeTest;
+            }
+            return new NodeTest(-1, undefined);
+        };
+        this.reduceActions[60] = function (rhs) {
+            return new NodeTest.PITest(rhs[2]);
+        };
+        this.reduceActions[61] = function (rhs) {
+            return rhs[1];
+        };
+        this.reduceActions[63] = function (rhs) {
+            rhs[1].absolute = true;
+            rhs[1].steps.unshift(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
+            return rhs[1];
+        };
+        this.reduceActions[64] = function (rhs) {
+            rhs[0].steps.push(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
+            rhs[0].steps.push(rhs[2]);
+            return rhs[0];
+        };
+        this.reduceActions[65] = function (rhs) {
+            return new Step(Step.SELF, NodeTest.nodeTest, []);
+        };
+        this.reduceActions[66] = function (rhs) {
+            return new Step(Step.PARENT, NodeTest.nodeTest, []);
+        };
+        this.reduceActions[67] = function (rhs) {
+            return new VariableReference(rhs[1]);
+        };
+        this.reduceActions[68] = function (rhs) {
+            return NodeTest.nameTestAny;
+        };
+        this.reduceActions[69] = function (rhs) {
+            return new NodeTest.NameTestPrefixAny(rhs[0].split(':')[0]);
+        };
+        this.reduceActions[70] = function (rhs) {
+            return new NodeTest.NameTestQName(rhs[0]);
+        };
+    };
+
+    XPathParser.actionTable = [
+        " s s        sssssssss    s ss  s  ss",
+        "                 s                  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "                rrrrr               ",
+        " s s        sssssssss    s ss  s  ss",
+        "rs  rrrrrrrr s  sssssrrrrrr  rrs rs ",
+        " s s        sssssssss    s ss  s  ss",
+        "                            s       ",
+        "                            s       ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "  s                                 ",
+        "                            s       ",
+        " s           s  sssss          s  s ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "a                                   ",
+        "r       s                    rr  r  ",
+        "r      sr                    rr  r  ",
+        "r   s  rr            s       rr  r  ",
+        "r   rssrr            rss     rr  r  ",
+        "r   rrrrr            rrrss   rr  r  ",
+        "r   rrrrrsss         rrrrr   rr  r  ",
+        "r   rrrrrrrr         rrrrr   rr  r  ",
+        "r   rrrrrrrr         rrrrrs  rr  r  ",
+        "r   rrrrrrrr         rrrrrr  rr  r  ",
+        "r   rrrrrrrr         rrrrrr  rr  r  ",
+        "r  srrrrrrrr         rrrrrrs rr sr  ",
+        "r  srrrrrrrr         rrrrrrs rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r   rrrrrrrr         rrrrrr  rr  r  ",
+        "r   rrrrrrrr         rrrrrr  rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "                sssss               ",
+        "r  rrrrrrrrr         rrrrrrr rr sr  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "                             s      ",
+        "r  srrrrrrrr         rrrrrrs rr  r  ",
+        "r   rrrrrrrr         rrrrr   rr  r  ",
+        "              s                     ",
+        "                             s      ",
+        "                rrrrr               ",
+        " s s        sssssssss    s sss s  ss",
+        "r  srrrrrrrr         rrrrrrs rr  r  ",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s s        sssssssss      ss  s  ss",
+        " s s        sssssssss    s ss  s  ss",
+        " s           s  sssss          s  s ",
+        " s           s  sssss          s  s ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        " s           s  sssss          s  s ",
+        " s           s  sssss          s  s ",
+        "r  rrrrrrrrr         rrrrrrr rr sr  ",
+        "r  rrrrrrrrr         rrrrrrr rr sr  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "                             s      ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "                             rr     ",
+        "                             s      ",
+        "                             rs     ",
+        "r      sr                    rr  r  ",
+        "r   s  rr            s       rr  r  ",
+        "r   rssrr            rss     rr  r  ",
+        "r   rssrr            rss     rr  r  ",
+        "r   rrrrr            rrrss   rr  r  ",
+        "r   rrrrr            rrrss   rr  r  ",
+        "r   rrrrr            rrrss   rr  r  ",
+        "r   rrrrr            rrrss   rr  r  ",
+        "r   rrrrrsss         rrrrr   rr  r  ",
+        "r   rrrrrsss         rrrrr   rr  r  ",
+        "r   rrrrrrrr         rrrrr   rr  r  ",
+        "r   rrrrrrrr         rrrrr   rr  r  ",
+        "r   rrrrrrrr         rrrrr   rr  r  ",
+        "r   rrrrrrrr         rrrrrr  rr  r  ",
+        "                                 r  ",
+        "                                 s  ",
+        "r  srrrrrrrr         rrrrrrs rr  r  ",
+        "r  srrrrrrrr         rrrrrrs rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr  r  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        " s s        sssssssss    s ss  s  ss",
+        "r  rrrrrrrrr         rrrrrrr rr rr  ",
+        "                             r      "
+    ];
+
+    XPathParser.actionTableNumber = [
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        "                 J                  ",
+        "a  aaaaaaaaa         aaaaaaa aa  a  ",
+        "                YYYYY               ",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        "K1  KKKKKKKK .  +*)('KKKKKK  KK# K\" ",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        "                            N       ",
+        "                            O       ",
+        "e  eeeeeeeee         eeeeeee ee ee  ",
+        "f  fffffffff         fffffff ff ff  ",
+        "d  ddddddddd         ddddddd dd dd  ",
+        "B  BBBBBBBBB         BBBBBBB BB BB  ",
+        "A  AAAAAAAAA         AAAAAAA AA AA  ",
+        "  P                                 ",
+        "                            Q       ",
+        " 1           .  +*)('          #  \" ",
+        "b  bbbbbbbbb         bbbbbbb bb  b  ",
+        "                                    ",
+        "!       S                    !!  !  ",
+        "\"      T\"                    \"\"  \"  ",
+        "$   V  $$            U       $$  $  ",
+        "&   &ZY&&            &XW     &&  &  ",
+        ")   )))))            )))\\[   ))  )  ",
+        ".   ....._^]         .....   ..  .  ",
+        "1   11111111         11111   11  1  ",
+        "5   55555555         55555`  55  5  ",
+        "7   77777777         777777  77  7  ",
+        "9   99999999         999999  99  9  ",
+        ":  c::::::::         ::::::b :: a:  ",
+        "I  fIIIIIIII         IIIIIIe II  I  ",
+        "=  =========         ======= == ==  ",
+        "?  ?????????         ??????? ?? ??  ",
+        "C  CCCCCCCCC         CCCCCCC CC CC  ",
+        "J   JJJJJJJJ         JJJJJJ  JJ  J  ",
+        "M   MMMMMMMM         MMMMMM  MM  M  ",
+        "N  NNNNNNNNN         NNNNNNN NN  N  ",
+        "P  PPPPPPPPP         PPPPPPP PP  P  ",
+        "                +*)('               ",
+        "R  RRRRRRRRR         RRRRRRR RR aR  ",
+        "U  UUUUUUUUU         UUUUUUU UU  U  ",
+        "Z  ZZZZZZZZZ         ZZZZZZZ ZZ ZZ  ",
+        "c  ccccccccc         ccccccc cc cc  ",
+        "                             j      ",
+        "L  fLLLLLLLL         LLLLLLe LL  L  ",
+        "6   66666666         66666   66  6  ",
+        "              k                     ",
+        "                             l      ",
+        "                XXXXX               ",
+        " 1 0        /.-,+*)('    & %$m #  \"!",
+        "_  f________         ______e __  _  ",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1 0        /.-,+*)('      %$  #  \"!",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        " 1           .  +*)('          #  \" ",
+        " 1           .  +*)('          #  \" ",
+        ">  >>>>>>>>>         >>>>>>> >> >>  ",
+        " 1           .  +*)('          #  \" ",
+        " 1           .  +*)('          #  \" ",
+        "Q  QQQQQQQQQ         QQQQQQQ QQ aQ  ",
+        "V  VVVVVVVVV         VVVVVVV VV aV  ",
+        "T  TTTTTTTTT         TTTTTTT TT  T  ",
+        "@  @@@@@@@@@         @@@@@@@ @@ @@  ",
+        "                             \x87      ",
+        "[  [[[[[[[[[         [[[[[[[ [[ [[  ",
+        "D  DDDDDDDDD         DDDDDDD DD DD  ",
+        "                             HH     ",
+        "                             \x88      ",
+        "                             F\x89     ",
+        "#      T#                    ##  #  ",
+        "%   V  %%            U       %%  %  ",
+        "'   'ZY''            'XW     ''  '  ",
+        "(   (ZY((            (XW     ((  (  ",
+        "+   +++++            +++\\[   ++  +  ",
+        "*   *****            ***\\[   **  *  ",
+        "-   -----            ---\\[   --  -  ",
+        ",   ,,,,,            ,,,\\[   ,,  ,  ",
+        "0   00000_^]         00000   00  0  ",
+        "/   /////_^]         /////   //  /  ",
+        "2   22222222         22222   22  2  ",
+        "3   33333333         33333   33  3  ",
+        "4   44444444         44444   44  4  ",
+        "8   88888888         888888  88  8  ",
+        "                                 ^  ",
+        "                                 \x8a  ",
+        ";  f;;;;;;;;         ;;;;;;e ;;  ;  ",
+        "<  f<<<<<<<<         <<<<<<e <<  <  ",
+        "O  OOOOOOOOO         OOOOOOO OO  O  ",
+        "`  `````````         ``````` ``  `  ",
+        "S  SSSSSSSSS         SSSSSSS SS  S  ",
+        "W  WWWWWWWWW         WWWWWWW WW  W  ",
+        "\\  \\\\\\\\\\\\\\\\\\         \\\\\\\\\\\\\\ \\\\ \\\\  ",
+        "E  EEEEEEEEE         EEEEEEE EE EE  ",
+        " 1 0        /.-,+*)('    & %$  #  \"!",
+        "]  ]]]]]]]]]         ]]]]]]] ]] ]]  ",
+        "                             G      "
+    ];
+
+    XPathParser.gotoTable = [
+        "3456789:;<=>?@ AB  CDEFGH IJ ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "L456789:;<=>?@ AB  CDEFGH IJ ",
+        "            M        EFGH IJ ",
+        "       N;<=>?@ AB  CDEFGH IJ ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "            S        EFGH IJ ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "              e              ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                        h  J ",
+        "              i          j   ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "o456789:;<=>?@ ABpqCDEFGH IJ ",
+        "                             ",
+        "  r6789:;<=>?@ AB  CDEFGH IJ ",
+        "   s789:;<=>?@ AB  CDEFGH IJ ",
+        "    t89:;<=>?@ AB  CDEFGH IJ ",
+        "    u89:;<=>?@ AB  CDEFGH IJ ",
+        "     v9:;<=>?@ AB  CDEFGH IJ ",
+        "     w9:;<=>?@ AB  CDEFGH IJ ",
+        "     x9:;<=>?@ AB  CDEFGH IJ ",
+        "     y9:;<=>?@ AB  CDEFGH IJ ",
+        "      z:;<=>?@ AB  CDEFGH IJ ",
+        "      {:;<=>?@ AB  CDEFGH IJ ",
+        "       |;<=>?@ AB  CDEFGH IJ ",
+        "       };<=>?@ AB  CDEFGH IJ ",
+        "       ~;<=>?@ AB  CDEFGH IJ ",
+        "         \x7f=>?@ AB  CDEFGH IJ ",
+        "\x80456789:;<=>?@ AB  CDEFGH IJ\x81",
+        "            \x82        EFGH IJ ",
+        "            \x83        EFGH IJ ",
+        "                             ",
+        "                     \x84 GH IJ ",
+        "                     \x85 GH IJ ",
+        "              i          \x86   ",
+        "              i          \x87   ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "                             ",
+        "o456789:;<=>?@ AB\x8cqCDEFGH IJ ",
+        "                             ",
+        "                             "
+    ];
+
+    XPathParser.productions = [
+        [1, 1, 2],
+        [2, 1, 3],
+        [3, 1, 4],
+        [3, 3, 3, -9, 4],
+        [4, 1, 5],
+        [4, 3, 4, -8, 5],
+        [5, 1, 6],
+        [5, 3, 5, -22, 6],
+        [5, 3, 5, -5, 6],
+        [6, 1, 7],
+        [6, 3, 6, -23, 7],
+        [6, 3, 6, -24, 7],
+        [6, 3, 6, -6, 7],
+        [6, 3, 6, -7, 7],
+        [7, 1, 8],
+        [7, 3, 7, -25, 8],
+        [7, 3, 7, -26, 8],
+        [8, 1, 9],
+        [8, 3, 8, -12, 9],
+        [8, 3, 8, -11, 9],
+        [8, 3, 8, -10, 9],
+        [9, 1, 10],
+        [9, 2, -26, 9],
+        [10, 1, 11],
+        [10, 3, 10, -27, 11],
+        [11, 1, 12],
+        [11, 1, 13],
+        [11, 3, 13, -28, 14],
+        [11, 3, 13, -4, 14],
+        [13, 1, 15],
+        [13, 2, 13, 16],
+        [15, 1, 17],
+        [15, 3, -29, 2, -30],
+        [15, 1, -15],
+        [15, 1, -16],
+        [15, 1, 18],
+        [18, 3, -13, -29, -30],
+        [18, 4, -13, -29, 19, -30],
+        [19, 1, 20],
+        [19, 3, 20, -31, 19],
+        [20, 1, 2],
+        [12, 1, 14],
+        [12, 1, 21],
+        [21, 1, -28],
+        [21, 2, -28, 14],
+        [21, 1, 22],
+        [14, 1, 23],
+        [14, 3, 14, -28, 23],
+        [14, 1, 24],
+        [23, 2, 25, 26],
+        [23, 1, 26],
+        [23, 3, 25, 26, 27],
+        [23, 2, 26, 27],
+        [23, 1, 28],
+        [27, 1, 16],
+        [27, 2, 16, 27],
+        [25, 2, -14, -3],
+        [25, 1, -32],
+        [26, 1, 29],
+        [26, 3, -20, -29, -30],
+        [26, 4, -21, -29, -15, -30],
+        [16, 3, -33, 30, -34],
+        [30, 1, 2],
+        [22, 2, -4, 14],
+        [24, 3, 14, -4, 23],
+        [28, 1, -35],
+        [28, 1, -2],
+        [17, 2, -36, -18],
+        [29, 1, -17],
+        [29, 1, -19],
+        [29, 1, -18]
+    ];
+
+    XPathParser.DOUBLEDOT = 2;
+    XPathParser.DOUBLECOLON = 3;
+    XPathParser.DOUBLESLASH = 4;
+    XPathParser.NOTEQUAL = 5;
+    XPathParser.LESSTHANOREQUAL = 6;
+    XPathParser.GREATERTHANOREQUAL = 7;
+    XPathParser.AND = 8;
+    XPathParser.OR = 9;
+    XPathParser.MOD = 10;
+    XPathParser.DIV = 11;
+    XPathParser.MULTIPLYOPERATOR = 12;
+    XPathParser.FUNCTIONNAME = 13;
+    XPathParser.AXISNAME = 14;
+    XPathParser.LITERAL = 15;
+    XPathParser.NUMBER = 16;
+    XPathParser.ASTERISKNAMETEST = 17;
+    XPathParser.QNAME = 18;
+    XPathParser.NCNAMECOLONASTERISK = 19;
+    XPathParser.NODETYPE = 20;
+    XPathParser.PROCESSINGINSTRUCTIONWITHLITERAL = 21;
+    XPathParser.EQUALS = 22;
+    XPathParser.LESSTHAN = 23;
+    XPathParser.GREATERTHAN = 24;
+    XPathParser.PLUS = 25;
+    XPathParser.MINUS = 26;
+    XPathParser.BAR = 27;
+    XPathParser.SLASH = 28;
+    XPathParser.LEFTPARENTHESIS = 29;
+    XPathParser.RIGHTPARENTHESIS = 30;
+    XPathParser.COMMA = 31;
+    XPathParser.AT = 32;
+    XPathParser.LEFTBRACKET = 33;
+    XPathParser.RIGHTBRACKET = 34;
+    XPathParser.DOT = 35;
+    XPathParser.DOLLAR = 36;
+
+    XPathParser.prototype.tokenize = function (s1) {
+        var types = [];
+        var values = [];
+        var s = s1 + '\0';
+
+        var pos = 0;
+        var c = s.charAt(pos++);
+        while (1) {
+            while (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+                c = s.charAt(pos++);
+            }
+            if (c == '\0' || pos >= s.length) {
+                break;
+            }
+
+            if (c == '(') {
+                types.push(XPathParser.LEFTPARENTHESIS);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == ')') {
+                types.push(XPathParser.RIGHTPARENTHESIS);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == '[') {
+                types.push(XPathParser.LEFTBRACKET);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == ']') {
+                types.push(XPathParser.RIGHTBRACKET);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == '@') {
+                types.push(XPathParser.AT);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == ',') {
+                types.push(XPathParser.COMMA);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == '|') {
+                types.push(XPathParser.BAR);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == '+') {
+                types.push(XPathParser.PLUS);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == '-') {
+                types.push(XPathParser.MINUS);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == '=') {
+                types.push(XPathParser.EQUALS);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+            if (c == '$') {
+                types.push(XPathParser.DOLLAR);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+
+            if (c == '.') {
+                c = s.charAt(pos++);
+                if (c == '.') {
+                    types.push(XPathParser.DOUBLEDOT);
+                    values.push("..");
+                    c = s.charAt(pos++);
+                    continue;
+                }
+                if (c >= '0' && c <= '9') {
+                    var number = "." + c;
+                    c = s.charAt(pos++);
+                    while (c >= '0' && c <= '9') {
+                        number += c;
+                        c = s.charAt(pos++);
+                    }
+                    types.push(XPathParser.NUMBER);
+                    values.push(number);
+                    continue;
+                }
+                types.push(XPathParser.DOT);
+                values.push('.');
+                continue;
+            }
+
+            if (c == '\'' || c == '"') {
+                var delimiter = c;
+                var literal = "";
+                while (pos < s.length && (c = s.charAt(pos)) !== delimiter) {
+                    literal += c;
+                    pos += 1;
+                }
+                if (c !== delimiter) {
+                    throw XPathException.fromMessage("Unterminated string literal: " + delimiter + literal);
+                }
+                pos += 1;
+                types.push(XPathParser.LITERAL);
+                values.push(literal);
+                c = s.charAt(pos++);
+                continue;
+            }
+
+            if (c >= '0' && c <= '9') {
+                var number = c;
+                c = s.charAt(pos++);
+                while (c >= '0' && c <= '9') {
+                    number += c;
+                    c = s.charAt(pos++);
+                }
+                if (c == '.') {
+                    if (s.charAt(pos) >= '0' && s.charAt(pos) <= '9') {
+                        number += c;
+                        number += s.charAt(pos++);
+                        c = s.charAt(pos++);
+                        while (c >= '0' && c <= '9') {
+                            number += c;
+                            c = s.charAt(pos++);
+                        }
+                    }
+                }
+                types.push(XPathParser.NUMBER);
+                values.push(number);
+                continue;
+            }
+
+            if (c == '*') {
+                if (types.length > 0) {
+                    var last = types[types.length - 1];
+                    if (last != XPathParser.AT
+                        && last != XPathParser.DOUBLECOLON
+                        && last != XPathParser.LEFTPARENTHESIS
+                        && last != XPathParser.LEFTBRACKET
+                        && last != XPathParser.AND
+                        && last != XPathParser.OR
+                        && last != XPathParser.MOD
+                        && last != XPathParser.DIV
+                        && last != XPathParser.MULTIPLYOPERATOR
+                        && last != XPathParser.SLASH
+                        && last != XPathParser.DOUBLESLASH
+                        && last != XPathParser.BAR
+                        && last != XPathParser.PLUS
+                        && last != XPathParser.MINUS
+                        && last != XPathParser.EQUALS
+                        && last != XPathParser.NOTEQUAL
+                        && last != XPathParser.LESSTHAN
+                        && last != XPathParser.LESSTHANOREQUAL
+                        && last != XPathParser.GREATERTHAN
+                        && last != XPathParser.GREATERTHANOREQUAL) {
+                        types.push(XPathParser.MULTIPLYOPERATOR);
+                        values.push(c);
+                        c = s.charAt(pos++);
+                        continue;
+                    }
+                }
+                types.push(XPathParser.ASTERISKNAMETEST);
+                values.push(c);
+                c = s.charAt(pos++);
+                continue;
+            }
+
+            if (c == ':') {
+                if (s.charAt(pos) == ':') {
+                    types.push(XPathParser.DOUBLECOLON);
+                    values.push("::");
+                    pos++;
+                    c = s.charAt(pos++);
+                    continue;
+                }
+            }
+
+            if (c == '/') {
+                c = s.charAt(pos++);
+                if (c == '/') {
+                    types.push(XPathParser.DOUBLESLASH);
+                    values.push("//");
+                    c = s.charAt(pos++);
+                    continue;
+                }
+                types.push(XPathParser.SLASH);
+                values.push('/');
+                continue;
+            }
+
+            if (c == '!') {
+                if (s.charAt(pos) == '=') {
+                    types.push(XPathParser.NOTEQUAL);
+                    values.push("!=");
+                    pos++;
+                    c = s.charAt(pos++);
+                    continue;
+                }
+            }
+
+            if (c == '<') {
+                if (s.charAt(pos) == '=') {
+                    types.push(XPathParser.LESSTHANOREQUAL);
+                    values.push("<=");
+                    pos++;
+                    c = s.charAt(pos++);
+                    continue;
+                }
+                types.push(XPathParser.LESSTHAN);
+                values.push('<');
+                c = s.charAt(pos++);
+                continue;
+            }
+
+            if (c == '>') {
+                if (s.charAt(pos) == '=') {
+                    types.push(XPathParser.GREATERTHANOREQUAL);
+                    values.push(">=");
+                    pos++;
+                    c = s.charAt(pos++);
+                    continue;
+                }
+                types.push(XPathParser.GREATERTHAN);
+                values.push('>');
+                c = s.charAt(pos++);
+                continue;
+            }
+
+            if (c == '_' || Utilities.isLetter(c.charCodeAt(0))) {
+                var name = c;
+                c = s.charAt(pos++);
+                while (Utilities.isNCNameChar(c.charCodeAt(0))) {
+                    name += c;
+                    c = s.charAt(pos++);
+                }
+                if (types.length > 0) {
+                    var last = types[types.length - 1];
+                    if (last != XPathParser.AT
+                        && last != XPathParser.DOUBLECOLON
+                        && last != XPathParser.LEFTPARENTHESIS
+                        && last != XPathParser.LEFTBRACKET
+                        && last != XPathParser.AND
+                        && last != XPathParser.OR
+                        && last != XPathParser.MOD
+                        && last != XPathParser.DIV
+                        && last != XPathParser.MULTIPLYOPERATOR
+                        && last != XPathParser.SLASH
+                        && last != XPathParser.DOUBLESLASH
+                        && last != XPathParser.BAR
+                        && last != XPathParser.PLUS
+                        && last != XPathParser.MINUS
+                        && last != XPathParser.EQUALS
+                        && last != XPathParser.NOTEQUAL
+                        && last != XPathParser.LESSTHAN
+                        && last != XPathParser.LESSTHANOREQUAL
+                        && last != XPathParser.GREATERTHAN
+                        && last != XPathParser.GREATERTHANOREQUAL) {
+                        if (name == "and") {
+                            types.push(XPathParser.AND);
+                            values.push(name);
+                            continue;
+                        }
+                        if (name == "or") {
+                            types.push(XPathParser.OR);
+                            values.push(name);
+                            continue;
+                        }
+                        if (name == "mod") {
+                            types.push(XPathParser.MOD);
+                            values.push(name);
+                            continue;
+                        }
+                        if (name == "div") {
+                            types.push(XPathParser.DIV);
+                            values.push(name);
+                            continue;
+                        }
+                    }
+                }
+                if (c == ':') {
+                    if (s.charAt(pos) == '*') {
+                        types.push(XPathParser.NCNAMECOLONASTERISK);
+                        values.push(name + ":*");
+                        pos++;
+                        c = s.charAt(pos++);
+                        continue;
+                    }
+                    if (s.charAt(pos) == '_' || Utilities.isLetter(s.charCodeAt(pos))) {
+                        name += ':';
+                        c = s.charAt(pos++);
+                        while (Utilities.isNCNameChar(c.charCodeAt(0))) {
+                            name += c;
+                            c = s.charAt(pos++);
+                        }
+                        if (c == '(') {
+                            types.push(XPathParser.FUNCTIONNAME);
+                            values.push(name);
+                            continue;
+                        }
+                        types.push(XPathParser.QNAME);
+                        values.push(name);
+                        continue;
+                    }
+                    if (s.charAt(pos) == ':') {
+                        types.push(XPathParser.AXISNAME);
+                        values.push(name);
+                        continue;
+                    }
+                }
+                if (c == '(') {
+                    if (name == "comment" || name == "text" || name == "node") {
+                        types.push(XPathParser.NODETYPE);
+                        values.push(name);
+                        continue;
+                    }
+                    if (name == "processing-instruction") {
+                        if (s.charAt(pos) == ')') {
+                            types.push(XPathParser.NODETYPE);
+                        } else {
+                            types.push(XPathParser.PROCESSINGINSTRUCTIONWITHLITERAL);
+                        }
+                        values.push(name);
+                        continue;
+                    }
+                    types.push(XPathParser.FUNCTIONNAME);
+                    values.push(name);
+                    continue;
+                }
+                types.push(XPathParser.QNAME);
+                values.push(name);
+                continue;
+            }
+
+            throw new Error("Unexpected character " + c);
+        }
+        types.push(1);
+        values.push("[EOF]");
+        return [types, values];
+    };
+
+    XPathParser.SHIFT = 's';
+    XPathParser.REDUCE = 'r';
+    XPathParser.ACCEPT = 'a';
+
+    XPathParser.prototype.parse = function (s) {
+        var types;
+        var values;
+        var res = this.tokenize(s);
+        if (res == undefined) {
+            return undefined;
+        }
+        types = res[0];
+        values = res[1];
+        var tokenPos = 0;
+        var state = [];
+        var tokenType = [];
+        var tokenValue = [];
+        var s;
+        var a;
+        var t;
+
+        state.push(0);
+        tokenType.push(1);
+        tokenValue.push("_S");
+
+        a = types[tokenPos];
+        t = values[tokenPos++];
+        while (1) {
+            s = state[state.length - 1];
+            switch (XPathParser.actionTable[s].charAt(a - 1)) {
+                case XPathParser.SHIFT:
+                    tokenType.push(-a);
+                    tokenValue.push(t);
+                    state.push(XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32);
+                    a = types[tokenPos];
+                    t = values[tokenPos++];
+                    break;
+                case XPathParser.REDUCE:
+                    var num = XPathParser.productions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32][1];
+                    var rhs = [];
+                    for (var i = 0; i < num; i++) {
+                        tokenType.pop();
+                        rhs.unshift(tokenValue.pop());
+                        state.pop();
+                    }
+                    var s_ = state[state.length - 1];
+                    tokenType.push(XPathParser.productions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32][0]);
+                    if (this.reduceActions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32] == undefined) {
+                        tokenValue.push(rhs[0]);
+                    } else {
+                        tokenValue.push(this.reduceActions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32](rhs));
+                    }
+                    state.push(XPathParser.gotoTable[s_].charCodeAt(XPathParser.productions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32][0] - 2) - 33);
+                    break;
+                case XPathParser.ACCEPT:
+                    return new XPath(tokenValue.pop());
+                default:
+                    throw new Error("XPath parse error");
+            }
+        }
+    };
+
+    // XPath /////////////////////////////////////////////////////////////////////
+
+    XPath.prototype = new Object();
+    XPath.prototype.constructor = XPath;
+    XPath.superclass = Object.prototype;
+
+    function XPath(e) {
+        this.expression = e;
+    }
+
+    XPath.prototype.toString = function () {
+        return this.expression.toString();
+    };
+
+    function setIfUnset(obj, prop, value) {
+        if (!(prop in obj)) {
+            obj[prop] = value;
+        }
+    }
+
+    XPath.prototype.evaluate = function (c) {
+        c.contextNode = c.expressionContextNode;
+        c.contextSize = 1;
+        c.contextPosition = 1;
+
+        // [2017-11-25] Removed usage of .implementation.hasFeature() since it does
+        //              not reliably detect HTML DOMs (always returns false in xmldom and true in browsers)
+        if (c.isHtml) {
+            setIfUnset(c, 'caseInsensitive', true);
+            setIfUnset(c, 'allowAnyNamespaceForNoPrefix', true);
+        }
+
+        setIfUnset(c, 'caseInsensitive', false);
+
+        return this.expression.evaluate(c);
+    };
+
+    XPath.XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace";
+    XPath.XMLNS_NAMESPACE_URI = "http://www.w3.org/2000/xmlns/";
+
+    // Expression ////////////////////////////////////////////////////////////////
+
+    Expression.prototype = new Object();
+    Expression.prototype.constructor = Expression;
+    Expression.superclass = Object.prototype;
+
+    function Expression() {
+    }
+
+    Expression.prototype.init = function () {
+    };
+
+    Expression.prototype.toString = function () {
+        return "<Expression>";
+    };
+
+    Expression.prototype.evaluate = function (c) {
+        throw new Error("Could not evaluate expression.");
+    };
+
+    // UnaryOperation ////////////////////////////////////////////////////////////
+
+    UnaryOperation.prototype = new Expression();
+    UnaryOperation.prototype.constructor = UnaryOperation;
+    UnaryOperation.superclass = Expression.prototype;
+
+    function UnaryOperation(rhs) {
+        if (arguments.length > 0) {
+            this.init(rhs);
+        }
+    }
+
+    UnaryOperation.prototype.init = function (rhs) {
+        this.rhs = rhs;
+    };
+
+    // UnaryMinusOperation ///////////////////////////////////////////////////////
+
+    UnaryMinusOperation.prototype = new UnaryOperation();
+    UnaryMinusOperation.prototype.constructor = UnaryMinusOperation;
+    UnaryMinusOperation.superclass = UnaryOperation.prototype;
+
+    function UnaryMinusOperation(rhs) {
+        if (arguments.length > 0) {
+            this.init(rhs);
+        }
+    }
+
+    UnaryMinusOperation.prototype.init = function (rhs) {
+        UnaryMinusOperation.superclass.init.call(this, rhs);
+    };
+
+    UnaryMinusOperation.prototype.evaluate = function (c) {
+        return this.rhs.evaluate(c).number().negate();
+    };
+
+    UnaryMinusOperation.prototype.toString = function () {
+        return "-" + this.rhs.toString();
+    };
+
+    // BinaryOperation ///////////////////////////////////////////////////////////
+
+    BinaryOperation.prototype = new Expression();
+    BinaryOperation.prototype.constructor = BinaryOperation;
+    BinaryOperation.superclass = Expression.prototype;
+
+    function BinaryOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    BinaryOperation.prototype.init = function (lhs, rhs) {
+        this.lhs = lhs;
+        this.rhs = rhs;
+    };
+
+    // OrOperation ///////////////////////////////////////////////////////////////
+
+    OrOperation.prototype = new BinaryOperation();
+    OrOperation.prototype.constructor = OrOperation;
+    OrOperation.superclass = BinaryOperation.prototype;
+
+    function OrOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    OrOperation.prototype.init = function (lhs, rhs) {
+        OrOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    OrOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " or " + this.rhs.toString() + ")";
+    };
+
+    OrOperation.prototype.evaluate = function (c) {
+        var b = this.lhs.evaluate(c).bool();
+        if (b.booleanValue()) {
+            return b;
+        }
+        return this.rhs.evaluate(c).bool();
+    };
+
+    // AndOperation //////////////////////////////////////////////////////////////
+
+    AndOperation.prototype = new BinaryOperation();
+    AndOperation.prototype.constructor = AndOperation;
+    AndOperation.superclass = BinaryOperation.prototype;
+
+    function AndOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    AndOperation.prototype.init = function (lhs, rhs) {
+        AndOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    AndOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " and " + this.rhs.toString() + ")";
+    };
+
+    AndOperation.prototype.evaluate = function (c) {
+        var b = this.lhs.evaluate(c).bool();
+        if (!b.booleanValue()) {
+            return b;
+        }
+        return this.rhs.evaluate(c).bool();
+    };
+
+    // EqualsOperation ///////////////////////////////////////////////////////////
+
+    EqualsOperation.prototype = new BinaryOperation();
+    EqualsOperation.prototype.constructor = EqualsOperation;
+    EqualsOperation.superclass = BinaryOperation.prototype;
+
+    function EqualsOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    EqualsOperation.prototype.init = function (lhs, rhs) {
+        EqualsOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    EqualsOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " = " + this.rhs.toString() + ")";
+    };
+
+    EqualsOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).equals(this.rhs.evaluate(c));
+    };
+
+    // NotEqualOperation /////////////////////////////////////////////////////////
+
+    NotEqualOperation.prototype = new BinaryOperation();
+    NotEqualOperation.prototype.constructor = NotEqualOperation;
+    NotEqualOperation.superclass = BinaryOperation.prototype;
+
+    function NotEqualOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    NotEqualOperation.prototype.init = function (lhs, rhs) {
+        NotEqualOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    NotEqualOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " != " + this.rhs.toString() + ")";
+    };
+
+    NotEqualOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).notequal(this.rhs.evaluate(c));
+    };
+
+    // LessThanOperation /////////////////////////////////////////////////////////
+
+    LessThanOperation.prototype = new BinaryOperation();
+    LessThanOperation.prototype.constructor = LessThanOperation;
+    LessThanOperation.superclass = BinaryOperation.prototype;
+
+    function LessThanOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    LessThanOperation.prototype.init = function (lhs, rhs) {
+        LessThanOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    LessThanOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).lessthan(this.rhs.evaluate(c));
+    };
+
+    LessThanOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " < " + this.rhs.toString() + ")";
+    };
+
+    // GreaterThanOperation //////////////////////////////////////////////////////
+
+    GreaterThanOperation.prototype = new BinaryOperation();
+    GreaterThanOperation.prototype.constructor = GreaterThanOperation;
+    GreaterThanOperation.superclass = BinaryOperation.prototype;
+
+    function GreaterThanOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    GreaterThanOperation.prototype.init = function (lhs, rhs) {
+        GreaterThanOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    GreaterThanOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).greaterthan(this.rhs.evaluate(c));
+    };
+
+    GreaterThanOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " > " + this.rhs.toString() + ")";
+    };
+
+    // LessThanOrEqualOperation //////////////////////////////////////////////////
+
+    LessThanOrEqualOperation.prototype = new BinaryOperation();
+    LessThanOrEqualOperation.prototype.constructor = LessThanOrEqualOperation;
+    LessThanOrEqualOperation.superclass = BinaryOperation.prototype;
+
+    function LessThanOrEqualOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    LessThanOrEqualOperation.prototype.init = function (lhs, rhs) {
+        LessThanOrEqualOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    LessThanOrEqualOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).lessthanorequal(this.rhs.evaluate(c));
+    };
+
+    LessThanOrEqualOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " <= " + this.rhs.toString() + ")";
+    };
+
+    // GreaterThanOrEqualOperation ///////////////////////////////////////////////
+
+    GreaterThanOrEqualOperation.prototype = new BinaryOperation();
+    GreaterThanOrEqualOperation.prototype.constructor = GreaterThanOrEqualOperation;
+    GreaterThanOrEqualOperation.superclass = BinaryOperation.prototype;
+
+    function GreaterThanOrEqualOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    GreaterThanOrEqualOperation.prototype.init = function (lhs, rhs) {
+        GreaterThanOrEqualOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    GreaterThanOrEqualOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).greaterthanorequal(this.rhs.evaluate(c));
+    };
+
+    GreaterThanOrEqualOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " >= " + this.rhs.toString() + ")";
+    };
+
+    // PlusOperation /////////////////////////////////////////////////////////////
+
+    PlusOperation.prototype = new BinaryOperation();
+    PlusOperation.prototype.constructor = PlusOperation;
+    PlusOperation.superclass = BinaryOperation.prototype;
+
+    function PlusOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    PlusOperation.prototype.init = function (lhs, rhs) {
+        PlusOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    PlusOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).number().plus(this.rhs.evaluate(c).number());
+    };
+
+    PlusOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " + " + this.rhs.toString() + ")";
+    };
+
+    // MinusOperation ////////////////////////////////////////////////////////////
+
+    MinusOperation.prototype = new BinaryOperation();
+    MinusOperation.prototype.constructor = MinusOperation;
+    MinusOperation.superclass = BinaryOperation.prototype;
+
+    function MinusOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    MinusOperation.prototype.init = function (lhs, rhs) {
+        MinusOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    MinusOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).number().minus(this.rhs.evaluate(c).number());
+    };
+
+    MinusOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " - " + this.rhs.toString() + ")";
+    };
+
+    // MultiplyOperation /////////////////////////////////////////////////////////
+
+    MultiplyOperation.prototype = new BinaryOperation();
+    MultiplyOperation.prototype.constructor = MultiplyOperation;
+    MultiplyOperation.superclass = BinaryOperation.prototype;
+
+    function MultiplyOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    MultiplyOperation.prototype.init = function (lhs, rhs) {
+        MultiplyOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    MultiplyOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).number().multiply(this.rhs.evaluate(c).number());
+    };
+
+    MultiplyOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " * " + this.rhs.toString() + ")";
+    };
+
+    // DivOperation //////////////////////////////////////////////////////////////
+
+    DivOperation.prototype = new BinaryOperation();
+    DivOperation.prototype.constructor = DivOperation;
+    DivOperation.superclass = BinaryOperation.prototype;
+
+    function DivOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    DivOperation.prototype.init = function (lhs, rhs) {
+        DivOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    DivOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).number().div(this.rhs.evaluate(c).number());
+    };
+
+    DivOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " div " + this.rhs.toString() + ")";
+    };
+
+    // ModOperation //////////////////////////////////////////////////////////////
+
+    ModOperation.prototype = new BinaryOperation();
+    ModOperation.prototype.constructor = ModOperation;
+    ModOperation.superclass = BinaryOperation.prototype;
+
+    function ModOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    ModOperation.prototype.init = function (lhs, rhs) {
+        ModOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    ModOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).number().mod(this.rhs.evaluate(c).number());
+    };
+
+    ModOperation.prototype.toString = function () {
+        return "(" + this.lhs.toString() + " mod " + this.rhs.toString() + ")";
+    };
+
+    // BarOperation //////////////////////////////////////////////////////////////
+
+    BarOperation.prototype = new BinaryOperation();
+    BarOperation.prototype.constructor = BarOperation;
+    BarOperation.superclass = BinaryOperation.prototype;
+
+    function BarOperation(lhs, rhs) {
+        if (arguments.length > 0) {
+            this.init(lhs, rhs);
+        }
+    }
+
+    BarOperation.prototype.init = function (lhs, rhs) {
+        BarOperation.superclass.init.call(this, lhs, rhs);
+    };
+
+    BarOperation.prototype.evaluate = function (c) {
+        return this.lhs.evaluate(c).nodeset().union(this.rhs.evaluate(c).nodeset());
+    };
+
+    BarOperation.prototype.toString = function () {
+        return map(toString, [this.lhs, this.rhs]).join(' | ');
+    };
+
+    // PathExpr //////////////////////////////////////////////////////////////////
+
+    PathExpr.prototype = new Expression();
+    PathExpr.prototype.constructor = PathExpr;
+    PathExpr.superclass = Expression.prototype;
+
+    function PathExpr(filter, filterPreds, locpath) {
+        if (arguments.length > 0) {
+            this.init(filter, filterPreds, locpath);
+        }
+    }
+
+    PathExpr.prototype.init = function (filter, filterPreds, locpath) {
+        PathExpr.superclass.init.call(this);
+        this.filter = filter;
+        this.filterPredicates = filterPreds;
+        this.locationPath = locpath;
+    };
+
+    /**
+     * Returns the topmost node of the tree containing node
+     */
+    function findRoot(node) {
+        while (node && node.parentNode) {
+            node = node.parentNode;
+        }
+
+        return node;
+    }
+
+    PathExpr.applyPredicates = function (predicates, c, nodes) {
+        if (predicates.length === 0) {
+            return nodes;
+        }
+
+        var ctx = c.extend({});
+
+        return reduce(
+            function (inNodes, pred) {
+                ctx.contextSize = inNodes.length;
+
+                return filter(
+                    function (node, i) {
+                        ctx.contextNode = node;
+                        ctx.contextPosition = i + 1;
+
+                        return PathExpr.predicateMatches(pred, ctx);
+                    },
+                    inNodes
+                );
+            },
+            nodes,
+            predicates
+        );
+    };
+
+    PathExpr.getRoot = function (xpc, nodes) {
+        var firstNode = nodes[0];
+
+        if (firstNode.nodeType === 9 /*Node.DOCUMENT_NODE*/) {
+            return firstNode;
+        }
+
+        if (xpc.virtualRoot) {
+            return xpc.virtualRoot;
+        }
+
+        var ownerDoc = firstNode.ownerDocument;
+
+        if (ownerDoc) {
+            return ownerDoc;
+        }
+
+        // IE 5.5 doesn't have ownerDocument?
+        var n = firstNode;
+        while (n.parentNode != null) {
+            n = n.parentNode;
+        }
+        return n;
+    }
+
+    PathExpr.applyStep = function (step, xpc, node) {
+        var self = this;
+        var newNodes = [];
+        xpc.contextNode = node;
+
+        switch (step.axis) {
+            case Step.ANCESTOR:
+                // look at all the ancestor nodes
+                if (xpc.contextNode === xpc.virtualRoot) {
+                    break;
+                }
+                var m;
+                if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
+                    m = PathExpr.getOwnerElement(xpc.contextNode);
+                } else {
+                    m = xpc.contextNode.parentNode;
+                }
+                while (m != null) {
+                    if (step.nodeTest.matches(m, xpc)) {
+                        newNodes.push(m);
+                    }
+                    if (m === xpc.virtualRoot) {
+                        break;
+                    }
+                    m = m.parentNode;
+                }
+                break;
+
+            case Step.ANCESTORORSELF:
+                // look at all the ancestor nodes and the current node
+                for (var m = xpc.contextNode; m != null; m = m.nodeType == 2 /*Node.ATTRIBUTE_NODE*/ ? PathExpr.getOwnerElement(m) : m.parentNode) {
+                    if (step.nodeTest.matches(m, xpc)) {
+                        newNodes.push(m);
+                    }
+                    if (m === xpc.virtualRoot) {
+                        break;
+                    }
+                }
+                break;
+
+            case Step.ATTRIBUTE:
+                // look at the attributes
+                var nnm = xpc.contextNode.attributes;
+                if (nnm != null) {
+                    for (var k = 0; k < nnm.length; k++) {
+                        var m = nnm.item(k);
+                        if (step.nodeTest.matches(m, xpc)) {
+                            newNodes.push(m);
+                        }
+                    }
+                }
+                break;
+
+            case Step.CHILD:
+                // look at all child elements
+                for (var m = xpc.contextNode.firstChild; m != null; m = m.nextSibling) {
+                    if (step.nodeTest.matches(m, xpc)) {
+                        newNodes.push(m);
+                    }
+                }
+                break;
+
+            case Step.DESCENDANT:
+                // look at all descendant nodes
+                var st = [xpc.contextNode.firstChild];
+                while (st.length > 0) {
+                    for (var m = st.pop(); m != null;) {
+                        if (step.nodeTest.matches(m, xpc)) {
+                            newNodes.push(m);
+                        }
+                        if (m.firstChild != null) {
+                            st.push(m.nextSibling);
+                            m = m.firstChild;
+                        } else {
+                            m = m.nextSibling;
+                        }
+                    }
+                }
+                break;
+
+            case Step.DESCENDANTORSELF:
+                // look at self
+                if (step.nodeTest.matches(xpc.contextNode, xpc)) {
+                    newNodes.push(xpc.contextNode);
+                }
+                // look at all descendant nodes
+                var st = [xpc.contextNode.firstChild];
+                while (st.length > 0) {
+                    for (var m = st.pop(); m != null;) {
+                        if (step.nodeTest.matches(m, xpc)) {
+                            newNodes.push(m);
+                        }
+                        if (m.firstChild != null) {
+                            st.push(m.nextSibling);
+                            m = m.firstChild;
+                        } else {
+                            m = m.nextSibling;
+                        }
+                    }
+                }
+                break;
+
+            case Step.FOLLOWING:
+                if (xpc.contextNode === xpc.virtualRoot) {
+                    break;
+                }
+                var st = [];
+                if (xpc.contextNode.firstChild != null) {
+                    st.unshift(xpc.contextNode.firstChild);
+                } else {
+                    st.unshift(xpc.contextNode.nextSibling);
+                }
+                for (var m = xpc.contextNode.parentNode; m != null && m.nodeType != 9 /*Node.DOCUMENT_NODE*/ && m !== xpc.virtualRoot; m = m.parentNode) {
+                    st.unshift(m.nextSibling);
+                }
+                do {
+                    for (var m = st.pop(); m != null;) {
+                        if (step.nodeTest.matches(m, xpc)) {
+                            newNodes.push(m);
+                        }
+                        if (m.firstChild != null) {
+                            st.push(m.nextSibling);
+                            m = m.firstChild;
+                        } else {
+                            m = m.nextSibling;
+                        }
+                    }
+                } while (st.length > 0);
+                break;
+
+            case Step.FOLLOWINGSIBLING:
+                if (xpc.contextNode === xpc.virtualRoot) {
+                    break;
+                }
+                for (var m = xpc.contextNode.nextSibling; m != null; m = m.nextSibling) {
+                    if (step.nodeTest.matches(m, xpc)) {
+                        newNodes.push(m);
+                    }
+                }
+                break;
+
+            case Step.NAMESPACE:
+                var n = {};
+                if (xpc.contextNode.nodeType == 1 /*Node.ELEMENT_NODE*/) {
+                    n["xml"] = XPath.XML_NAMESPACE_URI;
+                    n["xmlns"] = XPath.XMLNS_NAMESPACE_URI;
+                    for (var m = xpc.contextNode; m != null && m.nodeType == 1 /*Node.ELEMENT_NODE*/; m = m.parentNode) {
+                        for (var k = 0; k < m.attributes.length; k++) {
+                            var attr = m.attributes.item(k);
+                            var nm = String(attr.name);
+                            if (nm == "xmlns") {
+                                if (n[""] == undefined) {
+                                    n[""] = attr.value;
+                                }
+                            } else if (nm.length > 6 && nm.substring(0, 6) == "xmlns:") {
+                                var pre = nm.substring(6, nm.length);
+                                if (n[pre] == undefined) {
+                                    n[pre] = attr.value;
+                                }
+                            }
+                        }
+                    }
+                    for (var pre in n) {
+                        var nsn = new XPathNamespace(pre, n[pre], xpc.contextNode);
+                        if (step.nodeTest.matches(nsn, xpc)) {
+                            newNodes.push(nsn);
+                        }
+                    }
+                }
+                break;
+
+            case Step.PARENT:
+                m = null;
+                if (xpc.contextNode !== xpc.virtualRoot) {
+                    if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
+                        m = PathExpr.getOwnerElement(xpc.contextNode);
+                    } else {
+                        m = xpc.contextNode.parentNode;
+                    }
+                }
+                if (m != null && step.nodeTest.matches(m, xpc)) {
+                    newNodes.push(m);
+                }
+                break;
+
+            case Step.PRECEDING:
+                var st;
+                if (xpc.virtualRoot != null) {
+                    st = [xpc.virtualRoot];
+                } else {
+                    // cannot rely on .ownerDocument because the node may be in a document fragment
+                    st = [findRoot(xpc.contextNode)];
+                }
+                outer: while (st.length > 0) {
+                    for (var m = st.pop(); m != null;) {
+                        if (m == xpc.contextNode) {
+                            break outer;
+                        }
+                        if (step.nodeTest.matches(m, xpc)) {
+                            newNodes.unshift(m);
+                        }
+                        if (m.firstChild != null) {
+                            st.push(m.nextSibling);
+                            m = m.firstChild;
+                        } else {
+                            m = m.nextSibling;
+                        }
+                    }
+                }
+                break;
+
+            case Step.PRECEDINGSIBLING:
+                if (xpc.contextNode === xpc.virtualRoot) {
+                    break;
+                }
+                for (var m = xpc.contextNode.previousSibling; m != null; m = m.previousSibling) {
+                    if (step.nodeTest.matches(m, xpc)) {
+                        newNodes.push(m);
+                    }
+                }
+                break;
+
+            case Step.SELF:
+                if (step.nodeTest.matches(xpc.contextNode, xpc)) {
+                    newNodes.push(xpc.contextNode);
+                }
+                break;
+
+            default:
+        }
+
+        return newNodes;
+    };
+
+    function applyStepWithPredicates(step, xpc, node) {
+        return PathExpr.applyPredicates(
+            step.predicates,
+            xpc,
+            PathExpr.applyStep(step, xpc, node)
+        );
+    }
+
+    function applyStepToNodes(context, nodes, step) {
+        return flatten(
+            map(
+                applyStepWithPredicates.bind(null, step, context),
+                nodes
+            )
+        );
+    }
+
+    PathExpr.applySteps = function (steps, xpc, nodes) {
+        return reduce(
+            applyStepToNodes.bind(null, xpc),
+            nodes,
+            steps
+        );
+    }
+
+    PathExpr.prototype.applyFilter = function (c, xpc) {
+        if (!this.filter) {
+            return { nodes: [c.contextNode] };
+        }
+
+        var ns = this.filter.evaluate(c);
+
+        if (!Utilities.instance_of(ns, XNodeSet)) {
+            if (this.filterPredicates != null && this.filterPredicates.length > 0 || this.locationPath != null) {
+                throw new Error("Path expression filter must evaluate to a nodeset if predicates or location path are used");
+            }
+
+            return { nonNodes: ns };
+        }
+
+        return {
+            nodes: PathExpr.applyPredicates(this.filterPredicates || [], xpc, ns.toUnsortedArray())
+        };
+    };
+
+    PathExpr.applyLocationPath = function (locationPath, xpc, nodes) {
+        if (!locationPath) {
+            return nodes;
+        }
+
+        var startNodes = locationPath.absolute ? [PathExpr.getRoot(xpc, nodes)] : nodes;
+
+        return PathExpr.applySteps(locationPath.steps, xpc, startNodes);
+    };
+
+    PathExpr.prototype.evaluate = function (c) {
+        var xpc = assign(new XPathContext(), c);
+
+        var filterResult = this.applyFilter(c, xpc);
+
+        if ('nonNodes' in filterResult) {
+            return filterResult.nonNodes;
+        }
+
+        var ns = new XNodeSet();
+        ns.addArray(PathExpr.applyLocationPath(this.locationPath, xpc, filterResult.nodes));
+        return ns;
+    };
+
+    PathExpr.predicateMatches = function (pred, c) {
+        var res = pred.evaluate(c);
+
+        return Utilities.instance_of(res, XNumber)
+            ? c.contextPosition === res.numberValue()
+            : res.booleanValue();
+    };
+
+    PathExpr.predicateString = function (predicate) {
+        return wrap('[', ']', predicate.toString());
+    }
+
+    PathExpr.predicatesString = function (predicates) {
+        return join(
+            '',
+            map(PathExpr.predicateString, predicates)
+        );
+    }
+
+    PathExpr.prototype.toString = function () {
+        if (this.filter != undefined) {
+            var filterStr = toString(this.filter);
+
+            if (Utilities.instance_of(this.filter, XString)) {
+                return wrap("'", "'", filterStr);
+            }
+            if (this.filterPredicates != undefined && this.filterPredicates.length) {
+                return wrap('(', ')', filterStr) +
+                    PathExpr.predicatesString(this.filterPredicates);
+            }
+            if (this.locationPath != undefined) {
+                return filterStr +
+                    (this.locationPath.absolute ? '' : '/') +
+                    toString(this.locationPath);
+            }
+
+            return filterStr;
+        }
+
+        return toString(this.locationPath);
+    };
+
+    PathExpr.getOwnerElement = function (n) {
+        // DOM 2 has ownerElement
+        if (n.ownerElement) {
+            return n.ownerElement;
+        }
+        // DOM 1 Internet Explorer can use selectSingleNode (ironically)
+        try {
+            if (n.selectSingleNode) {
+                return n.selectSingleNode("..");
+            }
+        } catch (e) {
+        }
+        // Other DOM 1 implementations must use this egregious search
+        var doc = n.nodeType == 9 /*Node.DOCUMENT_NODE*/
+            ? n
+            : n.ownerDocument;
+        var elts = doc.getElementsByTagName("*");
+        for (var i = 0; i < elts.length; i++) {
+            var elt = elts.item(i);
+            var nnm = elt.attributes;
+            for (var j = 0; j < nnm.length; j++) {
+                var an = nnm.item(j);
+                if (an === n) {
+                    return elt;
+                }
+            }
+        }
+        return null;
+    };
+
+    // LocationPath //////////////////////////////////////////////////////////////
+
+    LocationPath.prototype = new Object();
+    LocationPath.prototype.constructor = LocationPath;
+    LocationPath.superclass = Object.prototype;
+
+    function LocationPath(abs, steps) {
+        if (arguments.length > 0) {
+            this.init(abs, steps);
+        }
+    }
+
+    LocationPath.prototype.init = function (abs, steps) {
+        this.absolute = abs;
+        this.steps = steps;
+    };
+
+    LocationPath.prototype.toString = function () {
+        return (
+            (this.absolute ? '/' : '') +
+            map(toString, this.steps).join('/')
+        );
+    };
+
+    // Step //////////////////////////////////////////////////////////////////////
+
+    Step.prototype = new Object();
+    Step.prototype.constructor = Step;
+    Step.superclass = Object.prototype;
+
+    function Step(axis, nodetest, preds) {
+        if (arguments.length > 0) {
+            this.init(axis, nodetest, preds);
+        }
+    }
+
+    Step.prototype.init = function (axis, nodetest, preds) {
+        this.axis = axis;
+        this.nodeTest = nodetest;
+        this.predicates = preds;
+    };
+
+    Step.prototype.toString = function () {
+        return Step.STEPNAMES[this.axis] +
+            "::" +
+            this.nodeTest.toString() +
+            PathExpr.predicatesString(this.predicates);
+    };
+
+
+    Step.ANCESTOR = 0;
+    Step.ANCESTORORSELF = 1;
+    Step.ATTRIBUTE = 2;
+    Step.CHILD = 3;
+    Step.DESCENDANT = 4;
+    Step.DESCENDANTORSELF = 5;
+    Step.FOLLOWING = 6;
+    Step.FOLLOWINGSIBLING = 7;
+    Step.NAMESPACE = 8;
+    Step.PARENT = 9;
+    Step.PRECEDING = 10;
+    Step.PRECEDINGSIBLING = 11;
+    Step.SELF = 12;
+
+    Step.STEPNAMES = reduce(function (acc, x) { return acc[x[0]] = x[1], acc; }, {}, [
+        [Step.ANCESTOR, 'ancestor'],
+        [Step.ANCESTORORSELF, 'ancestor-or-self'],
+        [Step.ATTRIBUTE, 'attribute'],
+        [Step.CHILD, 'child'],
+        [Step.DESCENDANT, 'descendant'],
+        [Step.DESCENDANTORSELF, 'descendant-or-self'],
+        [Step.FOLLOWING, 'following'],
+        [Step.FOLLOWINGSIBLING, 'following-sibling'],
+        [Step.NAMESPACE, 'namespace'],
+        [Step.PARENT, 'parent'],
+        [Step.PRECEDING, 'preceding'],
+        [Step.PRECEDINGSIBLING, 'preceding-sibling'],
+        [Step.SELF, 'self']
+    ]);
+
+    // NodeTest //////////////////////////////////////////////////////////////////
+
+    NodeTest.prototype = new Object();
+    NodeTest.prototype.constructor = NodeTest;
+    NodeTest.superclass = Object.prototype;
+
+    function NodeTest(type, value) {
+        if (arguments.length > 0) {
+            this.init(type, value);
+        }
+    }
+
+    NodeTest.prototype.init = function (type, value) {
+        this.type = type;
+        this.value = value;
+    };
+
+    NodeTest.prototype.toString = function () {
+        return "<unknown nodetest type>";
+    };
+
+    NodeTest.prototype.matches = function (n, xpc) {
+        console.warn('unknown node test type');
+    };
+
+    NodeTest.NAMETESTANY = 0;
+    NodeTest.NAMETESTPREFIXANY = 1;
+    NodeTest.NAMETESTQNAME = 2;
+    NodeTest.COMMENT = 3;
+    NodeTest.TEXT = 4;
+    NodeTest.PI = 5;
+    NodeTest.NODE = 6;
+
+    NodeTest.isNodeType = function (types) {
+        return function (node) {
+            return includes(types, node.nodeType);
+        };
+    };
+
+    NodeTest.makeNodeTestType = function (type, members, ctor) {
+        var newType = ctor || function () { };
+
+        newType.prototype = new NodeTest(type);
+        newType.prototype.constructor = newType;
+
+        assign(newType.prototype, members);
+
+        return newType;
+    };
+    // create invariant node test for certain node types
+    NodeTest.makeNodeTypeTest = function (type, nodeTypes, stringVal) {
+        return new (NodeTest.makeNodeTestType(type, {
+            matches: NodeTest.isNodeType(nodeTypes),
+            toString: always(stringVal)
+        }))();
+    };
+
+    NodeTest.hasPrefix = function (node) {
+        return node.prefix || (node.nodeName || node.tagName).indexOf(':') !== -1;
+    };
+
+    NodeTest.isElementOrAttribute = NodeTest.isNodeType([1, 2]);
+    NodeTest.nameSpaceMatches = function (prefix, xpc, n) {
+        var nNamespace = (n.namespaceURI || '');
+
+        if (!prefix) {
+            return !nNamespace || (xpc.allowAnyNamespaceForNoPrefix && !NodeTest.hasPrefix(n));
+        }
+
+        var ns = xpc.namespaceResolver.getNamespace(prefix, xpc.expressionContextNode);
+
+        if (ns == null) {
+            throw new Error("Cannot resolve QName " + prefix);
+        }
+
+        return ns === nNamespace;
+    };
+    NodeTest.localNameMatches = function (localName, xpc, n) {
+        var nLocalName = (n.localName || n.nodeName);
+
+        return xpc.caseInsensitive
+            ? localName.toLowerCase() === nLocalName.toLowerCase()
+            : localName === nLocalName;
+    };
+
+    NodeTest.NameTestPrefixAny = NodeTest.makeNodeTestType(
+        NodeTest.NAMETESTPREFIXANY,
+        {
+            matches: function (n, xpc) {
+                return NodeTest.isElementOrAttribute(n) &&
+                    NodeTest.nameSpaceMatches(this.prefix, xpc, n);
+            },
+            toString: function () {
+                return this.prefix + ":*";
             }
         },
-        fn = function( ) {
-            var args = slice.call( arguments );
-            return ( args.length < totalargs ) ?
-                partial( args, fn ) :
-                func.apply( this, slice.apply( arguments, [ 0, totalargs ] ) );
-        };
-    return fn;
-}
-
-var forEach = curry(function (f, xs) {
-	for (var i = 0; i < xs.length; i += 1) {
-		f(xs[i], i, xs);
-	}
-});
-
-var reduce = curry(function (f, seed, xs) {
-	var acc = seed;
-
-	forEach(function (x, i) { acc = f(acc, x, i); }, xs);
-
-	return acc;
-});
-
-var map = curry(function (f, xs) { 
-	var mapped = new Array(xs.length);
-	
-	forEach(function (x, i) { mapped[i] = f(x); }, xs);
-
-	return mapped;
-});
-
-var filter = curry(function (f, xs) {
-	var filtered = [];
-	
-	forEach(function (x, i) { if(f(x, i)) { filtered.push(x); } }, xs);
-	
-	return filtered;
-});
-
-function compose() {
-    if (arguments.length === 0) { throw new Error('compose requires at least one argument'); }
-
-    var funcs = Array.prototype.slice.call(arguments).reverse();
-	
-    var f0 = funcs[0];
-    var fRem = funcs.slice(1);
-
-    return function () {
-        return reduce(function (acc, next) {
-            return next(acc);
-        }, f0.apply(null, arguments), fRem);
-    };
-}
-
-var includes = curry(function (values, value) {
-	for (var i = 0; i < values.length; i += 1) {
-		if (values[i] === value){
-			return true;
-		}
-	}
-	
-	return false;
-});
-
-function always(value) { return function () { return value ;} }
-
-var prop = curry(function (name, obj) { return obj[name]; });
-
-function toString (x) { return x.toString(); }
-var join = curry(function (s, xs) { return xs.join(s); });
-var wrap = curry(function (pref, suf, str) { return pref + str + suf; });
-
-function assign(target) { // .length of function is 2
-    var to = Object(target);
-
-    for (var index = 1; index < arguments.length; index++) {
-        var nextSource = arguments[index];
-
-        if (nextSource != null) { // Skip over if undefined or null
-            for (var nextKey in nextSource) {
-                // Avoid bugs when hasOwnProperty is shadowed
-                if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
-                    to[nextKey] = nextSource[nextKey];
-                }
-            }
-        }
-    }
-
-    return to;
-}
-
-// XPathParser ///////////////////////////////////////////////////////////////
-
-XPathParser.prototype = new Object();
-XPathParser.prototype.constructor = XPathParser;
-XPathParser.superclass = Object.prototype;
-
-function XPathParser() {
-	this.init();
-}
-
-XPathParser.prototype.init = function() {
-	this.reduceActions = [];
-
-	this.reduceActions[3] = function(rhs) {
-		return new OrOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[5] = function(rhs) {
-		return new AndOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[7] = function(rhs) {
-		return new EqualsOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[8] = function(rhs) {
-		return new NotEqualOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[10] = function(rhs) {
-		return new LessThanOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[11] = function(rhs) {
-		return new GreaterThanOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[12] = function(rhs) {
-		return new LessThanOrEqualOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[13] = function(rhs) {
-		return new GreaterThanOrEqualOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[15] = function(rhs) {
-		return new PlusOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[16] = function(rhs) {
-		return new MinusOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[18] = function(rhs) {
-		return new MultiplyOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[19] = function(rhs) {
-		return new DivOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[20] = function(rhs) {
-		return new ModOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[22] = function(rhs) {
-		return new UnaryMinusOperation(rhs[1]);
-	};
-	this.reduceActions[24] = function(rhs) {
-		return new BarOperation(rhs[0], rhs[2]);
-	};
-	this.reduceActions[25] = function(rhs) {
-		return new PathExpr(undefined, undefined, rhs[0]);
-	};
-	this.reduceActions[27] = function(rhs) {
-		rhs[0].locationPath = rhs[2];
-		return rhs[0];
-	};
-	this.reduceActions[28] = function(rhs) {
-		rhs[0].locationPath = rhs[2];
-		rhs[0].locationPath.steps.unshift(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
-		return rhs[0];
-	};
-	this.reduceActions[29] = function(rhs) {
-		return new PathExpr(rhs[0], [], undefined);
-	};
-	this.reduceActions[30] = function(rhs) {
-		if (Utilities.instance_of(rhs[0], PathExpr)) {
-			if (rhs[0].filterPredicates == undefined) {
-				rhs[0].filterPredicates = [];
-			}
-			rhs[0].filterPredicates.push(rhs[1]);
-			return rhs[0];
-		} else {
-			return new PathExpr(rhs[0], [rhs[1]], undefined);
-		}
-	};
-	this.reduceActions[32] = function(rhs) {
-		return rhs[1];
-	};
-	this.reduceActions[33] = function(rhs) {
-		return new XString(rhs[0]);
-	};
-	this.reduceActions[34] = function(rhs) {
-		return new XNumber(rhs[0]);
-	};
-	this.reduceActions[36] = function(rhs) {
-		return new FunctionCall(rhs[0], []);
-	};
-	this.reduceActions[37] = function(rhs) {
-		return new FunctionCall(rhs[0], rhs[2]);
-	};
-	this.reduceActions[38] = function(rhs) {
-		return [ rhs[0] ];
-	};
-	this.reduceActions[39] = function(rhs) {
-		rhs[2].unshift(rhs[0]);
-		return rhs[2];
-	};
-	this.reduceActions[43] = function(rhs) {
-		return new LocationPath(true, []);
-	};
-	this.reduceActions[44] = function(rhs) {
-		rhs[1].absolute = true;
-		return rhs[1];
-	};
-	this.reduceActions[46] = function(rhs) {
-		return new LocationPath(false, [ rhs[0] ]);
-	};
-	this.reduceActions[47] = function(rhs) {
-		rhs[0].steps.push(rhs[2]);
-		return rhs[0];
-	};
-	this.reduceActions[49] = function(rhs) {
-		return new Step(rhs[0], rhs[1], []);
-	};
-	this.reduceActions[50] = function(rhs) {
-		return new Step(Step.CHILD, rhs[0], []);
-	};
-	this.reduceActions[51] = function(rhs) {
-		return new Step(rhs[0], rhs[1], rhs[2]);
-	};
-	this.reduceActions[52] = function(rhs) {
-		return new Step(Step.CHILD, rhs[0], rhs[1]);
-	};
-	this.reduceActions[54] = function(rhs) {
-		return [ rhs[0] ];
-	};
-	this.reduceActions[55] = function(rhs) {
-		rhs[1].unshift(rhs[0]);
-		return rhs[1];
-	};
-	this.reduceActions[56] = function(rhs) {
-		if (rhs[0] == "ancestor") {
-			return Step.ANCESTOR;
-		} else if (rhs[0] == "ancestor-or-self") {
-			return Step.ANCESTORORSELF;
-		} else if (rhs[0] == "attribute") {
-			return Step.ATTRIBUTE;
-		} else if (rhs[0] == "child") {
-			return Step.CHILD;
-		} else if (rhs[0] == "descendant") {
-			return Step.DESCENDANT;
-		} else if (rhs[0] == "descendant-or-self") {
-			return Step.DESCENDANTORSELF;
-		} else if (rhs[0] == "following") {
-			return Step.FOLLOWING;
-		} else if (rhs[0] == "following-sibling") {
-			return Step.FOLLOWINGSIBLING;
-		} else if (rhs[0] == "namespace") {
-			return Step.NAMESPACE;
-		} else if (rhs[0] == "parent") {
-			return Step.PARENT;
-		} else if (rhs[0] == "preceding") {
-			return Step.PRECEDING;
-		} else if (rhs[0] == "preceding-sibling") {
-			return Step.PRECEDINGSIBLING;
-		} else if (rhs[0] == "self") {
-			return Step.SELF;
-		}
-		return -1;
-	};
-	this.reduceActions[57] = function(rhs) {
-		return Step.ATTRIBUTE;
-	};
-	this.reduceActions[59] = function(rhs) {
-		if (rhs[0] == "comment") {
-			return NodeTest.commentTest;
-		} else if (rhs[0] == "text") {
-			return NodeTest.textTest;
-		} else if (rhs[0] == "processing-instruction") {
-			return NodeTest.anyPiTest;
-		} else if (rhs[0] == "node") {
-			return NodeTest.nodeTest;
-		}
-		return new NodeTest(-1, undefined);
-	};
-	this.reduceActions[60] = function(rhs) {
-		return new NodeTest.PITest(rhs[2]);
-	};
-	this.reduceActions[61] = function(rhs) {
-		return rhs[1];
-	};
-	this.reduceActions[63] = function(rhs) {
-		rhs[1].absolute = true;
-		rhs[1].steps.unshift(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
-		return rhs[1];
-	};
-	this.reduceActions[64] = function(rhs) {
-		rhs[0].steps.push(new Step(Step.DESCENDANTORSELF, NodeTest.nodeTest, []));
-		rhs[0].steps.push(rhs[2]);
-		return rhs[0];
-	};
-	this.reduceActions[65] = function(rhs) {
-		return new Step(Step.SELF, NodeTest.nodeTest, []);
-	};
-	this.reduceActions[66] = function(rhs) {
-		return new Step(Step.PARENT, NodeTest.nodeTest, []);
-	};
-	this.reduceActions[67] = function(rhs) {
-		return new VariableReference(rhs[1]);
-	};
-	this.reduceActions[68] = function(rhs) {
-		return NodeTest.nameTestAny;
-	};
-	this.reduceActions[69] = function(rhs) {
-		return new NodeTest.NameTestPrefixAny(rhs[0].split(':')[0]);
-	};
-	this.reduceActions[70] = function(rhs) {
-		return new NodeTest.NameTestQName(rhs[0]);
-	};
-};
-
-XPathParser.actionTable = [
-	" s s        sssssssss    s ss  s  ss",
-	"                 s                  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"                rrrrr               ",
-	" s s        sssssssss    s ss  s  ss",
-	"rs  rrrrrrrr s  sssssrrrrrr  rrs rs ",
-	" s s        sssssssss    s ss  s  ss",
-	"                            s       ",
-	"                            s       ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"  s                                 ",
-	"                            s       ",
-	" s           s  sssss          s  s ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"a                                   ",
-	"r       s                    rr  r  ",
-	"r      sr                    rr  r  ",
-	"r   s  rr            s       rr  r  ",
-	"r   rssrr            rss     rr  r  ",
-	"r   rrrrr            rrrss   rr  r  ",
-	"r   rrrrrsss         rrrrr   rr  r  ",
-	"r   rrrrrrrr         rrrrr   rr  r  ",
-	"r   rrrrrrrr         rrrrrs  rr  r  ",
-	"r   rrrrrrrr         rrrrrr  rr  r  ",
-	"r   rrrrrrrr         rrrrrr  rr  r  ",
-	"r  srrrrrrrr         rrrrrrs rr sr  ",
-	"r  srrrrrrrr         rrrrrrs rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r   rrrrrrrr         rrrrrr  rr  r  ",
-	"r   rrrrrrrr         rrrrrr  rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"                sssss               ",
-	"r  rrrrrrrrr         rrrrrrr rr sr  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"                             s      ",
-	"r  srrrrrrrr         rrrrrrs rr  r  ",
-	"r   rrrrrrrr         rrrrr   rr  r  ",
-	"              s                     ",
-	"                             s      ",
-	"                rrrrr               ",
-	" s s        sssssssss    s sss s  ss",
-	"r  srrrrrrrr         rrrrrrs rr  r  ",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s s        sssssssss      ss  s  ss",
-	" s s        sssssssss    s ss  s  ss",
-	" s           s  sssss          s  s ",
-	" s           s  sssss          s  s ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	" s           s  sssss          s  s ",
-	" s           s  sssss          s  s ",
-	"r  rrrrrrrrr         rrrrrrr rr sr  ",
-	"r  rrrrrrrrr         rrrrrrr rr sr  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"                             s      ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"                             rr     ",
-	"                             s      ",
-	"                             rs     ",
-	"r      sr                    rr  r  ",
-	"r   s  rr            s       rr  r  ",
-	"r   rssrr            rss     rr  r  ",
-	"r   rssrr            rss     rr  r  ",
-	"r   rrrrr            rrrss   rr  r  ",
-	"r   rrrrr            rrrss   rr  r  ",
-	"r   rrrrr            rrrss   rr  r  ",
-	"r   rrrrr            rrrss   rr  r  ",
-	"r   rrrrrsss         rrrrr   rr  r  ",
-	"r   rrrrrsss         rrrrr   rr  r  ",
-	"r   rrrrrrrr         rrrrr   rr  r  ",
-	"r   rrrrrrrr         rrrrr   rr  r  ",
-	"r   rrrrrrrr         rrrrr   rr  r  ",
-	"r   rrrrrrrr         rrrrrr  rr  r  ",
-	"                                 r  ",
-	"                                 s  ",
-	"r  srrrrrrrr         rrrrrrs rr  r  ",
-	"r  srrrrrrrr         rrrrrrs rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr  r  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	" s s        sssssssss    s ss  s  ss",
-	"r  rrrrrrrrr         rrrrrrr rr rr  ",
-	"                             r      "
-];
-
-XPathParser.actionTableNumber = [
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	"                 J                  ",
-	"a  aaaaaaaaa         aaaaaaa aa  a  ",
-	"                YYYYY               ",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	"K1  KKKKKKKK .  +*)('KKKKKK  KK# K\" ",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	"                            N       ",
-	"                            O       ",
-	"e  eeeeeeeee         eeeeeee ee ee  ",
-	"f  fffffffff         fffffff ff ff  ",
-	"d  ddddddddd         ddddddd dd dd  ",
-	"B  BBBBBBBBB         BBBBBBB BB BB  ",
-	"A  AAAAAAAAA         AAAAAAA AA AA  ",
-	"  P                                 ",
-	"                            Q       ",
-	" 1           .  +*)('          #  \" ",
-	"b  bbbbbbbbb         bbbbbbb bb  b  ",
-	"                                    ",
-	"!       S                    !!  !  ",
-	"\"      T\"                    \"\"  \"  ",
-	"$   V  $$            U       $$  $  ",
-	"&   &ZY&&            &XW     &&  &  ",
-	")   )))))            )))\\[   ))  )  ",
-	".   ....._^]         .....   ..  .  ",
-	"1   11111111         11111   11  1  ",
-	"5   55555555         55555`  55  5  ",
-	"7   77777777         777777  77  7  ",
-	"9   99999999         999999  99  9  ",
-	":  c::::::::         ::::::b :: a:  ",
-	"I  fIIIIIIII         IIIIIIe II  I  ",
-	"=  =========         ======= == ==  ",
-	"?  ?????????         ??????? ?? ??  ",
-	"C  CCCCCCCCC         CCCCCCC CC CC  ",
-	"J   JJJJJJJJ         JJJJJJ  JJ  J  ",
-	"M   MMMMMMMM         MMMMMM  MM  M  ",
-	"N  NNNNNNNNN         NNNNNNN NN  N  ",
-	"P  PPPPPPPPP         PPPPPPP PP  P  ",
-	"                +*)('               ",
-	"R  RRRRRRRRR         RRRRRRR RR aR  ",
-	"U  UUUUUUUUU         UUUUUUU UU  U  ",
-	"Z  ZZZZZZZZZ         ZZZZZZZ ZZ ZZ  ",
-	"c  ccccccccc         ccccccc cc cc  ",
-	"                             j      ",
-	"L  fLLLLLLLL         LLLLLLe LL  L  ",
-	"6   66666666         66666   66  6  ",
-	"              k                     ",
-	"                             l      ",
-	"                XXXXX               ",
-	" 1 0        /.-,+*)('    & %$m #  \"!",
-	"_  f________         ______e __  _  ",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1 0        /.-,+*)('      %$  #  \"!",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	" 1           .  +*)('          #  \" ",
-	" 1           .  +*)('          #  \" ",
-	">  >>>>>>>>>         >>>>>>> >> >>  ",
-	" 1           .  +*)('          #  \" ",
-	" 1           .  +*)('          #  \" ",
-	"Q  QQQQQQQQQ         QQQQQQQ QQ aQ  ",
-	"V  VVVVVVVVV         VVVVVVV VV aV  ",
-	"T  TTTTTTTTT         TTTTTTT TT  T  ",
-	"@  @@@@@@@@@         @@@@@@@ @@ @@  ",
-	"                             \x87      ",
-	"[  [[[[[[[[[         [[[[[[[ [[ [[  ",
-	"D  DDDDDDDDD         DDDDDDD DD DD  ",
-	"                             HH     ",
-	"                             \x88      ",
-	"                             F\x89     ",
-	"#      T#                    ##  #  ",
-	"%   V  %%            U       %%  %  ",
-	"'   'ZY''            'XW     ''  '  ",
-	"(   (ZY((            (XW     ((  (  ",
-	"+   +++++            +++\\[   ++  +  ",
-	"*   *****            ***\\[   **  *  ",
-	"-   -----            ---\\[   --  -  ",
-	",   ,,,,,            ,,,\\[   ,,  ,  ",
-	"0   00000_^]         00000   00  0  ",
-	"/   /////_^]         /////   //  /  ",
-	"2   22222222         22222   22  2  ",
-	"3   33333333         33333   33  3  ",
-	"4   44444444         44444   44  4  ",
-	"8   88888888         888888  88  8  ",
-	"                                 ^  ",
-	"                                 \x8a  ",
-	";  f;;;;;;;;         ;;;;;;e ;;  ;  ",
-	"<  f<<<<<<<<         <<<<<<e <<  <  ",
-	"O  OOOOOOOOO         OOOOOOO OO  O  ",
-	"`  `````````         ``````` ``  `  ",
-	"S  SSSSSSSSS         SSSSSSS SS  S  ",
-	"W  WWWWWWWWW         WWWWWWW WW  W  ",
-	"\\  \\\\\\\\\\\\\\\\\\         \\\\\\\\\\\\\\ \\\\ \\\\  ",
-	"E  EEEEEEEEE         EEEEEEE EE EE  ",
-	" 1 0        /.-,+*)('    & %$  #  \"!",
-	"]  ]]]]]]]]]         ]]]]]]] ]] ]]  ",
-	"                             G      "
-];
-
-XPathParser.gotoTable = [
-	"3456789:;<=>?@ AB  CDEFGH IJ ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"L456789:;<=>?@ AB  CDEFGH IJ ",
-	"            M        EFGH IJ ",
-	"       N;<=>?@ AB  CDEFGH IJ ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"            S        EFGH IJ ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"              e              ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                        h  J ",
-	"              i          j   ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"o456789:;<=>?@ ABpqCDEFGH IJ ",
-	"                             ",
-	"  r6789:;<=>?@ AB  CDEFGH IJ ",
-	"   s789:;<=>?@ AB  CDEFGH IJ ",
-	"    t89:;<=>?@ AB  CDEFGH IJ ",
-	"    u89:;<=>?@ AB  CDEFGH IJ ",
-	"     v9:;<=>?@ AB  CDEFGH IJ ",
-	"     w9:;<=>?@ AB  CDEFGH IJ ",
-	"     x9:;<=>?@ AB  CDEFGH IJ ",
-	"     y9:;<=>?@ AB  CDEFGH IJ ",
-	"      z:;<=>?@ AB  CDEFGH IJ ",
-	"      {:;<=>?@ AB  CDEFGH IJ ",
-	"       |;<=>?@ AB  CDEFGH IJ ",
-	"       };<=>?@ AB  CDEFGH IJ ",
-	"       ~;<=>?@ AB  CDEFGH IJ ",
-	"         \x7f=>?@ AB  CDEFGH IJ ",
-	"\x80456789:;<=>?@ AB  CDEFGH IJ\x81",
-	"            \x82        EFGH IJ ",
-	"            \x83        EFGH IJ ",
-	"                             ",
-	"                     \x84 GH IJ ",
-	"                     \x85 GH IJ ",
-	"              i          \x86   ",
-	"              i          \x87   ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"                             ",
-	"o456789:;<=>?@ AB\x8cqCDEFGH IJ ",
-	"                             ",
-	"                             "
-];
-
-XPathParser.productions = [
-	[1, 1, 2],
-	[2, 1, 3],
-	[3, 1, 4],
-	[3, 3, 3, -9, 4],
-	[4, 1, 5],
-	[4, 3, 4, -8, 5],
-	[5, 1, 6],
-	[5, 3, 5, -22, 6],
-	[5, 3, 5, -5, 6],
-	[6, 1, 7],
-	[6, 3, 6, -23, 7],
-	[6, 3, 6, -24, 7],
-	[6, 3, 6, -6, 7],
-	[6, 3, 6, -7, 7],
-	[7, 1, 8],
-	[7, 3, 7, -25, 8],
-	[7, 3, 7, -26, 8],
-	[8, 1, 9],
-	[8, 3, 8, -12, 9],
-	[8, 3, 8, -11, 9],
-	[8, 3, 8, -10, 9],
-	[9, 1, 10],
-	[9, 2, -26, 9],
-	[10, 1, 11],
-	[10, 3, 10, -27, 11],
-	[11, 1, 12],
-	[11, 1, 13],
-	[11, 3, 13, -28, 14],
-	[11, 3, 13, -4, 14],
-	[13, 1, 15],
-	[13, 2, 13, 16],
-	[15, 1, 17],
-	[15, 3, -29, 2, -30],
-	[15, 1, -15],
-	[15, 1, -16],
-	[15, 1, 18],
-	[18, 3, -13, -29, -30],
-	[18, 4, -13, -29, 19, -30],
-	[19, 1, 20],
-	[19, 3, 20, -31, 19],
-	[20, 1, 2],
-	[12, 1, 14],
-	[12, 1, 21],
-	[21, 1, -28],
-	[21, 2, -28, 14],
-	[21, 1, 22],
-	[14, 1, 23],
-	[14, 3, 14, -28, 23],
-	[14, 1, 24],
-	[23, 2, 25, 26],
-	[23, 1, 26],
-	[23, 3, 25, 26, 27],
-	[23, 2, 26, 27],
-	[23, 1, 28],
-	[27, 1, 16],
-	[27, 2, 16, 27],
-	[25, 2, -14, -3],
-	[25, 1, -32],
-	[26, 1, 29],
-	[26, 3, -20, -29, -30],
-	[26, 4, -21, -29, -15, -30],
-	[16, 3, -33, 30, -34],
-	[30, 1, 2],
-	[22, 2, -4, 14],
-	[24, 3, 14, -4, 23],
-	[28, 1, -35],
-	[28, 1, -2],
-	[17, 2, -36, -18],
-	[29, 1, -17],
-	[29, 1, -19],
-	[29, 1, -18]
-];
-
-XPathParser.DOUBLEDOT = 2;
-XPathParser.DOUBLECOLON = 3;
-XPathParser.DOUBLESLASH = 4;
-XPathParser.NOTEQUAL = 5;
-XPathParser.LESSTHANOREQUAL = 6;
-XPathParser.GREATERTHANOREQUAL = 7;
-XPathParser.AND = 8;
-XPathParser.OR = 9;
-XPathParser.MOD = 10;
-XPathParser.DIV = 11;
-XPathParser.MULTIPLYOPERATOR = 12;
-XPathParser.FUNCTIONNAME = 13;
-XPathParser.AXISNAME = 14;
-XPathParser.LITERAL = 15;
-XPathParser.NUMBER = 16;
-XPathParser.ASTERISKNAMETEST = 17;
-XPathParser.QNAME = 18;
-XPathParser.NCNAMECOLONASTERISK = 19;
-XPathParser.NODETYPE = 20;
-XPathParser.PROCESSINGINSTRUCTIONWITHLITERAL = 21;
-XPathParser.EQUALS = 22;
-XPathParser.LESSTHAN = 23;
-XPathParser.GREATERTHAN = 24;
-XPathParser.PLUS = 25;
-XPathParser.MINUS = 26;
-XPathParser.BAR = 27;
-XPathParser.SLASH = 28;
-XPathParser.LEFTPARENTHESIS = 29;
-XPathParser.RIGHTPARENTHESIS = 30;
-XPathParser.COMMA = 31;
-XPathParser.AT = 32;
-XPathParser.LEFTBRACKET = 33;
-XPathParser.RIGHTBRACKET = 34;
-XPathParser.DOT = 35;
-XPathParser.DOLLAR = 36;
-
-XPathParser.prototype.tokenize = function(s1) {
-	var types = [];
-	var values = [];
-	var s = s1 + '\0';
-
-	var pos = 0;
-	var c = s.charAt(pos++);
-	while (1) {
-		while (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-			c = s.charAt(pos++);
-		}
-		if (c == '\0' || pos >= s.length) {
-			break;
-		}
-
-		if (c == '(') {
-			types.push(XPathParser.LEFTPARENTHESIS);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == ')') {
-			types.push(XPathParser.RIGHTPARENTHESIS);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == '[') {
-			types.push(XPathParser.LEFTBRACKET);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == ']') {
-			types.push(XPathParser.RIGHTBRACKET);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == '@') {
-			types.push(XPathParser.AT);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == ',') {
-			types.push(XPathParser.COMMA);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == '|') {
-			types.push(XPathParser.BAR);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == '+') {
-			types.push(XPathParser.PLUS);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == '-') {
-			types.push(XPathParser.MINUS);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == '=') {
-			types.push(XPathParser.EQUALS);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-		if (c == '$') {
-			types.push(XPathParser.DOLLAR);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-
-		if (c == '.') {
-			c = s.charAt(pos++);
-			if (c == '.') {
-				types.push(XPathParser.DOUBLEDOT);
-				values.push("..");
-				c = s.charAt(pos++);
-				continue;
-			}
-			if (c >= '0' && c <= '9') {
-				var number = "." + c;
-				c = s.charAt(pos++);
-				while (c >= '0' && c <= '9') {
-					number += c;
-					c = s.charAt(pos++);
-				}
-				types.push(XPathParser.NUMBER);
-				values.push(number);
-				continue;
-			}
-			types.push(XPathParser.DOT);
-			values.push('.');
-			continue;
-		}
-
-		if (c == '\'' || c == '"') {
-			var delimiter = c;
-			var literal = "";
-			while (pos < s.length && (c = s.charAt(pos)) !== delimiter) {
-				literal += c;
-                pos += 1;
-			}
-            if (c !== delimiter) {
-                throw XPathException.fromMessage("Unterminated string literal: " + delimiter + literal);
-            }
-            pos += 1;
-			types.push(XPathParser.LITERAL);
-			values.push(literal);
-			c = s.charAt(pos++);
-			continue;
-		}
-
-		if (c >= '0' && c <= '9') {
-			var number = c;
-			c = s.charAt(pos++);
-			while (c >= '0' && c <= '9') {
-				number += c;
-				c = s.charAt(pos++);
-			}
-			if (c == '.') {
-				if (s.charAt(pos) >= '0' && s.charAt(pos) <= '9') {
-					number += c;
-					number += s.charAt(pos++);
-					c = s.charAt(pos++);
-					while (c >= '0' && c <= '9') {
-						number += c;
-						c = s.charAt(pos++);
-					}
-				}
-			}
-			types.push(XPathParser.NUMBER);
-			values.push(number);
-			continue;
-		}
-
-		if (c == '*') {
-			if (types.length > 0) {
-				var last = types[types.length - 1];
-				if (last != XPathParser.AT
-						&& last != XPathParser.DOUBLECOLON
-						&& last != XPathParser.LEFTPARENTHESIS
-						&& last != XPathParser.LEFTBRACKET
-						&& last != XPathParser.AND
-						&& last != XPathParser.OR
-						&& last != XPathParser.MOD
-						&& last != XPathParser.DIV
-						&& last != XPathParser.MULTIPLYOPERATOR
-						&& last != XPathParser.SLASH
-						&& last != XPathParser.DOUBLESLASH
-						&& last != XPathParser.BAR
-						&& last != XPathParser.PLUS
-						&& last != XPathParser.MINUS
-						&& last != XPathParser.EQUALS
-						&& last != XPathParser.NOTEQUAL
-						&& last != XPathParser.LESSTHAN
-						&& last != XPathParser.LESSTHANOREQUAL
-						&& last != XPathParser.GREATERTHAN
-						&& last != XPathParser.GREATERTHANOREQUAL) {
-					types.push(XPathParser.MULTIPLYOPERATOR);
-					values.push(c);
-					c = s.charAt(pos++);
-					continue;
-				}
-			}
-			types.push(XPathParser.ASTERISKNAMETEST);
-			values.push(c);
-			c = s.charAt(pos++);
-			continue;
-		}
-
-		if (c == ':') {
-			if (s.charAt(pos) == ':') {
-				types.push(XPathParser.DOUBLECOLON);
-				values.push("::");
-				pos++;
-				c = s.charAt(pos++);
-				continue;
-			}
-		}
-
-		if (c == '/') {
-			c = s.charAt(pos++);
-			if (c == '/') {
-				types.push(XPathParser.DOUBLESLASH);
-				values.push("//");
-				c = s.charAt(pos++);
-				continue;
-			}
-			types.push(XPathParser.SLASH);
-			values.push('/');
-			continue;
-		}
-
-		if (c == '!') {
-			if (s.charAt(pos) == '=') {
-				types.push(XPathParser.NOTEQUAL);
-				values.push("!=");
-				pos++;
-				c = s.charAt(pos++);
-				continue;
-			}
-		}
-
-		if (c == '<') {
-			if (s.charAt(pos) == '=') {
-				types.push(XPathParser.LESSTHANOREQUAL);
-				values.push("<=");
-				pos++;
-				c = s.charAt(pos++);
-				continue;
-			}
-			types.push(XPathParser.LESSTHAN);
-			values.push('<');
-			c = s.charAt(pos++);
-			continue;
-		}
-
-		if (c == '>') {
-			if (s.charAt(pos) == '=') {
-				types.push(XPathParser.GREATERTHANOREQUAL);
-				values.push(">=");
-				pos++;
-				c = s.charAt(pos++);
-				continue;
-			}
-			types.push(XPathParser.GREATERTHAN);
-			values.push('>');
-			c = s.charAt(pos++);
-			continue;
-		}
-
-		if (c == '_' || Utilities.isLetter(c.charCodeAt(0))) {
-			var name = c;
-			c = s.charAt(pos++);
-			while (Utilities.isNCNameChar(c.charCodeAt(0))) {
-				name += c;
-				c = s.charAt(pos++);
-			}
-			if (types.length > 0) {
-				var last = types[types.length - 1];
-				if (last != XPathParser.AT
-						&& last != XPathParser.DOUBLECOLON
-						&& last != XPathParser.LEFTPARENTHESIS
-						&& last != XPathParser.LEFTBRACKET
-						&& last != XPathParser.AND
-						&& last != XPathParser.OR
-						&& last != XPathParser.MOD
-						&& last != XPathParser.DIV
-						&& last != XPathParser.MULTIPLYOPERATOR
-						&& last != XPathParser.SLASH
-						&& last != XPathParser.DOUBLESLASH
-						&& last != XPathParser.BAR
-						&& last != XPathParser.PLUS
-						&& last != XPathParser.MINUS
-						&& last != XPathParser.EQUALS
-						&& last != XPathParser.NOTEQUAL
-						&& last != XPathParser.LESSTHAN
-						&& last != XPathParser.LESSTHANOREQUAL
-						&& last != XPathParser.GREATERTHAN
-						&& last != XPathParser.GREATERTHANOREQUAL) {
-					if (name == "and") {
-						types.push(XPathParser.AND);
-						values.push(name);
-						continue;
-					}
-					if (name == "or") {
-						types.push(XPathParser.OR);
-						values.push(name);
-						continue;
-					}
-					if (name == "mod") {
-						types.push(XPathParser.MOD);
-						values.push(name);
-						continue;
-					}
-					if (name == "div") {
-						types.push(XPathParser.DIV);
-						values.push(name);
-						continue;
-					}
-				}
-			}
-			if (c == ':') {
-				if (s.charAt(pos) == '*') {
-					types.push(XPathParser.NCNAMECOLONASTERISK);
-					values.push(name + ":*");
-					pos++;
-					c = s.charAt(pos++);
-					continue;
-				}
-				if (s.charAt(pos) == '_' || Utilities.isLetter(s.charCodeAt(pos))) {
-					name += ':';
-					c = s.charAt(pos++);
-					while (Utilities.isNCNameChar(c.charCodeAt(0))) {
-						name += c;
-						c = s.charAt(pos++);
-					}
-					if (c == '(') {
-						types.push(XPathParser.FUNCTIONNAME);
-						values.push(name);
-						continue;
-					}
-					types.push(XPathParser.QNAME);
-					values.push(name);
-					continue;
-				}
-				if (s.charAt(pos) == ':') {
-					types.push(XPathParser.AXISNAME);
-					values.push(name);
-					continue;
-				}
-			}
-			if (c == '(') {
-				if (name == "comment" || name == "text" || name == "node") {
-					types.push(XPathParser.NODETYPE);
-					values.push(name);
-					continue;
-				}
-				if (name == "processing-instruction") {
-					if (s.charAt(pos) == ')') {
-						types.push(XPathParser.NODETYPE);
-					} else {
-						types.push(XPathParser.PROCESSINGINSTRUCTIONWITHLITERAL);
-					}
-					values.push(name);
-					continue;
-				}
-				types.push(XPathParser.FUNCTIONNAME);
-				values.push(name);
-				continue;
-			}
-			types.push(XPathParser.QNAME);
-			values.push(name);
-			continue;
-		}
-
-		throw new Error("Unexpected character " + c);
-	}
-	types.push(1);
-	values.push("[EOF]");
-	return [types, values];
-};
-
-XPathParser.SHIFT = 's';
-XPathParser.REDUCE = 'r';
-XPathParser.ACCEPT = 'a';
-
-XPathParser.prototype.parse = function(s) {
-	var types;
-	var values;
-	var res = this.tokenize(s);
-	if (res == undefined) {
-		return undefined;
-	}
-	types = res[0];
-	values = res[1];
-	var tokenPos = 0;
-	var state = [];
-	var tokenType = [];
-	var tokenValue = [];
-	var s;
-	var a;
-	var t;
-
-	state.push(0);
-	tokenType.push(1);
-	tokenValue.push("_S");
-
-	a = types[tokenPos];
-	t = values[tokenPos++];
-	while (1) {
-		s = state[state.length - 1];
-		switch (XPathParser.actionTable[s].charAt(a - 1)) {
-			case XPathParser.SHIFT:
-				tokenType.push(-a);
-				tokenValue.push(t);
-				state.push(XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32);
-				a = types[tokenPos];
-				t = values[tokenPos++];
-				break;
-			case XPathParser.REDUCE:
-				var num = XPathParser.productions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32][1];
-				var rhs = [];
-				for (var i = 0; i < num; i++) {
-					tokenType.pop();
-					rhs.unshift(tokenValue.pop());
-					state.pop();
-				}
-				var s_ = state[state.length - 1];
-				tokenType.push(XPathParser.productions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32][0]);
-				if (this.reduceActions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32] == undefined) {
-					tokenValue.push(rhs[0]);
-				} else {
-					tokenValue.push(this.reduceActions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32](rhs));
-				}
-				state.push(XPathParser.gotoTable[s_].charCodeAt(XPathParser.productions[XPathParser.actionTableNumber[s].charCodeAt(a - 1) - 32][0] - 2) - 33);
-				break;
-			case XPathParser.ACCEPT:
-				return new XPath(tokenValue.pop());
-			default:
-				throw new Error("XPath parse error");
-		}
-	}
-};
-
-// XPath /////////////////////////////////////////////////////////////////////
-
-XPath.prototype = new Object();
-XPath.prototype.constructor = XPath;
-XPath.superclass = Object.prototype;
-
-function XPath(e) {
-	this.expression = e;
-}
-
-XPath.prototype.toString = function() {
-	return this.expression.toString();
-};
-
-function setIfUnset(obj, prop, value) {
-	if (!(prop in obj)) {
-		obj[prop] = value;
-	}
-}
-
-XPath.prototype.evaluate = function(c) {
-	c.contextNode = c.expressionContextNode;
-	c.contextSize = 1;
-	c.contextPosition = 1;
-
-	// [2017-11-25] Removed usage of .implementation.hasFeature() since it does
-	//              not reliably detect HTML DOMs (always returns false in xmldom and true in browsers)
-	if (c.isHtml) {
-		setIfUnset(c, 'caseInsensitive', true);
-		setIfUnset(c, 'allowAnyNamespaceForNoPrefix', true);
-	}
-	
-    setIfUnset(c, 'caseInsensitive', false);
-
-	return this.expression.evaluate(c);
-};
-
-XPath.XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace";
-XPath.XMLNS_NAMESPACE_URI = "http://www.w3.org/2000/xmlns/";
-
-// Expression ////////////////////////////////////////////////////////////////
-
-Expression.prototype = new Object();
-Expression.prototype.constructor = Expression;
-Expression.superclass = Object.prototype;
-
-function Expression() {
-}
-
-Expression.prototype.init = function() {
-};
-
-Expression.prototype.toString = function() {
-	return "<Expression>";
-};
-
-Expression.prototype.evaluate = function(c) {
-	throw new Error("Could not evaluate expression.");
-};
-
-// UnaryOperation ////////////////////////////////////////////////////////////
-
-UnaryOperation.prototype = new Expression();
-UnaryOperation.prototype.constructor = UnaryOperation;
-UnaryOperation.superclass = Expression.prototype;
-
-function UnaryOperation(rhs) {
-	if (arguments.length > 0) {
-		this.init(rhs);
-	}
-}
-
-UnaryOperation.prototype.init = function(rhs) {
-	this.rhs = rhs;
-};
-
-// UnaryMinusOperation ///////////////////////////////////////////////////////
-
-UnaryMinusOperation.prototype = new UnaryOperation();
-UnaryMinusOperation.prototype.constructor = UnaryMinusOperation;
-UnaryMinusOperation.superclass = UnaryOperation.prototype;
-
-function UnaryMinusOperation(rhs) {
-	if (arguments.length > 0) {
-		this.init(rhs);
-	}
-}
-
-UnaryMinusOperation.prototype.init = function(rhs) {
-	UnaryMinusOperation.superclass.init.call(this, rhs);
-};
-
-UnaryMinusOperation.prototype.evaluate = function(c) {
-	return this.rhs.evaluate(c).number().negate();
-};
-
-UnaryMinusOperation.prototype.toString = function() {
-	return "-" + this.rhs.toString();
-};
-
-// BinaryOperation ///////////////////////////////////////////////////////////
-
-BinaryOperation.prototype = new Expression();
-BinaryOperation.prototype.constructor = BinaryOperation;
-BinaryOperation.superclass = Expression.prototype;
-
-function BinaryOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-BinaryOperation.prototype.init = function(lhs, rhs) {
-	this.lhs = lhs;
-	this.rhs = rhs;
-};
-
-// OrOperation ///////////////////////////////////////////////////////////////
-
-OrOperation.prototype = new BinaryOperation();
-OrOperation.prototype.constructor = OrOperation;
-OrOperation.superclass = BinaryOperation.prototype;
-
-function OrOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-OrOperation.prototype.init = function(lhs, rhs) {
-	OrOperation.superclass.init.call(this, lhs, rhs);
-};
-
-OrOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " or " + this.rhs.toString() + ")";
-};
-
-OrOperation.prototype.evaluate = function(c) {
-	var b = this.lhs.evaluate(c).bool();
-	if (b.booleanValue()) {
-		return b;
-	}
-	return this.rhs.evaluate(c).bool();
-};
-
-// AndOperation //////////////////////////////////////////////////////////////
-
-AndOperation.prototype = new BinaryOperation();
-AndOperation.prototype.constructor = AndOperation;
-AndOperation.superclass = BinaryOperation.prototype;
-
-function AndOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-AndOperation.prototype.init = function(lhs, rhs) {
-	AndOperation.superclass.init.call(this, lhs, rhs);
-};
-
-AndOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " and " + this.rhs.toString() + ")";
-};
-
-AndOperation.prototype.evaluate = function(c) {
-	var b = this.lhs.evaluate(c).bool();
-	if (!b.booleanValue()) {
-		return b;
-	}
-	return this.rhs.evaluate(c).bool();
-};
-
-// EqualsOperation ///////////////////////////////////////////////////////////
-
-EqualsOperation.prototype = new BinaryOperation();
-EqualsOperation.prototype.constructor = EqualsOperation;
-EqualsOperation.superclass = BinaryOperation.prototype;
-
-function EqualsOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-EqualsOperation.prototype.init = function(lhs, rhs) {
-	EqualsOperation.superclass.init.call(this, lhs, rhs);
-};
-
-EqualsOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " = " + this.rhs.toString() + ")";
-};
-
-EqualsOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).equals(this.rhs.evaluate(c));
-};
-
-// NotEqualOperation /////////////////////////////////////////////////////////
-
-NotEqualOperation.prototype = new BinaryOperation();
-NotEqualOperation.prototype.constructor = NotEqualOperation;
-NotEqualOperation.superclass = BinaryOperation.prototype;
-
-function NotEqualOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-NotEqualOperation.prototype.init = function(lhs, rhs) {
-	NotEqualOperation.superclass.init.call(this, lhs, rhs);
-};
-
-NotEqualOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " != " + this.rhs.toString() + ")";
-};
-
-NotEqualOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).notequal(this.rhs.evaluate(c));
-};
-
-// LessThanOperation /////////////////////////////////////////////////////////
-
-LessThanOperation.prototype = new BinaryOperation();
-LessThanOperation.prototype.constructor = LessThanOperation;
-LessThanOperation.superclass = BinaryOperation.prototype;
-
-function LessThanOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-LessThanOperation.prototype.init = function(lhs, rhs) {
-	LessThanOperation.superclass.init.call(this, lhs, rhs);
-};
-
-LessThanOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).lessthan(this.rhs.evaluate(c));
-};
-
-LessThanOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " < " + this.rhs.toString() + ")";
-};
-
-// GreaterThanOperation //////////////////////////////////////////////////////
-
-GreaterThanOperation.prototype = new BinaryOperation();
-GreaterThanOperation.prototype.constructor = GreaterThanOperation;
-GreaterThanOperation.superclass = BinaryOperation.prototype;
-
-function GreaterThanOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-GreaterThanOperation.prototype.init = function(lhs, rhs) {
-	GreaterThanOperation.superclass.init.call(this, lhs, rhs);
-};
-
-GreaterThanOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).greaterthan(this.rhs.evaluate(c));
-};
-
-GreaterThanOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " > " + this.rhs.toString() + ")";
-};
-
-// LessThanOrEqualOperation //////////////////////////////////////////////////
-
-LessThanOrEqualOperation.prototype = new BinaryOperation();
-LessThanOrEqualOperation.prototype.constructor = LessThanOrEqualOperation;
-LessThanOrEqualOperation.superclass = BinaryOperation.prototype;
-
-function LessThanOrEqualOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-LessThanOrEqualOperation.prototype.init = function(lhs, rhs) {
-	LessThanOrEqualOperation.superclass.init.call(this, lhs, rhs);
-};
-
-LessThanOrEqualOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).lessthanorequal(this.rhs.evaluate(c));
-};
-
-LessThanOrEqualOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " <= " + this.rhs.toString() + ")";
-};
-
-// GreaterThanOrEqualOperation ///////////////////////////////////////////////
-
-GreaterThanOrEqualOperation.prototype = new BinaryOperation();
-GreaterThanOrEqualOperation.prototype.constructor = GreaterThanOrEqualOperation;
-GreaterThanOrEqualOperation.superclass = BinaryOperation.prototype;
-
-function GreaterThanOrEqualOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-GreaterThanOrEqualOperation.prototype.init = function(lhs, rhs) {
-	GreaterThanOrEqualOperation.superclass.init.call(this, lhs, rhs);
-};
-
-GreaterThanOrEqualOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).greaterthanorequal(this.rhs.evaluate(c));
-};
-
-GreaterThanOrEqualOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " >= " + this.rhs.toString() + ")";
-};
-
-// PlusOperation /////////////////////////////////////////////////////////////
-
-PlusOperation.prototype = new BinaryOperation();
-PlusOperation.prototype.constructor = PlusOperation;
-PlusOperation.superclass = BinaryOperation.prototype;
-
-function PlusOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-PlusOperation.prototype.init = function(lhs, rhs) {
-	PlusOperation.superclass.init.call(this, lhs, rhs);
-};
-
-PlusOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).number().plus(this.rhs.evaluate(c).number());
-};
-
-PlusOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " + " + this.rhs.toString() + ")";
-};
-
-// MinusOperation ////////////////////////////////////////////////////////////
-
-MinusOperation.prototype = new BinaryOperation();
-MinusOperation.prototype.constructor = MinusOperation;
-MinusOperation.superclass = BinaryOperation.prototype;
-
-function MinusOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-MinusOperation.prototype.init = function(lhs, rhs) {
-	MinusOperation.superclass.init.call(this, lhs, rhs);
-};
-
-MinusOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).number().minus(this.rhs.evaluate(c).number());
-};
-
-MinusOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " - " + this.rhs.toString() + ")";
-};
-
-// MultiplyOperation /////////////////////////////////////////////////////////
-
-MultiplyOperation.prototype = new BinaryOperation();
-MultiplyOperation.prototype.constructor = MultiplyOperation;
-MultiplyOperation.superclass = BinaryOperation.prototype;
-
-function MultiplyOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-MultiplyOperation.prototype.init = function(lhs, rhs) {
-	MultiplyOperation.superclass.init.call(this, lhs, rhs);
-};
-
-MultiplyOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).number().multiply(this.rhs.evaluate(c).number());
-};
-
-MultiplyOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " * " + this.rhs.toString() + ")";
-};
-
-// DivOperation //////////////////////////////////////////////////////////////
-
-DivOperation.prototype = new BinaryOperation();
-DivOperation.prototype.constructor = DivOperation;
-DivOperation.superclass = BinaryOperation.prototype;
-
-function DivOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-DivOperation.prototype.init = function(lhs, rhs) {
-	DivOperation.superclass.init.call(this, lhs, rhs);
-};
-
-DivOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).number().div(this.rhs.evaluate(c).number());
-};
-
-DivOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " div " + this.rhs.toString() + ")";
-};
-
-// ModOperation //////////////////////////////////////////////////////////////
-
-ModOperation.prototype = new BinaryOperation();
-ModOperation.prototype.constructor = ModOperation;
-ModOperation.superclass = BinaryOperation.prototype;
-
-function ModOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-ModOperation.prototype.init = function(lhs, rhs) {
-	ModOperation.superclass.init.call(this, lhs, rhs);
-};
-
-ModOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).number().mod(this.rhs.evaluate(c).number());
-};
-
-ModOperation.prototype.toString = function() {
-	return "(" + this.lhs.toString() + " mod " + this.rhs.toString() + ")";
-};
-
-// BarOperation //////////////////////////////////////////////////////////////
-
-BarOperation.prototype = new BinaryOperation();
-BarOperation.prototype.constructor = BarOperation;
-BarOperation.superclass = BinaryOperation.prototype;
-
-function BarOperation(lhs, rhs) {
-	if (arguments.length > 0) {
-		this.init(lhs, rhs);
-	}
-}
-
-BarOperation.prototype.init = function(lhs, rhs) {
-	BarOperation.superclass.init.call(this, lhs, rhs);
-};
-
-BarOperation.prototype.evaluate = function(c) {
-	return this.lhs.evaluate(c).nodeset().union(this.rhs.evaluate(c).nodeset());
-};
-
-BarOperation.prototype.toString = function() {
-	return map(toString, [this.lhs, this.rhs]).join(' | ');
-};
-
-// PathExpr //////////////////////////////////////////////////////////////////
-
-PathExpr.prototype = new Expression();
-PathExpr.prototype.constructor = PathExpr;
-PathExpr.superclass = Expression.prototype;
-
-function PathExpr(filter, filterPreds, locpath) {
-	if (arguments.length > 0) {
-		this.init(filter, filterPreds, locpath);
-	}
-}
-
-PathExpr.prototype.init = function(filter, filterPreds, locpath) {
-	PathExpr.superclass.init.call(this);
-	this.filter = filter;
-	this.filterPredicates = filterPreds;
-	this.locationPath = locpath;
-};
-
-/**
- * Returns the topmost node of the tree containing node
- */
-function findRoot(node) {
-    while (node && node.parentNode) {
-        node = node.parentNode;
-    }
-
-    return node;
-}
-
-PathExpr.applyPredicates = function (predicates, c, nodes) {
-	return reduce(function (inNodes, pred) {
-		var ctx = c.extend({ contextSize: inNodes.length });
-		
-		return filter(function (node, i) {
-			return PathExpr.predicateMatches(pred, ctx.extend({ contextNode: node, contextPosition: i + 1 }));
-		}, inNodes);
-	}, nodes, predicates);
-};
-
-PathExpr.getRoot = function (xpc, nodes) {
-	var firstNode = nodes[0];
-	
-    if (firstNode.nodeType === 9 /*Node.DOCUMENT_NODE*/) {
-		return firstNode;
-	}
-	
-    if (xpc.virtualRoot) {
-    	return xpc.virtualRoot;
-    }
-		
-	var ownerDoc = firstNode.ownerDocument;
-	
-	if (ownerDoc) {
-		return ownerDoc;
-	}
-			
-    // IE 5.5 doesn't have ownerDocument?
-    var n = firstNode;
-    while (n.parentNode != null) {
-    	n = n.parentNode;
-    }
-    return n;
-}
-
-PathExpr.applyStep = function (step, xpc, node) {
-	var self = this;
-	var newNodes = [];
-    xpc.contextNode = node;
-    
-    switch (step.axis) {
-    	case Step.ANCESTOR:
-    		// look at all the ancestor nodes
-    		if (xpc.contextNode === xpc.virtualRoot) {
-    			break;
-    		}
-    		var m;
-    		if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
-    			m = PathExpr.getOwnerElement(xpc.contextNode);
-    		} else {
-    			m = xpc.contextNode.parentNode;
-    		}
-    		while (m != null) {
-    			if (step.nodeTest.matches(m, xpc)) {
-    				newNodes.push(m);
-    			}
-    			if (m === xpc.virtualRoot) {
-    				break;
-    			}
-    			m = m.parentNode;
-    		}
-    		break;
-    
-    	case Step.ANCESTORORSELF:
-    		// look at all the ancestor nodes and the current node
-    		for (var m = xpc.contextNode; m != null; m = m.nodeType == 2 /*Node.ATTRIBUTE_NODE*/ ? PathExpr.getOwnerElement(m) : m.parentNode) {
-    			if (step.nodeTest.matches(m, xpc)) {
-    				newNodes.push(m);
-    			}
-    			if (m === xpc.virtualRoot) {
-    				break;
-    			}
-    		}
-    		break;
-    
-    	case Step.ATTRIBUTE:
-    		// look at the attributes
-    		var nnm = xpc.contextNode.attributes;
-    		if (nnm != null) {
-    			for (var k = 0; k < nnm.length; k++) {
-    				var m = nnm.item(k);
-    				if (step.nodeTest.matches(m, xpc)) {
-    					newNodes.push(m);
-    				}
-    			}
-    		}
-    		break;
-    
-    	case Step.CHILD:
-    		// look at all child elements
-    		for (var m = xpc.contextNode.firstChild; m != null; m = m.nextSibling) {
-    			if (step.nodeTest.matches(m, xpc)) {
-    				newNodes.push(m);
-    			}
-    		}
-    		break;
-    
-    	case Step.DESCENDANT:
-    		// look at all descendant nodes
-    		var st = [ xpc.contextNode.firstChild ];
-    		while (st.length > 0) {
-    			for (var m = st.pop(); m != null; ) {
-    				if (step.nodeTest.matches(m, xpc)) {
-    					newNodes.push(m);
-    				}
-    				if (m.firstChild != null) {
-    					st.push(m.nextSibling);
-    					m = m.firstChild;
-    				} else {
-    					m = m.nextSibling;
-    				}
-    			}
-    		}
-    		break;
-    
-    	case Step.DESCENDANTORSELF:
-    		// look at self
-    		if (step.nodeTest.matches(xpc.contextNode, xpc)) {
-    			newNodes.push(xpc.contextNode);
-    		}
-    		// look at all descendant nodes
-    		var st = [ xpc.contextNode.firstChild ];
-    		while (st.length > 0) {
-    			for (var m = st.pop(); m != null; ) {
-    				if (step.nodeTest.matches(m, xpc)) {
-    					newNodes.push(m);
-    				}
-    				if (m.firstChild != null) {
-    					st.push(m.nextSibling);
-    					m = m.firstChild;
-    				} else {
-    					m = m.nextSibling;
-    				}
-    			}
-    		}
-    		break;
-    
-    	case Step.FOLLOWING:
-    		if (xpc.contextNode === xpc.virtualRoot) {
-    			break;
-    		}
-    		var st = [];
-    		if (xpc.contextNode.firstChild != null) {
-    			st.unshift(xpc.contextNode.firstChild);
-    		} else {
-    			st.unshift(xpc.contextNode.nextSibling);
-    		}
-    		for (var m = xpc.contextNode.parentNode; m != null && m.nodeType != 9 /*Node.DOCUMENT_NODE*/ && m !== xpc.virtualRoot; m = m.parentNode) {
-    			st.unshift(m.nextSibling);
-    		}
-    		do {
-    			for (var m = st.pop(); m != null; ) {
-    				if (step.nodeTest.matches(m, xpc)) {
-    					newNodes.push(m);
-    				}
-    				if (m.firstChild != null) {
-    					st.push(m.nextSibling);
-    					m = m.firstChild;
-    				} else {
-    					m = m.nextSibling;
-    				}
-    			}
-    		} while (st.length > 0);
-    		break;
-    
-    	case Step.FOLLOWINGSIBLING:
-    		if (xpc.contextNode === xpc.virtualRoot) {
-    			break;
-    		}
-    		for (var m = xpc.contextNode.nextSibling; m != null; m = m.nextSibling) {
-    			if (step.nodeTest.matches(m, xpc)) {
-    				newNodes.push(m);
-    			}
-    		}
-    		break;
-    
-    	case Step.NAMESPACE:
-    		var n = {};
-    		if (xpc.contextNode.nodeType == 1 /*Node.ELEMENT_NODE*/) {
-    			n["xml"] = XPath.XML_NAMESPACE_URI;
-    			n["xmlns"] = XPath.XMLNS_NAMESPACE_URI;
-    			for (var m = xpc.contextNode; m != null && m.nodeType == 1 /*Node.ELEMENT_NODE*/; m = m.parentNode) {
-    				for (var k = 0; k < m.attributes.length; k++) {
-    					var attr = m.attributes.item(k);
-    					var nm = String(attr.name);
-    					if (nm == "xmlns") {
-    						if (n[""] == undefined) {
-    							n[""] = attr.value;
-    						}
-    					} else if (nm.length > 6 && nm.substring(0, 6) == "xmlns:") {
-    						var pre = nm.substring(6, nm.length);
-    						if (n[pre] == undefined) {
-    							n[pre] = attr.value;
-    						}
-    					}
-    				}
-    			}
-    			for (var pre in n) {
-    				var nsn = new XPathNamespace(pre, n[pre], xpc.contextNode);
-    				if (step.nodeTest.matches(nsn, xpc)) {
-    					newNodes.push(nsn);
-    				}
-    			}
-    		}
-    		break;
-    
-    	case Step.PARENT:
-    		m = null;
-    		if (xpc.contextNode !== xpc.virtualRoot) {
-    			if (xpc.contextNode.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
-    				m = PathExpr.getOwnerElement(xpc.contextNode);
-    			} else {
-    				m = xpc.contextNode.parentNode;
-    			}
-    		}
-    		if (m != null && step.nodeTest.matches(m, xpc)) {
-    			newNodes.push(m);
-    		}
-    		break;
-    
-    	case Step.PRECEDING:
-    		var st;
-    		if (xpc.virtualRoot != null) {
-    			st = [ xpc.virtualRoot ];
-    		} else {
-                // cannot rely on .ownerDocument because the node may be in a document fragment
-                st = [findRoot(xpc.contextNode)];
-    		}
-    		outer: while (st.length > 0) {
-    			for (var m = st.pop(); m != null; ) {
-    				if (m == xpc.contextNode) {
-    					break outer;
-    				}
-    				if (step.nodeTest.matches(m, xpc)) {
-    					newNodes.unshift(m);
-    				}
-    				if (m.firstChild != null) {
-    					st.push(m.nextSibling);
-    					m = m.firstChild;
-    				} else {
-    					m = m.nextSibling;
-    				}
-    			}
-    		}
-    		break;
-    
-    	case Step.PRECEDINGSIBLING:
-    		if (xpc.contextNode === xpc.virtualRoot) {
-    			break;
-    		}
-    		for (var m = xpc.contextNode.previousSibling; m != null; m = m.previousSibling) {
-    			if (step.nodeTest.matches(m, xpc)) {
-    				newNodes.push(m);
-    			}
-    		}
-    		break;
-    
-    	case Step.SELF:
-    		if (step.nodeTest.matches(xpc.contextNode, xpc)) {
-    			newNodes.push(xpc.contextNode);
-    		}
-    		break;
-    
-    	default:
-    }
-	
-	return newNodes;
-};
-
-PathExpr.applySteps = function (steps, xpc, nodes) {
-	return reduce(function (inNodes, step) {
-		return [].concat.apply([], map(function (node) {
-			return PathExpr.applyPredicates(step.predicates, xpc, PathExpr.applyStep(step, xpc, node));
-		}, inNodes));
-	}, nodes, steps);
-}
-
-PathExpr.prototype.applyFilter = function(c, xpc) {
-	if (!this.filter) {
-		return { nodes: [ c.contextNode ] };
-	}
-	
-	var ns = this.filter.evaluate(c);
-
-	if (!Utilities.instance_of(ns, XNodeSet)) {
-        if (this.filterPredicates != null && this.filterPredicates.length > 0 || this.locationPath != null) {
-		    throw new Error("Path expression filter must evaluate to a nodeset if predicates or location path are used");
-		}
-
-		return { nonNodes: ns };
-	}
-	
-	return { 
-	    nodes: PathExpr.applyPredicates(this.filterPredicates || [], xpc, ns.toUnsortedArray())
-	};
-};
-
-PathExpr.applyLocationPath = function (locationPath, xpc, nodes) {
-	if (!locationPath) {
-		return nodes;
-	}
-	
-	var startNodes = locationPath.absolute ? [ PathExpr.getRoot(xpc, nodes) ] : nodes;
-		
-    return PathExpr.applySteps(locationPath.steps, xpc, startNodes);
-};
-
-PathExpr.prototype.evaluate = function(c) {
-	var xpc = assign(new XPathContext(), c);
-	
-    var filterResult = this.applyFilter(c, xpc);
-	
-	if ('nonNodes' in filterResult) {
-		return filterResult.nonNodes;
-	}	
-	
-	var ns = new XNodeSet();
-	ns.addArray(PathExpr.applyLocationPath(this.locationPath, xpc, filterResult.nodes));
-	return ns;
-};
-
-PathExpr.predicateMatches = function(pred, c) {
-	var res = pred.evaluate(c);
-	
-	return Utilities.instance_of(res, XNumber)
-		? c.contextPosition == res.numberValue()
-		: res.booleanValue();
-};
-
-PathExpr.predicateString = compose(wrap('[', ']'), toString);
-PathExpr.predicatesString = compose(join(''), map(PathExpr.predicateString));
-
-PathExpr.prototype.toString = function() {
-	if (this.filter != undefined) {
-		var filterStr = toString(this.filter);
-
-		if (Utilities.instance_of(this.filter, XString)) {
-			return wrap("'", "'", filterStr);
-		}
-		if (this.filterPredicates != undefined && this.filterPredicates.length) {
-			return wrap('(', ')', filterStr) + 
-			    PathExpr.predicatesString(this.filterPredicates);
-		}
-		if (this.locationPath != undefined) {
-			return filterStr + 
-			    (this.locationPath.absolute ? '' : '/') +
-				toString(this.locationPath);
-		}
-
-		return filterStr;
-	}
-
-	return toString(this.locationPath);
-};
-
-PathExpr.getOwnerElement = function(n) {
-	// DOM 2 has ownerElement
-	if (n.ownerElement) {
-		return n.ownerElement;
-	}
-	// DOM 1 Internet Explorer can use selectSingleNode (ironically)
-	try {
-		if (n.selectSingleNode) {
-			return n.selectSingleNode("..");
-		}
-	} catch (e) {
-	}
-	// Other DOM 1 implementations must use this egregious search
-	var doc = n.nodeType == 9 /*Node.DOCUMENT_NODE*/
-			? n
-			: n.ownerDocument;
-	var elts = doc.getElementsByTagName("*");
-	for (var i = 0; i < elts.length; i++) {
-		var elt = elts.item(i);
-		var nnm = elt.attributes;
-		for (var j = 0; j < nnm.length; j++) {
-			var an = nnm.item(j);
-			if (an === n) {
-				return elt;
-			}
-		}
-	}
-	return null;
-};
-
-// LocationPath //////////////////////////////////////////////////////////////
-
-LocationPath.prototype = new Object();
-LocationPath.prototype.constructor = LocationPath;
-LocationPath.superclass = Object.prototype;
-
-function LocationPath(abs, steps) {
-	if (arguments.length > 0) {
-		this.init(abs, steps);
-	}
-}
-
-LocationPath.prototype.init = function(abs, steps) {
-	this.absolute = abs;
-	this.steps = steps;
-};
-
-LocationPath.prototype.toString = function() {
-	return (
-	    (this.absolute ? '/' : '') +
-		map(toString, this.steps).join('/')
+        function NameTestPrefixAny(prefix) { this.prefix = prefix; }
     );
-};
 
-// Step //////////////////////////////////////////////////////////////////////
-
-Step.prototype = new Object();
-Step.prototype.constructor = Step;
-Step.superclass = Object.prototype;
-
-function Step(axis, nodetest, preds) {
-	if (arguments.length > 0) {
-		this.init(axis, nodetest, preds);
-	}
-}
-
-Step.prototype.init = function(axis, nodetest, preds) {
-	this.axis = axis;
-	this.nodeTest = nodetest;
-	this.predicates = preds;
-};
-
-Step.prototype.toString = function() {
-	return Step.STEPNAMES[this.axis] +
-        "::" +
-        this.nodeTest.toString() +
-	    PathExpr.predicatesString(this.predicates);
-};
-
-
-Step.ANCESTOR = 0;
-Step.ANCESTORORSELF = 1;
-Step.ATTRIBUTE = 2;
-Step.CHILD = 3;
-Step.DESCENDANT = 4;
-Step.DESCENDANTORSELF = 5;
-Step.FOLLOWING = 6;
-Step.FOLLOWINGSIBLING = 7;
-Step.NAMESPACE = 8;
-Step.PARENT = 9;
-Step.PRECEDING = 10;
-Step.PRECEDINGSIBLING = 11;
-Step.SELF = 12;
-
-Step.STEPNAMES = reduce(function (acc, x) { return acc[x[0]] = x[1], acc; }, {}, [
-	[Step.ANCESTOR, 'ancestor'],
-	[Step.ANCESTORORSELF, 'ancestor-or-self'],
-	[Step.ATTRIBUTE, 'attribute'],
-	[Step.CHILD, 'child'],
-	[Step.DESCENDANT, 'descendant'],
-	[Step.DESCENDANTORSELF, 'descendant-or-self'],
-	[Step.FOLLOWING, 'following'],
-	[Step.FOLLOWINGSIBLING, 'following-sibling'],
-	[Step.NAMESPACE, 'namespace'],
-	[Step.PARENT, 'parent'],
-	[Step.PRECEDING, 'preceding'],
-	[Step.PRECEDINGSIBLING, 'preceding-sibling'],
-	[Step.SELF, 'self']
-  ]);
-  
-// NodeTest //////////////////////////////////////////////////////////////////
-
-NodeTest.prototype = new Object();
-NodeTest.prototype.constructor = NodeTest;
-NodeTest.superclass = Object.prototype;
-
-function NodeTest(type, value) {
-	if (arguments.length > 0) {
-		this.init(type, value);
-	}
-}
-
-NodeTest.prototype.init = function(type, value) {
-	this.type = type;
-	this.value = value;
-};
-
-NodeTest.prototype.toString = function() {
-	return "<unknown nodetest type>";
-};
-
-NodeTest.prototype.matches = function (n, xpc) {
-    console.warn('unknown node test type');
-};
-
-NodeTest.NAMETESTANY = 0;
-NodeTest.NAMETESTPREFIXANY = 1;
-NodeTest.NAMETESTQNAME = 2;
-NodeTest.COMMENT = 3;
-NodeTest.TEXT = 4;
-NodeTest.PI = 5;
-NodeTest.NODE = 6;
-
-NodeTest.isNodeType = function (types){
-	return compose(includes(types), prop('nodeType'));
-};
-
-NodeTest.makeNodeTestType = function (type, members, ctor) {
-	var newType = ctor || function () {};
-	
-	newType.prototype = new NodeTest(members.type);
-	newType.prototype.constructor = type;
-	
-	for (var key in members) {
-		newType.prototype[key] = members[key];
-	}
-	
-	return newType;
-};
-// create invariant node test for certain node types
-NodeTest.makeNodeTypeTest = function (type, nodeTypes, stringVal) {
-	return new (NodeTest.makeNodeTestType(type, {
-		matches: NodeTest.isNodeType(nodeTypes),
-		toString: always(stringVal)
-	}))();
-};
-
-NodeTest.hasPrefix = function (node) {
-	return node.prefix || (node.nodeName || node.tagName).indexOf(':') !== -1;
-};
-
-NodeTest.isElementOrAttribute = NodeTest.isNodeType([1, 2]);
-NodeTest.nameSpaceMatches = function (prefix, xpc, n) {
-	var nNamespace = (n.namespaceURI || '');
-	
-	if (!prefix) { 
-	    return !nNamespace || (xpc.allowAnyNamespaceForNoPrefix && !NodeTest.hasPrefix(n)); 
-	}
-	
-    var ns = xpc.namespaceResolver.getNamespace(prefix, xpc.expressionContextNode);
-
-	if (ns == null) {
-        throw new Error("Cannot resolve QName " + prefix);
-    }
-
-    return ns === nNamespace;
-};
-NodeTest.localNameMatches = function (localName, xpc, n) {
-	var nLocalName = (n.localName || n.nodeName);
-	
-	return xpc.caseInsensitive
-	    ? localName.toLowerCase() === nLocalName.toLowerCase()
-		: localName === nLocalName;
-};
-
-NodeTest.NameTestPrefixAny = NodeTest.makeNodeTestType(NodeTest.NAMETESTPREFIXANY, {
-	matches: function (n, xpc){
-        return NodeTest.isElementOrAttribute(n) && 
-		    NodeTest.nameSpaceMatches(this.prefix, xpc, n);
-	},
-	toString: function () {
-		return this.prefix + ":*";
-	}
-}, function (prefix) { this.prefix = prefix; });
-
-NodeTest.NameTestQName = NodeTest.makeNodeTestType(NodeTest.NAMETESTQNAME, {
-	matches: function (n, xpc) {
-		return NodeTest.isNodeType([1, 2, XPathNamespace.XPATH_NAMESPACE_NODE])(n) &&
-		    NodeTest.nameSpaceMatches(this.prefix, xpc, n) &&
-            NodeTest.localNameMatches(this.localName, xpc, n);
-	},
-	toString: function () {
-        return this.name;
-	}
-}, function (name) { 
-    var nameParts = name.split(':');
-	
-	this.name = name;
-	this.prefix = nameParts.length > 1 ? nameParts[0] : null;
-	this.localName = nameParts[nameParts.length > 1 ? 1 : 0];
-});
-
-NodeTest.PITest = NodeTest.makeNodeTestType(NodeTest.PI, {
-	matches: function (n, xpc) {
-		return NodeTest.isNodeType([7])(n) && (n.target || n.nodeName) === this.name;
-	},
-	toString: function () {
-        return wrap('processing-instruction("', '")', this.name);
-	}
-}, function (name) { this.name = name; })
-
-// singletons
-
-// elements, attributes, namespaces
-NodeTest.nameTestAny = NodeTest.makeNodeTypeTest(NodeTest.NAMETESTANY, [1, 2, XPathNamespace.XPATH_NAMESPACE_NODE], '*');
-// text, cdata
-NodeTest.textTest = NodeTest.makeNodeTypeTest(NodeTest.TEXT, [3, 4], 'text()');
-NodeTest.commentTest = NodeTest.makeNodeTypeTest(NodeTest.COMMENT, [8], 'comment()');
-// elements, attributes, text, cdata, PIs, comments, document nodes
-NodeTest.nodeTest = NodeTest.makeNodeTypeTest(NodeTest.NODE, [1, 2, 3, 4, 7, 8, 9], 'node()');
-NodeTest.anyPiTest = NodeTest.makeNodeTypeTest(NodeTest.PI, [7], 'processing-instruction()');
-
-// VariableReference /////////////////////////////////////////////////////////
-
-VariableReference.prototype = new Expression();
-VariableReference.prototype.constructor = VariableReference;
-VariableReference.superclass = Expression.prototype;
-
-function VariableReference(v) {
-	if (arguments.length > 0) {
-		this.init(v);
-	}
-}
-
-VariableReference.prototype.init = function(v) {
-	this.variable = v;
-};
-
-VariableReference.prototype.toString = function() {
-	return "$" + this.variable;
-};
-
-VariableReference.prototype.evaluate = function(c) {
-    var parts = Utilities.resolveQName(this.variable, c.namespaceResolver, c.contextNode, false);
-
-    if (parts[0] == null) {
-        throw new Error("Cannot resolve QName " + fn);
-    }
-	var result = c.variableResolver.getVariable(parts[1], parts[0]);
-    if (!result) {
-        throw XPathException.fromMessage("Undeclared variable: " + this.toString());
-    }
-    return result;
-};
-
-// FunctionCall //////////////////////////////////////////////////////////////
-
-FunctionCall.prototype = new Expression();
-FunctionCall.prototype.constructor = FunctionCall;
-FunctionCall.superclass = Expression.prototype;
-
-function FunctionCall(fn, args) {
-	if (arguments.length > 0) {
-		this.init(fn, args);
-	}
-}
-
-FunctionCall.prototype.init = function(fn, args) {
-	this.functionName = fn;
-	this.arguments = args;
-};
-
-FunctionCall.prototype.toString = function() {
-	var s = this.functionName + "(";
-	for (var i = 0; i < this.arguments.length; i++) {
-		if (i > 0) {
-			s += ", ";
-		}
-		s += this.arguments[i].toString();
-	}
-	return s + ")";
-};
-
-FunctionCall.prototype.evaluate = function(c) {
-    var f = FunctionResolver.getFunctionFromContext(this.functionName, c);
-
-    if (!f) {
-		throw new Error("Unknown function " + this.functionName);
-	}
-
-    var a = [c].concat(this.arguments);
-	return f.apply(c.functionResolver.thisArg, a);
-};
-
-// Operators /////////////////////////////////////////////////////////////////
-
-var Operators = new Object();
-
-Operators.equals = function(l, r) {
-	return l.equals(r);
-};
-
-Operators.notequal = function(l, r) {
-	return l.notequal(r);
-};
-
-Operators.lessthan = function(l, r) {
-	return l.lessthan(r);
-};
-
-Operators.greaterthan = function(l, r) {
-	return l.greaterthan(r);
-};
-
-Operators.lessthanorequal = function(l, r) {
-	return l.lessthanorequal(r);
-};
-
-Operators.greaterthanorequal = function(l, r) {
-	return l.greaterthanorequal(r);
-};
-
-// XString ///////////////////////////////////////////////////////////////////
-
-XString.prototype = new Expression();
-XString.prototype.constructor = XString;
-XString.superclass = Expression.prototype;
-
-function XString(s) {
-	if (arguments.length > 0) {
-		this.init(s);
-	}
-}
-
-XString.prototype.init = function(s) {
-	this.str = String(s);
-};
-
-XString.prototype.toString = function() {
-	return this.str;
-};
-
-XString.prototype.evaluate = function(c) {
-	return this;
-};
-
-XString.prototype.string = function() {
-	return this;
-};
-
-XString.prototype.number = function() {
-	return new XNumber(this.str);
-};
-
-XString.prototype.bool = function() {
-	return new XBoolean(this.str);
-};
-
-XString.prototype.nodeset = function() {
-	throw new Error("Cannot convert string to nodeset");
-};
-
-XString.prototype.stringValue = function() {
-	return this.str;
-};
-
-XString.prototype.numberValue = function() {
-	return this.number().numberValue();
-};
-
-XString.prototype.booleanValue = function() {
-	return this.bool().booleanValue();
-};
-
-XString.prototype.equals = function(r) {
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.bool().equals(r);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.number().equals(r);
-	}
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithString(this, Operators.equals);
-	}
-	return new XBoolean(this.str == r.str);
-};
-
-XString.prototype.notequal = function(r) {
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.bool().notequal(r);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.number().notequal(r);
-	}
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithString(this, Operators.notequal);
-	}
-	return new XBoolean(this.str != r.str);
-};
-
-XString.prototype.lessthan = function(r) {
-	return this.number().lessthan(r);
-};
-
-XString.prototype.greaterthan = function(r) {
-	return this.number().greaterthan(r);
-};
-
-XString.prototype.lessthanorequal = function(r) {
-	return this.number().lessthanorequal(r);
-};
-
-XString.prototype.greaterthanorequal = function(r) {
-	return this.number().greaterthanorequal(r);
-};
-
-// XNumber ///////////////////////////////////////////////////////////////////
-
-XNumber.prototype = new Expression();
-XNumber.prototype.constructor = XNumber;
-XNumber.superclass = Expression.prototype;
-
-function XNumber(n) {
-	if (arguments.length > 0) {
-		this.init(n);
-	}
-}
-
-XNumber.prototype.init = function(n) {
-	this.num = typeof n === "string" ? this.parse(n) : Number(n);
-};
-
-XNumber.prototype.numberFormat = /^\s*-?[0-9]*\.?[0-9]+\s*$/;
-
-XNumber.prototype.parse = function(s) {
-    // XPath representation of numbers is more restrictive than what Number() or parseFloat() allow
-    return this.numberFormat.test(s) ? parseFloat(s) : Number.NaN;
-};
-
-function padSmallNumber(numberStr) {
-	var parts = numberStr.split('e-');
-	var base = parts[0].replace('.', '');
-	var exponent = Number(parts[1]);
-	
-	for (var i = 0; i < exponent - 1; i += 1) {
-		base = '0' + base;
-	}
-	
-	return '0.' + base;
-}
-
-function padLargeNumber(numberStr) {
-	var parts = numberStr.split('e');
-	var base = parts[0].replace('.', '');
-	var exponent = Number(parts[1]);
-	var zerosToAppend = exponent + 1 - base.length;
-	
-	for (var i = 0; i < zerosToAppend; i += 1){
-		base += '0';
-	}
-	
-	return base;
-}
-
-XNumber.prototype.toString = function() {
-	var strValue = this.num.toString();
-
-	if (strValue.indexOf('e-') !== -1) {
-		return padSmallNumber(strValue);
-	}
-    
-	if (strValue.indexOf('e') !== -1) {
-		return padLargeNumber(strValue);
-	}
-	
-	return strValue;
-};
-
-XNumber.prototype.evaluate = function(c) {
-	return this;
-};
-
-XNumber.prototype.string = function() {
-	
-	
-	return new XString(this.toString());
-};
-
-XNumber.prototype.number = function() {
-	return this;
-};
-
-XNumber.prototype.bool = function() {
-	return new XBoolean(this.num);
-};
-
-XNumber.prototype.nodeset = function() {
-	throw new Error("Cannot convert number to nodeset");
-};
-
-XNumber.prototype.stringValue = function() {
-	return this.string().stringValue();
-};
-
-XNumber.prototype.numberValue = function() {
-	return this.num;
-};
-
-XNumber.prototype.booleanValue = function() {
-	return this.bool().booleanValue();
-};
-
-XNumber.prototype.negate = function() {
-	return new XNumber(-this.num);
-};
-
-XNumber.prototype.equals = function(r) {
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.bool().equals(r);
-	}
-	if (Utilities.instance_of(r, XString)) {
-		return this.equals(r.number());
-	}
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.equals);
-	}
-	return new XBoolean(this.num == r.num);
-};
-
-XNumber.prototype.notequal = function(r) {
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.bool().notequal(r);
-	}
-	if (Utilities.instance_of(r, XString)) {
-		return this.notequal(r.number());
-	}
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.notequal);
-	}
-	return new XBoolean(this.num != r.num);
-};
-
-XNumber.prototype.lessthan = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.greaterthan);
-	}
-	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
-		return this.lessthan(r.number());
-	}
-	return new XBoolean(this.num < r.num);
-};
-
-XNumber.prototype.greaterthan = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.lessthan);
-	}
-	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
-		return this.greaterthan(r.number());
-	}
-	return new XBoolean(this.num > r.num);
-};
-
-XNumber.prototype.lessthanorequal = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.greaterthanorequal);
-	}
-	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
-		return this.lessthanorequal(r.number());
-	}
-	return new XBoolean(this.num <= r.num);
-};
-
-XNumber.prototype.greaterthanorequal = function(r) {
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithNumber(this, Operators.lessthanorequal);
-	}
-	if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
-		return this.greaterthanorequal(r.number());
-	}
-	return new XBoolean(this.num >= r.num);
-};
-
-XNumber.prototype.plus = function(r) {
-	return new XNumber(this.num + r.num);
-};
-
-XNumber.prototype.minus = function(r) {
-	return new XNumber(this.num - r.num);
-};
-
-XNumber.prototype.multiply = function(r) {
-	return new XNumber(this.num * r.num);
-};
-
-XNumber.prototype.div = function(r) {
-	return new XNumber(this.num / r.num);
-};
-
-XNumber.prototype.mod = function(r) {
-	return new XNumber(this.num % r.num);
-};
-
-// XBoolean //////////////////////////////////////////////////////////////////
-
-XBoolean.prototype = new Expression();
-XBoolean.prototype.constructor = XBoolean;
-XBoolean.superclass = Expression.prototype;
-
-function XBoolean(b) {
-	if (arguments.length > 0) {
-		this.init(b);
-	}
-}
-
-XBoolean.prototype.init = function(b) {
-	this.b = Boolean(b);
-};
-
-XBoolean.prototype.toString = function() {
-	return this.b.toString();
-};
-
-XBoolean.prototype.evaluate = function(c) {
-	return this;
-};
-
-XBoolean.prototype.string = function() {
-	return new XString(this.b);
-};
-
-XBoolean.prototype.number = function() {
-	return new XNumber(this.b);
-};
-
-XBoolean.prototype.bool = function() {
-	return this;
-};
-
-XBoolean.prototype.nodeset = function() {
-	throw new Error("Cannot convert boolean to nodeset");
-};
-
-XBoolean.prototype.stringValue = function() {
-	return this.string().stringValue();
-};
-
-XBoolean.prototype.numberValue = function() {
-	return this.number().numberValue();
-};
-
-XBoolean.prototype.booleanValue = function() {
-	return this.b;
-};
-
-XBoolean.prototype.not = function() {
-	return new XBoolean(!this.b);
-};
-
-XBoolean.prototype.equals = function(r) {
-	if (Utilities.instance_of(r, XString) || Utilities.instance_of(r, XNumber)) {
-		return this.equals(r.bool());
-	}
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithBoolean(this, Operators.equals);
-	}
-	return new XBoolean(this.b == r.b);
-};
-
-XBoolean.prototype.notequal = function(r) {
-	if (Utilities.instance_of(r, XString) || Utilities.instance_of(r, XNumber)) {
-		return this.notequal(r.bool());
-	}
-	if (Utilities.instance_of(r, XNodeSet)) {
-		return r.compareWithBoolean(this, Operators.notequal);
-	}
-	return new XBoolean(this.b != r.b);
-};
-
-XBoolean.prototype.lessthan = function(r) {
-	return this.number().lessthan(r);
-};
-
-XBoolean.prototype.greaterthan = function(r) {
-	return this.number().greaterthan(r);
-};
-
-XBoolean.prototype.lessthanorequal = function(r) {
-	return this.number().lessthanorequal(r);
-};
-
-XBoolean.prototype.greaterthanorequal = function(r) {
-	return this.number().greaterthanorequal(r);
-};
-
-XBoolean.true_ = new XBoolean(true);
-XBoolean.false_ = new XBoolean(false);
-
-// AVLTree ///////////////////////////////////////////////////////////////////
-
-AVLTree.prototype = new Object();
-AVLTree.prototype.constructor = AVLTree;
-AVLTree.superclass = Object.prototype;
-
-function AVLTree(n) {
-	this.init(n);
-}
-
-AVLTree.prototype.init = function(n) {
-	this.left = null;
-    this.right = null;
-	this.node = n;
-	this.depth = 1;
-};
-
-AVLTree.prototype.balance = function() {
-    var ldepth = this.left  == null ? 0 : this.left.depth;
-    var rdepth = this.right == null ? 0 : this.right.depth;
-
-	if (ldepth > rdepth + 1) {
-        // LR or LL rotation
-        var lldepth = this.left.left  == null ? 0 : this.left.left.depth;
-        var lrdepth = this.left.right == null ? 0 : this.left.right.depth;
-
-        if (lldepth < lrdepth) {
-            // LR rotation consists of a RR rotation of the left child
-            this.left.rotateRR();
-            // plus a LL rotation of this node, which happens anyway
-        }
-        this.rotateLL();
-    } else if (ldepth + 1 < rdepth) {
-        // RR or RL rorarion
-		var rrdepth = this.right.right == null ? 0 : this.right.right.depth;
-		var rldepth = this.right.left  == null ? 0 : this.right.left.depth;
-
-        if (rldepth > rrdepth) {
-            // RR rotation consists of a LL rotation of the right child
-            this.right.rotateLL();
-            // plus a RR rotation of this node, which happens anyway
-        }
-        this.rotateRR();
-    }
-};
-
-AVLTree.prototype.rotateLL = function() {
-    // the left side is too long => rotate from the left (_not_ leftwards)
-    var nodeBefore = this.node;
-    var rightBefore = this.right;
-    this.node = this.left.node;
-    this.right = this.left;
-    this.left = this.left.left;
-    this.right.left = this.right.right;
-    this.right.right = rightBefore;
-    this.right.node = nodeBefore;
-    this.right.updateInNewLocation();
-    this.updateInNewLocation();
-};
-
-AVLTree.prototype.rotateRR = function() {
-    // the right side is too long => rotate from the right (_not_ rightwards)
-    var nodeBefore = this.node;
-    var leftBefore = this.left;
-    this.node = this.right.node;
-    this.left = this.right;
-    this.right = this.right.right;
-    this.left.right = this.left.left;
-    this.left.left = leftBefore;
-    this.left.node = nodeBefore;
-    this.left.updateInNewLocation();
-    this.updateInNewLocation();
-};
-
-AVLTree.prototype.updateInNewLocation = function() {
-    this.getDepthFromChildren();
-};
-
-AVLTree.prototype.getDepthFromChildren = function() {
-    this.depth = this.node == null ? 0 : 1;
-    if (this.left != null) {
-        this.depth = this.left.depth + 1;
-    }
-    if (this.right != null && this.depth <= this.right.depth) {
-        this.depth = this.right.depth + 1;
-    }
-};
-
-function nodeOrder(n1, n2) {
-	if (n1 === n2) {
-		return 0;
-	}
-
-	if (n1.compareDocumentPosition) {
-	    var cpos = n1.compareDocumentPosition(n2);
-
-        if (cpos & 0x01) {
-            // not in the same document; return an arbitrary result (is there a better way to do this)
-            return 1;
-        }
-        if (cpos & 0x0A) {
-            // n2 precedes or contains n1
-            return 1;
-        }
-        if (cpos & 0x14) {
-            // n2 follows or is contained by n1
-            return -1;
-        }
-
-	    return 0;
-	}
-
-	var d1 = 0,
-	    d2 = 0;
-	for (var m1 = n1; m1 != null; m1 = m1.parentNode || m1.ownerElement) {
-		d1++;
-	}
-	for (var m2 = n2; m2 != null; m2 = m2.parentNode || m2.ownerElement) {
-		d2++;
-	}
-
-    // step up to same depth
-	if (d1 > d2) {
-		while (d1 > d2) {
-			n1 = n1.parentNode || n1.ownerElement;
-			d1--;
-		}
-		if (n1 === n2) {
-			return 1;
-		}
-	} else if (d2 > d1) {
-		while (d2 > d1) {
-			n2 = n2.parentNode || n2.ownerElement;
-			d2--;
-		}
-		if (n1 === n2) {
-			return -1;
-		}
-	}
-
-    var n1Par = n1.parentNode || n1.ownerElement,
-        n2Par = n2.parentNode || n2.ownerElement;
-
-    // find common parent
-	while (n1Par !== n2Par) {
-		n1 = n1Par;
-		n2 = n2Par;
-		n1Par = n1.parentNode || n1.ownerElement;
-	    n2Par = n2.parentNode || n2.ownerElement;
-	}
-    
-    var n1isAttr = Utilities.isAttribute(n1);
-    var n2isAttr = Utilities.isAttribute(n2);
-    
-    if (n1isAttr && !n2isAttr) {
-        return -1;
-    }
-    if (!n1isAttr && n2isAttr) {
-        return 1;
-    }
-    
-    if(n1Par) {
-	    var cn = n1isAttr ? n1Par.attributes : n1Par.childNodes,
-	        len = cn.length;
-        for (var i = 0; i < len; i += 1) {
-            var n = cn[i];
-            if (n === n1) {
-                return -1;
+    NodeTest.NameTestQName = NodeTest.makeNodeTestType(
+        NodeTest.NAMETESTQNAME,
+        {
+            matches: function (n, xpc) {
+                return NodeTest.isNodeType([1, 2, XPathNamespace.XPATH_NAMESPACE_NODE])(n) &&
+                    NodeTest.nameSpaceMatches(this.prefix, xpc, n) &&
+                    NodeTest.localNameMatches(this.localName, xpc, n);
+            },
+            toString: function () {
+                return this.name;
             }
-            if (n === n2) {
+        },
+        function NameTestQName(name) {
+            var nameParts = name.split(':');
+
+            this.name = name;
+            this.prefix = nameParts.length > 1 ? nameParts[0] : null;
+            this.localName = nameParts[nameParts.length > 1 ? 1 : 0];
+        }
+    );
+
+    NodeTest.PITest = NodeTest.makeNodeTestType(NodeTest.PI, {
+        matches: function (n, xpc) {
+            return NodeTest.isNodeType([7])(n) && (n.target || n.nodeName) === this.name;
+        },
+        toString: function () {
+            return wrap('processing-instruction("', '")', this.name);
+        }
+    }, function (name) { this.name = name; })
+
+    // singletons
+
+    // elements, attributes, namespaces
+    NodeTest.nameTestAny = NodeTest.makeNodeTypeTest(NodeTest.NAMETESTANY, [1, 2, XPathNamespace.XPATH_NAMESPACE_NODE], '*');
+    // text, cdata
+    NodeTest.textTest = NodeTest.makeNodeTypeTest(NodeTest.TEXT, [3, 4], 'text()');
+    NodeTest.commentTest = NodeTest.makeNodeTypeTest(NodeTest.COMMENT, [8], 'comment()');
+    // elements, attributes, text, cdata, PIs, comments, document nodes
+    NodeTest.nodeTest = NodeTest.makeNodeTypeTest(NodeTest.NODE, [1, 2, 3, 4, 7, 8, 9], 'node()');
+    NodeTest.anyPiTest = NodeTest.makeNodeTypeTest(NodeTest.PI, [7], 'processing-instruction()');
+
+    // VariableReference /////////////////////////////////////////////////////////
+
+    VariableReference.prototype = new Expression();
+    VariableReference.prototype.constructor = VariableReference;
+    VariableReference.superclass = Expression.prototype;
+
+    function VariableReference(v) {
+        if (arguments.length > 0) {
+            this.init(v);
+        }
+    }
+
+    VariableReference.prototype.init = function (v) {
+        this.variable = v;
+    };
+
+    VariableReference.prototype.toString = function () {
+        return "$" + this.variable;
+    };
+
+    VariableReference.prototype.evaluate = function (c) {
+        var parts = Utilities.resolveQName(this.variable, c.namespaceResolver, c.contextNode, false);
+
+        if (parts[0] == null) {
+            throw new Error("Cannot resolve QName " + fn);
+        }
+        var result = c.variableResolver.getVariable(parts[1], parts[0]);
+        if (!result) {
+            throw XPathException.fromMessage("Undeclared variable: " + this.toString());
+        }
+        return result;
+    };
+
+    // FunctionCall //////////////////////////////////////////////////////////////
+
+    FunctionCall.prototype = new Expression();
+    FunctionCall.prototype.constructor = FunctionCall;
+    FunctionCall.superclass = Expression.prototype;
+
+    function FunctionCall(fn, args) {
+        if (arguments.length > 0) {
+            this.init(fn, args);
+        }
+    }
+
+    FunctionCall.prototype.init = function (fn, args) {
+        this.functionName = fn;
+        this.arguments = args;
+    };
+
+    FunctionCall.prototype.toString = function () {
+        var s = this.functionName + "(";
+        for (var i = 0; i < this.arguments.length; i++) {
+            if (i > 0) {
+                s += ", ";
+            }
+            s += this.arguments[i].toString();
+        }
+        return s + ")";
+    };
+
+    FunctionCall.prototype.evaluate = function (c) {
+        var f = FunctionResolver.getFunctionFromContext(this.functionName, c);
+
+        if (!f) {
+            throw new Error("Unknown function " + this.functionName);
+        }
+
+        var a = [c].concat(this.arguments);
+        return f.apply(c.functionResolver.thisArg, a);
+    };
+
+    // Operators /////////////////////////////////////////////////////////////////
+
+    var Operators = new Object();
+
+    Operators.equals = function (l, r) {
+        return l.equals(r);
+    };
+
+    Operators.notequal = function (l, r) {
+        return l.notequal(r);
+    };
+
+    Operators.lessthan = function (l, r) {
+        return l.lessthan(r);
+    };
+
+    Operators.greaterthan = function (l, r) {
+        return l.greaterthan(r);
+    };
+
+    Operators.lessthanorequal = function (l, r) {
+        return l.lessthanorequal(r);
+    };
+
+    Operators.greaterthanorequal = function (l, r) {
+        return l.greaterthanorequal(r);
+    };
+
+    // XString ///////////////////////////////////////////////////////////////////
+
+    XString.prototype = new Expression();
+    XString.prototype.constructor = XString;
+    XString.superclass = Expression.prototype;
+
+    function XString(s) {
+        if (arguments.length > 0) {
+            this.init(s);
+        }
+    }
+
+    XString.prototype.init = function (s) {
+        this.str = String(s);
+    };
+
+    XString.prototype.toString = function () {
+        return this.str;
+    };
+
+    XString.prototype.evaluate = function (c) {
+        return this;
+    };
+
+    XString.prototype.string = function () {
+        return this;
+    };
+
+    XString.prototype.number = function () {
+        return new XNumber(this.str);
+    };
+
+    XString.prototype.bool = function () {
+        return new XBoolean(this.str);
+    };
+
+    XString.prototype.nodeset = function () {
+        throw new Error("Cannot convert string to nodeset");
+    };
+
+    XString.prototype.stringValue = function () {
+        return this.str;
+    };
+
+    XString.prototype.numberValue = function () {
+        return this.number().numberValue();
+    };
+
+    XString.prototype.booleanValue = function () {
+        return this.bool().booleanValue();
+    };
+
+    XString.prototype.equals = function (r) {
+        if (Utilities.instance_of(r, XBoolean)) {
+            return this.bool().equals(r);
+        }
+        if (Utilities.instance_of(r, XNumber)) {
+            return this.number().equals(r);
+        }
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithString(this, Operators.equals);
+        }
+        return new XBoolean(this.str == r.str);
+    };
+
+    XString.prototype.notequal = function (r) {
+        if (Utilities.instance_of(r, XBoolean)) {
+            return this.bool().notequal(r);
+        }
+        if (Utilities.instance_of(r, XNumber)) {
+            return this.number().notequal(r);
+        }
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithString(this, Operators.notequal);
+        }
+        return new XBoolean(this.str != r.str);
+    };
+
+    XString.prototype.lessthan = function (r) {
+        return this.number().lessthan(r);
+    };
+
+    XString.prototype.greaterthan = function (r) {
+        return this.number().greaterthan(r);
+    };
+
+    XString.prototype.lessthanorequal = function (r) {
+        return this.number().lessthanorequal(r);
+    };
+
+    XString.prototype.greaterthanorequal = function (r) {
+        return this.number().greaterthanorequal(r);
+    };
+
+    // XNumber ///////////////////////////////////////////////////////////////////
+
+    XNumber.prototype = new Expression();
+    XNumber.prototype.constructor = XNumber;
+    XNumber.superclass = Expression.prototype;
+
+    function XNumber(n) {
+        if (arguments.length > 0) {
+            this.init(n);
+        }
+    }
+
+    XNumber.prototype.init = function (n) {
+        this.num = typeof n === "string" ? this.parse(n) : Number(n);
+    };
+
+    XNumber.prototype.numberFormat = /^\s*-?[0-9]*\.?[0-9]+\s*$/;
+
+    XNumber.prototype.parse = function (s) {
+        // XPath representation of numbers is more restrictive than what Number() or parseFloat() allow
+        return this.numberFormat.test(s) ? parseFloat(s) : Number.NaN;
+    };
+
+    function padSmallNumber(numberStr) {
+        var parts = numberStr.split('e-');
+        var base = parts[0].replace('.', '');
+        var exponent = Number(parts[1]);
+
+        for (var i = 0; i < exponent - 1; i += 1) {
+            base = '0' + base;
+        }
+
+        return '0.' + base;
+    }
+
+    function padLargeNumber(numberStr) {
+        var parts = numberStr.split('e');
+        var base = parts[0].replace('.', '');
+        var exponent = Number(parts[1]);
+        var zerosToAppend = exponent + 1 - base.length;
+
+        for (var i = 0; i < zerosToAppend; i += 1) {
+            base += '0';
+        }
+
+        return base;
+    }
+
+    XNumber.prototype.toString = function () {
+        var strValue = this.num.toString();
+
+        if (strValue.indexOf('e-') !== -1) {
+            return padSmallNumber(strValue);
+        }
+
+        if (strValue.indexOf('e') !== -1) {
+            return padLargeNumber(strValue);
+        }
+
+        return strValue;
+    };
+
+    XNumber.prototype.evaluate = function (c) {
+        return this;
+    };
+
+    XNumber.prototype.string = function () {
+
+
+        return new XString(this.toString());
+    };
+
+    XNumber.prototype.number = function () {
+        return this;
+    };
+
+    XNumber.prototype.bool = function () {
+        return new XBoolean(this.num);
+    };
+
+    XNumber.prototype.nodeset = function () {
+        throw new Error("Cannot convert number to nodeset");
+    };
+
+    XNumber.prototype.stringValue = function () {
+        return this.string().stringValue();
+    };
+
+    XNumber.prototype.numberValue = function () {
+        return this.num;
+    };
+
+    XNumber.prototype.booleanValue = function () {
+        return this.bool().booleanValue();
+    };
+
+    XNumber.prototype.negate = function () {
+        return new XNumber(-this.num);
+    };
+
+    XNumber.prototype.equals = function (r) {
+        if (Utilities.instance_of(r, XBoolean)) {
+            return this.bool().equals(r);
+        }
+        if (Utilities.instance_of(r, XString)) {
+            return this.equals(r.number());
+        }
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithNumber(this, Operators.equals);
+        }
+        return new XBoolean(this.num == r.num);
+    };
+
+    XNumber.prototype.notequal = function (r) {
+        if (Utilities.instance_of(r, XBoolean)) {
+            return this.bool().notequal(r);
+        }
+        if (Utilities.instance_of(r, XString)) {
+            return this.notequal(r.number());
+        }
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithNumber(this, Operators.notequal);
+        }
+        return new XBoolean(this.num != r.num);
+    };
+
+    XNumber.prototype.lessthan = function (r) {
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithNumber(this, Operators.greaterthan);
+        }
+        if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
+            return this.lessthan(r.number());
+        }
+        return new XBoolean(this.num < r.num);
+    };
+
+    XNumber.prototype.greaterthan = function (r) {
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithNumber(this, Operators.lessthan);
+        }
+        if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
+            return this.greaterthan(r.number());
+        }
+        return new XBoolean(this.num > r.num);
+    };
+
+    XNumber.prototype.lessthanorequal = function (r) {
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithNumber(this, Operators.greaterthanorequal);
+        }
+        if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
+            return this.lessthanorequal(r.number());
+        }
+        return new XBoolean(this.num <= r.num);
+    };
+
+    XNumber.prototype.greaterthanorequal = function (r) {
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithNumber(this, Operators.lessthanorequal);
+        }
+        if (Utilities.instance_of(r, XBoolean) || Utilities.instance_of(r, XString)) {
+            return this.greaterthanorequal(r.number());
+        }
+        return new XBoolean(this.num >= r.num);
+    };
+
+    XNumber.prototype.plus = function (r) {
+        return new XNumber(this.num + r.num);
+    };
+
+    XNumber.prototype.minus = function (r) {
+        return new XNumber(this.num - r.num);
+    };
+
+    XNumber.prototype.multiply = function (r) {
+        return new XNumber(this.num * r.num);
+    };
+
+    XNumber.prototype.div = function (r) {
+        return new XNumber(this.num / r.num);
+    };
+
+    XNumber.prototype.mod = function (r) {
+        return new XNumber(this.num % r.num);
+    };
+
+    // XBoolean //////////////////////////////////////////////////////////////////
+
+    XBoolean.prototype = new Expression();
+    XBoolean.prototype.constructor = XBoolean;
+    XBoolean.superclass = Expression.prototype;
+
+    function XBoolean(b) {
+        if (arguments.length > 0) {
+            this.init(b);
+        }
+    }
+
+    XBoolean.prototype.init = function (b) {
+        this.b = Boolean(b);
+    };
+
+    XBoolean.prototype.toString = function () {
+        return this.b.toString();
+    };
+
+    XBoolean.prototype.evaluate = function (c) {
+        return this;
+    };
+
+    XBoolean.prototype.string = function () {
+        return new XString(this.b);
+    };
+
+    XBoolean.prototype.number = function () {
+        return new XNumber(this.b);
+    };
+
+    XBoolean.prototype.bool = function () {
+        return this;
+    };
+
+    XBoolean.prototype.nodeset = function () {
+        throw new Error("Cannot convert boolean to nodeset");
+    };
+
+    XBoolean.prototype.stringValue = function () {
+        return this.string().stringValue();
+    };
+
+    XBoolean.prototype.numberValue = function () {
+        return this.number().numberValue();
+    };
+
+    XBoolean.prototype.booleanValue = function () {
+        return this.b;
+    };
+
+    XBoolean.prototype.not = function () {
+        return new XBoolean(!this.b);
+    };
+
+    XBoolean.prototype.equals = function (r) {
+        if (Utilities.instance_of(r, XString) || Utilities.instance_of(r, XNumber)) {
+            return this.equals(r.bool());
+        }
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithBoolean(this, Operators.equals);
+        }
+        return new XBoolean(this.b == r.b);
+    };
+
+    XBoolean.prototype.notequal = function (r) {
+        if (Utilities.instance_of(r, XString) || Utilities.instance_of(r, XNumber)) {
+            return this.notequal(r.bool());
+        }
+        if (Utilities.instance_of(r, XNodeSet)) {
+            return r.compareWithBoolean(this, Operators.notequal);
+        }
+        return new XBoolean(this.b != r.b);
+    };
+
+    XBoolean.prototype.lessthan = function (r) {
+        return this.number().lessthan(r);
+    };
+
+    XBoolean.prototype.greaterthan = function (r) {
+        return this.number().greaterthan(r);
+    };
+
+    XBoolean.prototype.lessthanorequal = function (r) {
+        return this.number().lessthanorequal(r);
+    };
+
+    XBoolean.prototype.greaterthanorequal = function (r) {
+        return this.number().greaterthanorequal(r);
+    };
+
+    XBoolean.true_ = new XBoolean(true);
+    XBoolean.false_ = new XBoolean(false);
+
+    // AVLTree ///////////////////////////////////////////////////////////////////
+
+    AVLTree.prototype = new Object();
+    AVLTree.prototype.constructor = AVLTree;
+    AVLTree.superclass = Object.prototype;
+
+    function AVLTree(n) {
+        this.init(n);
+    }
+
+    AVLTree.prototype.init = function (n) {
+        this.left = null;
+        this.right = null;
+        this.node = n;
+        this.depth = 1;
+    };
+
+    AVLTree.prototype.balance = function () {
+        var ldepth = this.left == null ? 0 : this.left.depth;
+        var rdepth = this.right == null ? 0 : this.right.depth;
+
+        if (ldepth > rdepth + 1) {
+            // LR or LL rotation
+            var lldepth = this.left.left == null ? 0 : this.left.left.depth;
+            var lrdepth = this.left.right == null ? 0 : this.left.right.depth;
+
+            if (lldepth < lrdepth) {
+                // LR rotation consists of a RR rotation of the left child
+                this.left.rotateRR();
+                // plus a LL rotation of this node, which happens anyway
+            }
+            this.rotateLL();
+        } else if (ldepth + 1 < rdepth) {
+            // RR or RL rorarion
+            var rrdepth = this.right.right == null ? 0 : this.right.right.depth;
+            var rldepth = this.right.left == null ? 0 : this.right.left.depth;
+
+            if (rldepth > rrdepth) {
+                // RR rotation consists of a LL rotation of the right child
+                this.right.rotateLL();
+                // plus a RR rotation of this node, which happens anyway
+            }
+            this.rotateRR();
+        }
+    };
+
+    AVLTree.prototype.rotateLL = function () {
+        // the left side is too long => rotate from the left (_not_ leftwards)
+        var nodeBefore = this.node;
+        var rightBefore = this.right;
+        this.node = this.left.node;
+        this.right = this.left;
+        this.left = this.left.left;
+        this.right.left = this.right.right;
+        this.right.right = rightBefore;
+        this.right.node = nodeBefore;
+        this.right.updateInNewLocation();
+        this.updateInNewLocation();
+    };
+
+    AVLTree.prototype.rotateRR = function () {
+        // the right side is too long => rotate from the right (_not_ rightwards)
+        var nodeBefore = this.node;
+        var leftBefore = this.left;
+        this.node = this.right.node;
+        this.left = this.right;
+        this.right = this.right.right;
+        this.left.right = this.left.left;
+        this.left.left = leftBefore;
+        this.left.node = nodeBefore;
+        this.left.updateInNewLocation();
+        this.updateInNewLocation();
+    };
+
+    AVLTree.prototype.updateInNewLocation = function () {
+        this.getDepthFromChildren();
+    };
+
+    AVLTree.prototype.getDepthFromChildren = function () {
+        this.depth = this.node == null ? 0 : 1;
+        if (this.left != null) {
+            this.depth = this.left.depth + 1;
+        }
+        if (this.right != null && this.depth <= this.right.depth) {
+            this.depth = this.right.depth + 1;
+        }
+    };
+
+    function nodeOrder(n1, n2) {
+        if (n1 === n2) {
+            return 0;
+        }
+
+        if (n1.compareDocumentPosition) {
+            var cpos = n1.compareDocumentPosition(n2);
+
+            if (cpos & 0x01) {
+                // not in the same document; return an arbitrary result (is there a better way to do this)
                 return 1;
             }
+            if (cpos & 0x0A) {
+                // n2 precedes or contains n1
+                return 1;
+            }
+            if (cpos & 0x14) {
+                // n2 follows or is contained by n1
+                return -1;
+            }
+
+            return 0;
         }
-    }        
-    
-    throw new Error('Unexpected: could not determine node order');
-}
 
-AVLTree.prototype.add = function(n)  {
-	if (n === this.node) {
-        return false;
-    }
+        var d1 = 0,
+            d2 = 0;
+        for (var m1 = n1; m1 != null; m1 = m1.parentNode || m1.ownerElement) {
+            d1++;
+        }
+        for (var m2 = n2; m2 != null; m2 = m2.parentNode || m2.ownerElement) {
+            d2++;
+        }
 
-	var o = nodeOrder(n, this.node);
-
-    var ret = false;
-    if (o == -1) {
-        if (this.left == null) {
-            this.left = new AVLTree(n);
-            ret = true;
-        } else {
-            ret = this.left.add(n);
-            if (ret) {
-                this.balance();
+        // step up to same depth
+        if (d1 > d2) {
+            while (d1 > d2) {
+                n1 = n1.parentNode || n1.ownerElement;
+                d1--;
+            }
+            if (n1 === n2) {
+                return 1;
+            }
+        } else if (d2 > d1) {
+            while (d2 > d1) {
+                n2 = n2.parentNode || n2.ownerElement;
+                d2--;
+            }
+            if (n1 === n2) {
+                return -1;
             }
         }
-    } else if (o == 1) {
-        if (this.right == null) {
-            this.right = new AVLTree(n);
-            ret = true;
-        } else {
-            ret = this.right.add(n);
-            if (ret) {
-                this.balance();
-            }
-        }
-    }
 
-    if (ret) {
-        this.getDepthFromChildren();
-    }
-    return ret;
-};
-
-// XNodeSet //////////////////////////////////////////////////////////////////
-
-XNodeSet.prototype = new Expression();
-XNodeSet.prototype.constructor = XNodeSet;
-XNodeSet.superclass = Expression.prototype;
-
-function XNodeSet() {
-	this.init();
-}
-
-XNodeSet.prototype.init = function() {
-    this.tree = null;
-	this.nodes = [];
-	this.size = 0;
-};
-
-XNodeSet.prototype.toString = function() {
-	var p = this.first();
-	if (p == null) {
-		return "";
-	}
-	return this.stringForNode(p);
-};
-
-XNodeSet.prototype.evaluate = function(c) {
-	return this;
-};
-
-XNodeSet.prototype.string = function() {
-	return new XString(this.toString());
-};
-
-XNodeSet.prototype.stringValue = function() {
-	return this.toString();
-};
-
-XNodeSet.prototype.number = function() {
-	return new XNumber(this.string());
-};
-
-XNodeSet.prototype.numberValue = function() {
-	return Number(this.string());
-};
-
-XNodeSet.prototype.bool = function() {
-	return new XBoolean(this.booleanValue());
-};
-
-XNodeSet.prototype.booleanValue = function() {
-	return !!this.size;
-};
-
-XNodeSet.prototype.nodeset = function() {
-	return this;
-};
-
-XNodeSet.prototype.stringForNode = function(n) {
-	if (n.nodeType == 9   /*Node.DOCUMENT_NODE*/ || 
-        n.nodeType == 1   /*Node.ELEMENT_NODE */ || 
-        n.nodeType === 11 /*Node.DOCUMENT_FRAGMENT*/) {
-		return this.stringForContainerNode(n);
-	}
-    if (n.nodeType === 2 /* Node.ATTRIBUTE_NODE */) {
-        return n.value || n.nodeValue;
-    }
-	if (n.isNamespaceNode) {
-		return n.namespace;
-	}
-	return n.nodeValue;
-};
-
-XNodeSet.prototype.stringForContainerNode = function(n) {
-	var s = "";
-	for (var n2 = n.firstChild; n2 != null; n2 = n2.nextSibling) {
-        var nt = n2.nodeType;
-        //  Element,    Text,       CDATA,      Document,   Document Fragment
-        if (nt === 1 || nt === 3 || nt === 4 || nt === 9 || nt === 11) {
-            s += this.stringForNode(n2);
-        }
-	}
-	return s;
-};
-
-XNodeSet.prototype.buildTree = function () {
-    if (!this.tree && this.nodes.length) {
-        this.tree = new AVLTree(this.nodes[0]);
-        for (var i = 1; i < this.nodes.length; i += 1) {
-            this.tree.add(this.nodes[i]);
-        }
-    }
-
-    return this.tree;
-};
-
-XNodeSet.prototype.first = function() {
-	var p = this.buildTree();
-	if (p == null) {
-		return null;
-	}
-	while (p.left != null) {
-		p = p.left;
-	}
-	return p.node;
-};
-
-XNodeSet.prototype.add = function(n) {
-    for (var i = 0; i < this.nodes.length; i += 1) {
-        if (n === this.nodes[i]) {
-            return;
-        }
-    }
-
-    this.tree = null;
-    this.nodes.push(n);
-    this.size += 1;
-};
-
-XNodeSet.prototype.addArray = function(ns) {
-	var self = this;
-	
-	forEach(function (x) { self.add(x); }, ns);
-};
-
-/**
- * Returns an array of the node set's contents in document order
- */
-XNodeSet.prototype.toArray = function() {
-	var a = [];
-	this.toArrayRec(this.buildTree(), a);
-	return a;
-};
-
-XNodeSet.prototype.toArrayRec = function(t, a) {
-	if (t != null) {
-		this.toArrayRec(t.left, a);
-		a.push(t.node);
-		this.toArrayRec(t.right, a);
-	}
-};
-
-/**
- * Returns an array of the node set's contents in arbitrary order
- */
-XNodeSet.prototype.toUnsortedArray = function () {
-    return this.nodes.slice();
-};
-
-XNodeSet.prototype.compareWithString = function(r, o) {
-	var a = this.toUnsortedArray();
-	for (var i = 0; i < a.length; i++) {
-		var n = a[i];
-		var l = new XString(this.stringForNode(n));
-		var res = o(l, r);
-		if (res.booleanValue()) {
-			return res;
-		}
-	}
-	return new XBoolean(false);
-};
-
-XNodeSet.prototype.compareWithNumber = function(r, o) {
-	var a = this.toUnsortedArray();
-	for (var i = 0; i < a.length; i++) {
-		var n = a[i];
-		var l = new XNumber(this.stringForNode(n));
-		var res = o(l, r);
-		if (res.booleanValue()) {
-			return res;
-		}
-	}
-	return new XBoolean(false);
-};
-
-XNodeSet.prototype.compareWithBoolean = function(r, o) {
-	return o(this.bool(), r);
-};
-
-XNodeSet.prototype.compareWithNodeSet = function(r, o) {
-	var arr = this.toUnsortedArray();
-	var oInvert = function (lop, rop) { return o(rop, lop); };
-	
-	for (var i = 0; i < arr.length; i++) {
-		var l = new XString(this.stringForNode(arr[i]));
-
-		var res = r.compareWithString(l, oInvert);
-		if (res.booleanValue()) {
-			return res;
-		}
-	}
-	
-	return new XBoolean(false);
-};
-
-XNodeSet.compareWith = curry(function (o, r) {
-	if (Utilities.instance_of(r, XString)) {
-		return this.compareWithString(r, o);
-	}
-	if (Utilities.instance_of(r, XNumber)) {
-		return this.compareWithNumber(r, o);
-	}
-	if (Utilities.instance_of(r, XBoolean)) {
-		return this.compareWithBoolean(r, o);
-	}
-	return this.compareWithNodeSet(r, o);
-});
-
-XNodeSet.prototype.equals = XNodeSet.compareWith(Operators.equals);
-XNodeSet.prototype.notequal = XNodeSet.compareWith(Operators.notequal);
-XNodeSet.prototype.lessthan = XNodeSet.compareWith(Operators.lessthan);
-XNodeSet.prototype.greaterthan = XNodeSet.compareWith(Operators.greaterthan);
-XNodeSet.prototype.lessthanorequal = XNodeSet.compareWith(Operators.lessthanorequal);
-XNodeSet.prototype.greaterthanorequal = XNodeSet.compareWith(Operators.greaterthanorequal);
-
-XNodeSet.prototype.union = function(r) {
-	var ns = new XNodeSet();
-    ns.addArray(this.toUnsortedArray());
-	ns.addArray(r.toUnsortedArray());
-	return ns;
-};
-
-// XPathNamespace ////////////////////////////////////////////////////////////
-
-XPathNamespace.prototype = new Object();
-XPathNamespace.prototype.constructor = XPathNamespace;
-XPathNamespace.superclass = Object.prototype;
-
-function XPathNamespace(pre, ns, p) {
-	this.isXPathNamespace = true;
-	this.ownerDocument = p.ownerDocument;
-	this.nodeName = "#namespace";
-	this.prefix = pre;
-	this.localName = pre;
-	this.namespaceURI = ns;
-	this.nodeValue = ns;
-	this.ownerElement = p;
-	this.nodeType = XPathNamespace.XPATH_NAMESPACE_NODE;
-}
-
-XPathNamespace.prototype.toString = function() {
-	return "{ \"" + this.prefix + "\", \"" + this.namespaceURI + "\" }";
-};
-
-// XPathContext //////////////////////////////////////////////////////////////
-
-XPathContext.prototype = new Object();
-XPathContext.prototype.constructor = XPathContext;
-XPathContext.superclass = Object.prototype;
-
-function XPathContext(vr, nr, fr) {
-	this.variableResolver = vr != null ? vr : new VariableResolver();
-	this.namespaceResolver = nr != null ? nr : new NamespaceResolver();
-	this.functionResolver = fr != null ? fr : new FunctionResolver();
-}
-
-XPathContext.prototype.extend = function (newProps) {
-	return assign(new XPathContext(), this, newProps);
-};
-
-// VariableResolver //////////////////////////////////////////////////////////
-
-VariableResolver.prototype = new Object();
-VariableResolver.prototype.constructor = VariableResolver;
-VariableResolver.superclass = Object.prototype;
-
-function VariableResolver() {
-}
-
-VariableResolver.prototype.getVariable = function(ln, ns) {
-	return null;
-};
-
-// FunctionResolver //////////////////////////////////////////////////////////
-
-FunctionResolver.prototype = new Object();
-FunctionResolver.prototype.constructor = FunctionResolver;
-FunctionResolver.superclass = Object.prototype;
-
-function FunctionResolver(thisArg) {
-	this.thisArg = thisArg != null ? thisArg : Functions;
-	this.functions = new Object();
-	this.addStandardFunctions();
-}
-
-FunctionResolver.prototype.addStandardFunctions = function() {
-	this.functions["{}last"] = Functions.last;
-	this.functions["{}position"] = Functions.position;
-	this.functions["{}count"] = Functions.count;
-	this.functions["{}id"] = Functions.id;
-	this.functions["{}local-name"] = Functions.localName;
-	this.functions["{}namespace-uri"] = Functions.namespaceURI;
-	this.functions["{}name"] = Functions.name;
-	this.functions["{}string"] = Functions.string;
-	this.functions["{}concat"] = Functions.concat;
-	this.functions["{}starts-with"] = Functions.startsWith;
-	this.functions["{}contains"] = Functions.contains;
-	this.functions["{}substring-before"] = Functions.substringBefore;
-	this.functions["{}substring-after"] = Functions.substringAfter;
-	this.functions["{}substring"] = Functions.substring;
-	this.functions["{}string-length"] = Functions.stringLength;
-	this.functions["{}normalize-space"] = Functions.normalizeSpace;
-	this.functions["{}translate"] = Functions.translate;
-	this.functions["{}boolean"] = Functions.boolean_;
-	this.functions["{}not"] = Functions.not;
-	this.functions["{}true"] = Functions.true_;
-	this.functions["{}false"] = Functions.false_;
-	this.functions["{}lang"] = Functions.lang;
-	this.functions["{}number"] = Functions.number;
-	this.functions["{}sum"] = Functions.sum;
-	this.functions["{}floor"] = Functions.floor;
-	this.functions["{}ceiling"] = Functions.ceiling;
-	this.functions["{}round"] = Functions.round;
-};
-
-FunctionResolver.prototype.addFunction = function(ns, ln, f) {
-	this.functions["{" + ns + "}" + ln] = f;
-};
-
-FunctionResolver.getFunctionFromContext = function(qName, context) {
-    var parts = Utilities.resolveQName(qName, context.namespaceResolver, context.contextNode, false);
-
-    if (parts[0] === null) {
-        throw new Error("Cannot resolve QName " + name);
-    }
-
-    return context.functionResolver.getFunction(parts[1], parts[0]);
-};
-
-FunctionResolver.prototype.getFunction = function(localName, namespace) {
-	return this.functions["{" + namespace + "}" + localName];
-};
-
-// NamespaceResolver /////////////////////////////////////////////////////////
-
-NamespaceResolver.prototype = new Object();
-NamespaceResolver.prototype.constructor = NamespaceResolver;
-NamespaceResolver.superclass = Object.prototype;
-
-function NamespaceResolver() {
-}
-
-NamespaceResolver.prototype.getNamespace = function(prefix, n) {
-	if (prefix == "xml") {
-		return XPath.XML_NAMESPACE_URI;
-	} else if (prefix == "xmlns") {
-		return XPath.XMLNS_NAMESPACE_URI;
-	}
-	if (n.nodeType == 9 /*Node.DOCUMENT_NODE*/) {
-		n = n.documentElement;
-	} else if (n.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
-		n = PathExpr.getOwnerElement(n);
-	} else if (n.nodeType != 1 /*Node.ELEMENT_NODE*/) {
-		n = n.parentNode;
-	}
-	while (n != null && n.nodeType == 1 /*Node.ELEMENT_NODE*/) {
-		var nnm = n.attributes;
-		for (var i = 0; i < nnm.length; i++) {
-			var a = nnm.item(i);
-			var aname = a.name || a.nodeName;
-			if ((aname === "xmlns" && prefix === "")
-					|| aname === "xmlns:" + prefix) {
-				return String(a.value || a.nodeValue);
-			}
-		}
-		n = n.parentNode;
-	}
-	return null;
-};
-
-// Functions /////////////////////////////////////////////////////////////////
-
-var Functions = new Object();
-
-Functions.last = function(c) {
-	if (arguments.length != 1) {
-		throw new Error("Function last expects ()");
-	}
-
-	return new XNumber(c.contextSize);
-};
-
-Functions.position = function(c) {
-	if (arguments.length != 1) {
-		throw new Error("Function position expects ()");
-	}
-
-	return new XNumber(c.contextPosition);
-};
-
-Functions.count = function() {
-	var c = arguments[0];
-	var ns;
-	if (arguments.length != 2 || !Utilities.instance_of(ns = arguments[1].evaluate(c), XNodeSet)) {
-		throw new Error("Function count expects (node-set)");
-	}
-	return new XNumber(ns.size);
-};
-
-Functions.id = function() {
-	var c = arguments[0];
-	var id;
-	if (arguments.length != 2) {
-		throw new Error("Function id expects (object)");
-	}
-	id = arguments[1].evaluate(c);
-	if (Utilities.instance_of(id, XNodeSet)) {
-		id = id.toArray().join(" ");
-	} else {
-		id = id.stringValue();
-	}
-	var ids = id.split(/[\x0d\x0a\x09\x20]+/);
-	var count = 0;
-	var ns = new XNodeSet();
-	var doc = c.contextNode.nodeType == 9 /*Node.DOCUMENT_NODE*/
-			? c.contextNode
-			: c.contextNode.ownerDocument;
-	for (var i = 0; i < ids.length; i++) {
-		var n;
-		if (doc.getElementById) {
-			n = doc.getElementById(ids[i]);
-		} else {
-			n = Utilities.getElementById(doc, ids[i]);
-		}
-		if (n != null) {
-			ns.add(n);
-			count++;
-		}
-	}
-	return ns;
-};
-
-Functions.localName = function(c, eNode) {
-	var n;
-	
-	if (arguments.length == 1) {
-		n = c.contextNode;
-	} else if (arguments.length == 2) {
-		n = eNode.evaluate(c).first();
-	} else {
-		throw new Error("Function local-name expects (node-set?)");
-	}
-	
-	if (n == null) {
-		return new XString("");
-	}
-
-	return new XString(n.localName ||     //  standard elements and attributes
-	                   n.baseName  ||     //  IE
-					   n.target    ||     //  processing instructions
-                       n.nodeName  ||     //  DOM1 elements
-					   "");               //  fallback
-};
-
-Functions.namespaceURI = function() {
-	var c = arguments[0];
-	var n;
-	if (arguments.length == 1) {
-		n = c.contextNode;
-	} else if (arguments.length == 2) {
-		n = arguments[1].evaluate(c).first();
-	} else {
-		throw new Error("Function namespace-uri expects (node-set?)");
-	}
-	if (n == null) {
-		return new XString("");
-	}
-	return new XString(n.namespaceURI);
-};
-
-Functions.name = function() {
-	var c = arguments[0];
-	var n;
-	if (arguments.length == 1) {
-		n = c.contextNode;
-	} else if (arguments.length == 2) {
-		n = arguments[1].evaluate(c).first();
-	} else {
-		throw new Error("Function name expects (node-set?)");
-	}
-	if (n == null) {
-		return new XString("");
-	}
-	if (n.nodeType == 1 /*Node.ELEMENT_NODE*/) {
-		return new XString(n.nodeName);
-	} else if (n.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
-		return new XString(n.name || n.nodeName);
-	} else if (n.nodeType === 7 /*Node.PROCESSING_INSTRUCTION_NODE*/) {
-	    return new XString(n.target || n.nodeName);
-	} else if (n.localName == null) {
-		return new XString("");
-	} else {
-		return new XString(n.localName);
-	}
-};
-
-Functions.string = function() {
-	var c = arguments[0];
-	if (arguments.length == 1) {
-		return new XString(XNodeSet.prototype.stringForNode(c.contextNode));
-	} else if (arguments.length == 2) {
-		return arguments[1].evaluate(c).string();
-	}
-	throw new Error("Function string expects (object?)");
-};
-
-Functions.concat = function(c) {
-	if (arguments.length < 3) {
-		throw new Error("Function concat expects (string, string[, string]*)");
-	}
-	var s = "";
-	for (var i = 1; i < arguments.length; i++) {
-		s += arguments[i].evaluate(c).stringValue();
-	}
-	return new XString(s);
-};
-
-Functions.startsWith = function() {
-	var c = arguments[0];
-	if (arguments.length != 3) {
-		throw new Error("Function startsWith expects (string, string)");
-	}
-	var s1 = arguments[1].evaluate(c).stringValue();
-	var s2 = arguments[2].evaluate(c).stringValue();
-	return new XBoolean(s1.substring(0, s2.length) == s2);
-};
-
-Functions.contains = function() {
-	var c = arguments[0];
-	if (arguments.length != 3) {
-		throw new Error("Function contains expects (string, string)");
-	}
-	var s1 = arguments[1].evaluate(c).stringValue();
-	var s2 = arguments[2].evaluate(c).stringValue();
-	return new XBoolean(s1.indexOf(s2) !== -1);
-};
-
-Functions.substringBefore = function() {
-	var c = arguments[0];
-	if (arguments.length != 3) {
-		throw new Error("Function substring-before expects (string, string)");
-	}
-	var s1 = arguments[1].evaluate(c).stringValue();
-	var s2 = arguments[2].evaluate(c).stringValue();
-	return new XString(s1.substring(0, s1.indexOf(s2)));
-};
-
-Functions.substringAfter = function() {
-	var c = arguments[0];
-	if (arguments.length != 3) {
-		throw new Error("Function substring-after expects (string, string)");
-	}
-	var s1 = arguments[1].evaluate(c).stringValue();
-	var s2 = arguments[2].evaluate(c).stringValue();
-	if (s2.length == 0) {
-		return new XString(s1);
-	}
-	var i = s1.indexOf(s2);
-	if (i == -1) {
-		return new XString("");
-	}
-	return new XString(s1.substring(i + s2.length));
-};
-
-Functions.substring = function() {
-	var c = arguments[0];
-	if (!(arguments.length == 3 || arguments.length == 4)) {
-		throw new Error("Function substring expects (string, number, number?)");
-	}
-	var s = arguments[1].evaluate(c).stringValue();
-	var n1 = Math.round(arguments[2].evaluate(c).numberValue()) - 1;
-	var n2 = arguments.length == 4 ? n1 + Math.round(arguments[3].evaluate(c).numberValue()) : undefined;
-	return new XString(s.substring(n1, n2));
-};
-
-Functions.stringLength = function() {
-	var c = arguments[0];
-	var s;
-	if (arguments.length == 1) {
-		s = XNodeSet.prototype.stringForNode(c.contextNode);
-	} else if (arguments.length == 2) {
-		s = arguments[1].evaluate(c).stringValue();
-	} else {
-		throw new Error("Function string-length expects (string?)");
-	}
-	return new XNumber(s.length);
-};
-
-Functions.normalizeSpace = function() {
-	var c = arguments[0];
-	var s;
-	if (arguments.length == 1) {
-		s = XNodeSet.prototype.stringForNode(c.contextNode);
-	} else if (arguments.length == 2) {
-		s = arguments[1].evaluate(c).stringValue();
-	} else {
-		throw new Error("Function normalize-space expects (string?)");
-	}
-	var i = 0;
-	var j = s.length - 1;
-	while (Utilities.isSpace(s.charCodeAt(j))) {
-		j--;
-	}
-	var t = "";
-	while (i <= j && Utilities.isSpace(s.charCodeAt(i))) {
-		i++;
-	}
-	while (i <= j) {
-		if (Utilities.isSpace(s.charCodeAt(i))) {
-			t += " ";
-			while (i <= j && Utilities.isSpace(s.charCodeAt(i))) {
-				i++;
-			}
-		} else {
-			t += s.charAt(i);
-			i++;
-		}
-	}
-	return new XString(t);
-};
-
-Functions.translate = function(c, eValue, eFrom, eTo) {
-	if (arguments.length != 4) {
-		throw new Error("Function translate expects (string, string, string)");
-	}
-
-	var value = eValue.evaluate(c).stringValue();
-	var from = eFrom.evaluate(c).stringValue();
-	var to = eTo.evaluate(c).stringValue();
-	
-	var cMap = reduce(function (acc, ch, i) {
-		if (!(ch in acc)) {
-			acc[ch] = i > to.length ? '' : to[i];
-		}
-		return acc;
-	}, {}, from);
-
-    var t = join('', map(function (ch) {
-        return ch in cMap ? cMap[ch] : ch;
-    }, value));
-
-	return new XString(t);
-};
-
-Functions.boolean_ = function() {
-	var c = arguments[0];
-	if (arguments.length != 2) {
-		throw new Error("Function boolean expects (object)");
-	}
-	return arguments[1].evaluate(c).bool();
-};
-
-Functions.not = function(c, eValue) {
-	if (arguments.length != 2) {
-		throw new Error("Function not expects (object)");
-	}
-	return eValue.evaluate(c).bool().not();
-};
-
-Functions.true_ = function() {
-	if (arguments.length != 1) {
-		throw new Error("Function true expects ()");
-	}
-	return XBoolean.true_;
-};
-
-Functions.false_ = function() {
-	if (arguments.length != 1) {
-		throw new Error("Function false expects ()");
-	}
-	return XBoolean.false_;
-};
-
-Functions.lang = function() {
-	var c = arguments[0];
-	if (arguments.length != 2) {
-		throw new Error("Function lang expects (string)");
-	}
-	var lang;
-	for (var n = c.contextNode; n != null && n.nodeType != 9 /*Node.DOCUMENT_NODE*/; n = n.parentNode) {
-		var a = n.getAttributeNS(XPath.XML_NAMESPACE_URI, "lang");
-		if (a != null) {
-			lang = String(a);
-			break;
-		}
-	}
-	if (lang == null) {
-		return XBoolean.false_;
-	}
-	var s = arguments[1].evaluate(c).stringValue();
-	return new XBoolean(lang.substring(0, s.length) == s
-				&& (lang.length == s.length || lang.charAt(s.length) == '-'));
-};
-
-Functions.number = function() {
-	var c = arguments[0];
-	if (!(arguments.length == 1 || arguments.length == 2)) {
-		throw new Error("Function number expects (object?)");
-	}
-	if (arguments.length == 1) {
-		return new XNumber(XNodeSet.prototype.stringForNode(c.contextNode));
-	}
-	return arguments[1].evaluate(c).number();
-};
-
-Functions.sum = function() {
-	var c = arguments[0];
-	var ns;
-	if (arguments.length != 2 || !Utilities.instance_of((ns = arguments[1].evaluate(c)), XNodeSet)) {
-		throw new Error("Function sum expects (node-set)");
-	}
-	ns = ns.toUnsortedArray();
-	var n = 0;
-	for (var i = 0; i < ns.length; i++) {
-		n += new XNumber(XNodeSet.prototype.stringForNode(ns[i])).numberValue();
-	}
-	return new XNumber(n);
-};
-
-Functions.floor = function() {
-	var c = arguments[0];
-	if (arguments.length != 2) {
-		throw new Error("Function floor expects (number)");
-	}
-	return new XNumber(Math.floor(arguments[1].evaluate(c).numberValue()));
-};
-
-Functions.ceiling = function() {
-	var c = arguments[0];
-	if (arguments.length != 2) {
-		throw new Error("Function ceiling expects (number)");
-	}
-	return new XNumber(Math.ceil(arguments[1].evaluate(c).numberValue()));
-};
-
-Functions.round = function() {
-	var c = arguments[0];
-	if (arguments.length != 2) {
-		throw new Error("Function round expects (number)");
-	}
-	return new XNumber(Math.round(arguments[1].evaluate(c).numberValue()));
-};
-
-// Utilities /////////////////////////////////////////////////////////////////
-
-var Utilities = new Object();
-
-Utilities.isAttribute = function (val) {
-    return val && (val.nodeType === 2 || val.ownerElement);
-}
-
-Utilities.splitQName = function(qn) {
-	var i = qn.indexOf(":");
-	if (i == -1) {
-		return [ null, qn ];
-	}
-	return [ qn.substring(0, i), qn.substring(i + 1) ];
-};
-
-Utilities.resolveQName = function(qn, nr, n, useDefault) {
-	var parts = Utilities.splitQName(qn);
-	if (parts[0] != null) {
-		parts[0] = nr.getNamespace(parts[0], n);
-	} else {
-		if (useDefault) {
-			parts[0] = nr.getNamespace("", n);
-			if (parts[0] == null) {
-				parts[0] = "";
-			}
-		} else {
-			parts[0] = "";
-		}
-	}
-	return parts;
-};
-
-Utilities.isSpace = function(c) {
-	return c == 0x9 || c == 0xd || c == 0xa || c == 0x20;
-};
-
-Utilities.isLetter = function(c) {
-	return c >= 0x0041 && c <= 0x005A ||
-		c >= 0x0061 && c <= 0x007A ||
-		c >= 0x00C0 && c <= 0x00D6 ||
-		c >= 0x00D8 && c <= 0x00F6 ||
-		c >= 0x00F8 && c <= 0x00FF ||
-		c >= 0x0100 && c <= 0x0131 ||
-		c >= 0x0134 && c <= 0x013E ||
-		c >= 0x0141 && c <= 0x0148 ||
-		c >= 0x014A && c <= 0x017E ||
-		c >= 0x0180 && c <= 0x01C3 ||
-		c >= 0x01CD && c <= 0x01F0 ||
-		c >= 0x01F4 && c <= 0x01F5 ||
-		c >= 0x01FA && c <= 0x0217 ||
-		c >= 0x0250 && c <= 0x02A8 ||
-		c >= 0x02BB && c <= 0x02C1 ||
-		c == 0x0386 ||
-		c >= 0x0388 && c <= 0x038A ||
-		c == 0x038C ||
-		c >= 0x038E && c <= 0x03A1 ||
-		c >= 0x03A3 && c <= 0x03CE ||
-		c >= 0x03D0 && c <= 0x03D6 ||
-		c == 0x03DA ||
-		c == 0x03DC ||
-		c == 0x03DE ||
-		c == 0x03E0 ||
-		c >= 0x03E2 && c <= 0x03F3 ||
-		c >= 0x0401 && c <= 0x040C ||
-		c >= 0x040E && c <= 0x044F ||
-		c >= 0x0451 && c <= 0x045C ||
-		c >= 0x045E && c <= 0x0481 ||
-		c >= 0x0490 && c <= 0x04C4 ||
-		c >= 0x04C7 && c <= 0x04C8 ||
-		c >= 0x04CB && c <= 0x04CC ||
-		c >= 0x04D0 && c <= 0x04EB ||
-		c >= 0x04EE && c <= 0x04F5 ||
-		c >= 0x04F8 && c <= 0x04F9 ||
-		c >= 0x0531 && c <= 0x0556 ||
-		c == 0x0559 ||
-		c >= 0x0561 && c <= 0x0586 ||
-		c >= 0x05D0 && c <= 0x05EA ||
-		c >= 0x05F0 && c <= 0x05F2 ||
-		c >= 0x0621 && c <= 0x063A ||
-		c >= 0x0641 && c <= 0x064A ||
-		c >= 0x0671 && c <= 0x06B7 ||
-		c >= 0x06BA && c <= 0x06BE ||
-		c >= 0x06C0 && c <= 0x06CE ||
-		c >= 0x06D0 && c <= 0x06D3 ||
-		c == 0x06D5 ||
-		c >= 0x06E5 && c <= 0x06E6 ||
-		c >= 0x0905 && c <= 0x0939 ||
-		c == 0x093D ||
-		c >= 0x0958 && c <= 0x0961 ||
-		c >= 0x0985 && c <= 0x098C ||
-		c >= 0x098F && c <= 0x0990 ||
-		c >= 0x0993 && c <= 0x09A8 ||
-		c >= 0x09AA && c <= 0x09B0 ||
-		c == 0x09B2 ||
-		c >= 0x09B6 && c <= 0x09B9 ||
-		c >= 0x09DC && c <= 0x09DD ||
-		c >= 0x09DF && c <= 0x09E1 ||
-		c >= 0x09F0 && c <= 0x09F1 ||
-		c >= 0x0A05 && c <= 0x0A0A ||
-		c >= 0x0A0F && c <= 0x0A10 ||
-		c >= 0x0A13 && c <= 0x0A28 ||
-		c >= 0x0A2A && c <= 0x0A30 ||
-		c >= 0x0A32 && c <= 0x0A33 ||
-		c >= 0x0A35 && c <= 0x0A36 ||
-		c >= 0x0A38 && c <= 0x0A39 ||
-		c >= 0x0A59 && c <= 0x0A5C ||
-		c == 0x0A5E ||
-		c >= 0x0A72 && c <= 0x0A74 ||
-		c >= 0x0A85 && c <= 0x0A8B ||
-		c == 0x0A8D ||
-		c >= 0x0A8F && c <= 0x0A91 ||
-		c >= 0x0A93 && c <= 0x0AA8 ||
-		c >= 0x0AAA && c <= 0x0AB0 ||
-		c >= 0x0AB2 && c <= 0x0AB3 ||
-		c >= 0x0AB5 && c <= 0x0AB9 ||
-		c == 0x0ABD ||
-		c == 0x0AE0 ||
-		c >= 0x0B05 && c <= 0x0B0C ||
-		c >= 0x0B0F && c <= 0x0B10 ||
-		c >= 0x0B13 && c <= 0x0B28 ||
-		c >= 0x0B2A && c <= 0x0B30 ||
-		c >= 0x0B32 && c <= 0x0B33 ||
-		c >= 0x0B36 && c <= 0x0B39 ||
-		c == 0x0B3D ||
-		c >= 0x0B5C && c <= 0x0B5D ||
-		c >= 0x0B5F && c <= 0x0B61 ||
-		c >= 0x0B85 && c <= 0x0B8A ||
-		c >= 0x0B8E && c <= 0x0B90 ||
-		c >= 0x0B92 && c <= 0x0B95 ||
-		c >= 0x0B99 && c <= 0x0B9A ||
-		c == 0x0B9C ||
-		c >= 0x0B9E && c <= 0x0B9F ||
-		c >= 0x0BA3 && c <= 0x0BA4 ||
-		c >= 0x0BA8 && c <= 0x0BAA ||
-		c >= 0x0BAE && c <= 0x0BB5 ||
-		c >= 0x0BB7 && c <= 0x0BB9 ||
-		c >= 0x0C05 && c <= 0x0C0C ||
-		c >= 0x0C0E && c <= 0x0C10 ||
-		c >= 0x0C12 && c <= 0x0C28 ||
-		c >= 0x0C2A && c <= 0x0C33 ||
-		c >= 0x0C35 && c <= 0x0C39 ||
-		c >= 0x0C60 && c <= 0x0C61 ||
-		c >= 0x0C85 && c <= 0x0C8C ||
-		c >= 0x0C8E && c <= 0x0C90 ||
-		c >= 0x0C92 && c <= 0x0CA8 ||
-		c >= 0x0CAA && c <= 0x0CB3 ||
-		c >= 0x0CB5 && c <= 0x0CB9 ||
-		c == 0x0CDE ||
-		c >= 0x0CE0 && c <= 0x0CE1 ||
-		c >= 0x0D05 && c <= 0x0D0C ||
-		c >= 0x0D0E && c <= 0x0D10 ||
-		c >= 0x0D12 && c <= 0x0D28 ||
-		c >= 0x0D2A && c <= 0x0D39 ||
-		c >= 0x0D60 && c <= 0x0D61 ||
-		c >= 0x0E01 && c <= 0x0E2E ||
-		c == 0x0E30 ||
-		c >= 0x0E32 && c <= 0x0E33 ||
-		c >= 0x0E40 && c <= 0x0E45 ||
-		c >= 0x0E81 && c <= 0x0E82 ||
-		c == 0x0E84 ||
-		c >= 0x0E87 && c <= 0x0E88 ||
-		c == 0x0E8A ||
-		c == 0x0E8D ||
-		c >= 0x0E94 && c <= 0x0E97 ||
-		c >= 0x0E99 && c <= 0x0E9F ||
-		c >= 0x0EA1 && c <= 0x0EA3 ||
-		c == 0x0EA5 ||
-		c == 0x0EA7 ||
-		c >= 0x0EAA && c <= 0x0EAB ||
-		c >= 0x0EAD && c <= 0x0EAE ||
-		c == 0x0EB0 ||
-		c >= 0x0EB2 && c <= 0x0EB3 ||
-		c == 0x0EBD ||
-		c >= 0x0EC0 && c <= 0x0EC4 ||
-		c >= 0x0F40 && c <= 0x0F47 ||
-		c >= 0x0F49 && c <= 0x0F69 ||
-		c >= 0x10A0 && c <= 0x10C5 ||
-		c >= 0x10D0 && c <= 0x10F6 ||
-		c == 0x1100 ||
-		c >= 0x1102 && c <= 0x1103 ||
-		c >= 0x1105 && c <= 0x1107 ||
-		c == 0x1109 ||
-		c >= 0x110B && c <= 0x110C ||
-		c >= 0x110E && c <= 0x1112 ||
-		c == 0x113C ||
-		c == 0x113E ||
-		c == 0x1140 ||
-		c == 0x114C ||
-		c == 0x114E ||
-		c == 0x1150 ||
-		c >= 0x1154 && c <= 0x1155 ||
-		c == 0x1159 ||
-		c >= 0x115F && c <= 0x1161 ||
-		c == 0x1163 ||
-		c == 0x1165 ||
-		c == 0x1167 ||
-		c == 0x1169 ||
-		c >= 0x116D && c <= 0x116E ||
-		c >= 0x1172 && c <= 0x1173 ||
-		c == 0x1175 ||
-		c == 0x119E ||
-		c == 0x11A8 ||
-		c == 0x11AB ||
-		c >= 0x11AE && c <= 0x11AF ||
-		c >= 0x11B7 && c <= 0x11B8 ||
-		c == 0x11BA ||
-		c >= 0x11BC && c <= 0x11C2 ||
-		c == 0x11EB ||
-		c == 0x11F0 ||
-		c == 0x11F9 ||
-		c >= 0x1E00 && c <= 0x1E9B ||
-		c >= 0x1EA0 && c <= 0x1EF9 ||
-		c >= 0x1F00 && c <= 0x1F15 ||
-		c >= 0x1F18 && c <= 0x1F1D ||
-		c >= 0x1F20 && c <= 0x1F45 ||
-		c >= 0x1F48 && c <= 0x1F4D ||
-		c >= 0x1F50 && c <= 0x1F57 ||
-		c == 0x1F59 ||
-		c == 0x1F5B ||
-		c == 0x1F5D ||
-		c >= 0x1F5F && c <= 0x1F7D ||
-		c >= 0x1F80 && c <= 0x1FB4 ||
-		c >= 0x1FB6 && c <= 0x1FBC ||
-		c == 0x1FBE ||
-		c >= 0x1FC2 && c <= 0x1FC4 ||
-		c >= 0x1FC6 && c <= 0x1FCC ||
-		c >= 0x1FD0 && c <= 0x1FD3 ||
-		c >= 0x1FD6 && c <= 0x1FDB ||
-		c >= 0x1FE0 && c <= 0x1FEC ||
-		c >= 0x1FF2 && c <= 0x1FF4 ||
-		c >= 0x1FF6 && c <= 0x1FFC ||
-		c == 0x2126 ||
-		c >= 0x212A && c <= 0x212B ||
-		c == 0x212E ||
-		c >= 0x2180 && c <= 0x2182 ||
-		c >= 0x3041 && c <= 0x3094 ||
-		c >= 0x30A1 && c <= 0x30FA ||
-		c >= 0x3105 && c <= 0x312C ||
-		c >= 0xAC00 && c <= 0xD7A3 ||
-		c >= 0x4E00 && c <= 0x9FA5 ||
-		c == 0x3007 ||
-		c >= 0x3021 && c <= 0x3029;
-};
-
-Utilities.isNCNameChar = function(c) {
-	return c >= 0x0030 && c <= 0x0039
-		|| c >= 0x0660 && c <= 0x0669
-		|| c >= 0x06F0 && c <= 0x06F9
-		|| c >= 0x0966 && c <= 0x096F
-		|| c >= 0x09E6 && c <= 0x09EF
-		|| c >= 0x0A66 && c <= 0x0A6F
-		|| c >= 0x0AE6 && c <= 0x0AEF
-		|| c >= 0x0B66 && c <= 0x0B6F
-		|| c >= 0x0BE7 && c <= 0x0BEF
-		|| c >= 0x0C66 && c <= 0x0C6F
-		|| c >= 0x0CE6 && c <= 0x0CEF
-		|| c >= 0x0D66 && c <= 0x0D6F
-		|| c >= 0x0E50 && c <= 0x0E59
-		|| c >= 0x0ED0 && c <= 0x0ED9
-		|| c >= 0x0F20 && c <= 0x0F29
-		|| c == 0x002E
-		|| c == 0x002D
-		|| c == 0x005F
-		|| Utilities.isLetter(c)
-		|| c >= 0x0300 && c <= 0x0345
-		|| c >= 0x0360 && c <= 0x0361
-		|| c >= 0x0483 && c <= 0x0486
-		|| c >= 0x0591 && c <= 0x05A1
-		|| c >= 0x05A3 && c <= 0x05B9
-		|| c >= 0x05BB && c <= 0x05BD
-		|| c == 0x05BF
-		|| c >= 0x05C1 && c <= 0x05C2
-		|| c == 0x05C4
-		|| c >= 0x064B && c <= 0x0652
-		|| c == 0x0670
-		|| c >= 0x06D6 && c <= 0x06DC
-		|| c >= 0x06DD && c <= 0x06DF
-		|| c >= 0x06E0 && c <= 0x06E4
-		|| c >= 0x06E7 && c <= 0x06E8
-		|| c >= 0x06EA && c <= 0x06ED
-		|| c >= 0x0901 && c <= 0x0903
-		|| c == 0x093C
-		|| c >= 0x093E && c <= 0x094C
-		|| c == 0x094D
-		|| c >= 0x0951 && c <= 0x0954
-		|| c >= 0x0962 && c <= 0x0963
-		|| c >= 0x0981 && c <= 0x0983
-		|| c == 0x09BC
-		|| c == 0x09BE
-		|| c == 0x09BF
-		|| c >= 0x09C0 && c <= 0x09C4
-		|| c >= 0x09C7 && c <= 0x09C8
-		|| c >= 0x09CB && c <= 0x09CD
-		|| c == 0x09D7
-		|| c >= 0x09E2 && c <= 0x09E3
-		|| c == 0x0A02
-		|| c == 0x0A3C
-		|| c == 0x0A3E
-		|| c == 0x0A3F
-		|| c >= 0x0A40 && c <= 0x0A42
-		|| c >= 0x0A47 && c <= 0x0A48
-		|| c >= 0x0A4B && c <= 0x0A4D
-		|| c >= 0x0A70 && c <= 0x0A71
-		|| c >= 0x0A81 && c <= 0x0A83
-		|| c == 0x0ABC
-		|| c >= 0x0ABE && c <= 0x0AC5
-		|| c >= 0x0AC7 && c <= 0x0AC9
-		|| c >= 0x0ACB && c <= 0x0ACD
-		|| c >= 0x0B01 && c <= 0x0B03
-		|| c == 0x0B3C
-		|| c >= 0x0B3E && c <= 0x0B43
-		|| c >= 0x0B47 && c <= 0x0B48
-		|| c >= 0x0B4B && c <= 0x0B4D
-		|| c >= 0x0B56 && c <= 0x0B57
-		|| c >= 0x0B82 && c <= 0x0B83
-		|| c >= 0x0BBE && c <= 0x0BC2
-		|| c >= 0x0BC6 && c <= 0x0BC8
-		|| c >= 0x0BCA && c <= 0x0BCD
-		|| c == 0x0BD7
-		|| c >= 0x0C01 && c <= 0x0C03
-		|| c >= 0x0C3E && c <= 0x0C44
-		|| c >= 0x0C46 && c <= 0x0C48
-		|| c >= 0x0C4A && c <= 0x0C4D
-		|| c >= 0x0C55 && c <= 0x0C56
-		|| c >= 0x0C82 && c <= 0x0C83
-		|| c >= 0x0CBE && c <= 0x0CC4
-		|| c >= 0x0CC6 && c <= 0x0CC8
-		|| c >= 0x0CCA && c <= 0x0CCD
-		|| c >= 0x0CD5 && c <= 0x0CD6
-		|| c >= 0x0D02 && c <= 0x0D03
-		|| c >= 0x0D3E && c <= 0x0D43
-		|| c >= 0x0D46 && c <= 0x0D48
-		|| c >= 0x0D4A && c <= 0x0D4D
-		|| c == 0x0D57
-		|| c == 0x0E31
-		|| c >= 0x0E34 && c <= 0x0E3A
-		|| c >= 0x0E47 && c <= 0x0E4E
-		|| c == 0x0EB1
-		|| c >= 0x0EB4 && c <= 0x0EB9
-		|| c >= 0x0EBB && c <= 0x0EBC
-		|| c >= 0x0EC8 && c <= 0x0ECD
-		|| c >= 0x0F18 && c <= 0x0F19
-		|| c == 0x0F35
-		|| c == 0x0F37
-		|| c == 0x0F39
-		|| c == 0x0F3E
-		|| c == 0x0F3F
-		|| c >= 0x0F71 && c <= 0x0F84
-		|| c >= 0x0F86 && c <= 0x0F8B
-		|| c >= 0x0F90 && c <= 0x0F95
-		|| c == 0x0F97
-		|| c >= 0x0F99 && c <= 0x0FAD
-		|| c >= 0x0FB1 && c <= 0x0FB7
-		|| c == 0x0FB9
-		|| c >= 0x20D0 && c <= 0x20DC
-		|| c == 0x20E1
-		|| c >= 0x302A && c <= 0x302F
-		|| c == 0x3099
-		|| c == 0x309A
-		|| c == 0x00B7
-		|| c == 0x02D0
-		|| c == 0x02D1
-		|| c == 0x0387
-		|| c == 0x0640
-		|| c == 0x0E46
-		|| c == 0x0EC6
-		|| c == 0x3005
-		|| c >= 0x3031 && c <= 0x3035
-		|| c >= 0x309D && c <= 0x309E
-		|| c >= 0x30FC && c <= 0x30FE;
-};
-
-Utilities.coalesceText = function(n) {
-	for (var m = n.firstChild; m != null; m = m.nextSibling) {
-		if (m.nodeType == 3 /*Node.TEXT_NODE*/ || m.nodeType == 4 /*Node.CDATA_SECTION_NODE*/) {
-			var s = m.nodeValue;
-			var first = m;
-			m = m.nextSibling;
-			while (m != null && (m.nodeType == 3 /*Node.TEXT_NODE*/ || m.nodeType == 4 /*Node.CDATA_SECTION_NODE*/)) {
-				s += m.nodeValue;
-				var del = m;
-				m = m.nextSibling;
-				del.parentNode.removeChild(del);
-			}
-			if (first.nodeType == 4 /*Node.CDATA_SECTION_NODE*/) {
-				var p = first.parentNode;
-				if (first.nextSibling == null) {
-					p.removeChild(first);
-					p.appendChild(p.ownerDocument.createTextNode(s));
-				} else {
-					var next = first.nextSibling;
-					p.removeChild(first);
-					p.insertBefore(p.ownerDocument.createTextNode(s), next);
-				}
-			} else {
-				first.nodeValue = s;
-			}
-			if (m == null) {
-				break;
-			}
-		} else if (m.nodeType == 1 /*Node.ELEMENT_NODE*/) {
-			Utilities.coalesceText(m);
-		}
-	}
-};
-
-Utilities.instance_of = function(o, c) {
-	while (o != null) {
-		if (o.constructor === c) {
-			return true;
-		}
-		if (o === Object) {
-			return false;
-		}
-		o = o.constructor.superclass;
-	}
-	return false;
-};
-
-Utilities.getElementById = function(n, id) {
-	// Note that this does not check the DTD to check for actual
-	// attributes of type ID, so this may be a bit wrong.
-	if (n.nodeType == 1 /*Node.ELEMENT_NODE*/) {
-		if (n.getAttribute("id") == id
-				|| n.getAttributeNS(null, "id") == id) {
-			return n;
-		}
-	}
-	for (var m = n.firstChild; m != null; m = m.nextSibling) {
-		var res = Utilities.getElementById(m, id);
-		if (res != null) {
-			return res;
-		}
-	}
-	return null;
-};
-
-// XPathException ////////////////////////////////////////////////////////////
-
-var XPathException = (function () {
-    function getMessage(code, exception) {
-        var msg = exception ? ": " + exception.toString() : "";
-        switch (code) {
-            case XPathException.INVALID_EXPRESSION_ERR:
-                return "Invalid expression" + msg;
-            case XPathException.TYPE_ERR:
-                return "Type error" + msg;
-        }
-        return null;
-    }
-
-    function XPathException(code, error, message) {
-        var err = Error.call(this, getMessage(code, error) || message);
-
-        err.code = code;
-        err.exception = error;
-
-        return err;
-    }
-
-    XPathException.prototype = Object.create(Error.prototype);
-    XPathException.prototype.constructor = XPathException;
-    XPathException.superclass = Error;
-
-    XPathException.prototype.toString = function() {
-        return this.message;
-    };
-
-    XPathException.fromMessage = function(message, error) {
-        return new XPathException(null, error, message);
-    };
-
-    XPathException.INVALID_EXPRESSION_ERR = 51;
-    XPathException.TYPE_ERR = 52;
-
-    return XPathException;
-})();
-
-// XPathExpression ///////////////////////////////////////////////////////////
-
-XPathExpression.prototype = {};
-XPathExpression.prototype.constructor = XPathExpression;
-XPathExpression.superclass = Object.prototype;
-
-function XPathExpression(e, r, p) {
-	this.xpath = p.parse(e);
-	this.context = new XPathContext();
-	this.context.namespaceResolver = new XPathNSResolverWrapper(r);
-}
-
-XPathExpression.getOwnerDocument = function (n) {
-	return n.nodeType === 9 /*Node.DOCUMENT_NODE*/ ? n : n.ownerDocument;
-}
-
-XPathExpression.detectHtmlDom = function (n) {
-	if (!n) { return false; }
-	
-	var doc = XPathExpression.getOwnerDocument(n);
-	
-	try {
-		return doc.implementation.hasFeature("HTML", "2.0");
-	} catch (e) {
-		return true;
-	}
-}
-
-XPathExpression.prototype.evaluate = function(n, t, res) {
-	this.context.expressionContextNode = n;
-	// backward compatibility - no reliable way to detect whether the DOM is HTML, but
-	// this library has been using this method up until now, so we will continue to use it
-	// ONLY when using an XPathExpression
-	this.context.caseInsensitive = XPathExpression.detectHtmlDom(n);
-	
-	var result = this.xpath.evaluate(this.context);
-	return new XPathResult(result, t);
-}
-
-// XPathNSResolverWrapper ////////////////////////////////////////////////////
-
-XPathNSResolverWrapper.prototype = {};
-XPathNSResolverWrapper.prototype.constructor = XPathNSResolverWrapper;
-XPathNSResolverWrapper.superclass = Object.prototype;
-
-function XPathNSResolverWrapper(r) {
-	this.xpathNSResolver = r;
-}
-
-XPathNSResolverWrapper.prototype.getNamespace = function(prefix, n) {
-    if (this.xpathNSResolver == null) {
-        return null;
-    }
-	return this.xpathNSResolver.lookupNamespaceURI(prefix);
-};
-
-// NodeXPathNSResolver ///////////////////////////////////////////////////////
-
-NodeXPathNSResolver.prototype = {};
-NodeXPathNSResolver.prototype.constructor = NodeXPathNSResolver;
-NodeXPathNSResolver.superclass = Object.prototype;
-
-function NodeXPathNSResolver(n) {
-	this.node = n;
-	this.namespaceResolver = new NamespaceResolver();
-}
-
-NodeXPathNSResolver.prototype.lookupNamespaceURI = function(prefix) {
-	return this.namespaceResolver.getNamespace(prefix, this.node);
-};
-
-// XPathResult ///////////////////////////////////////////////////////////////
-
-XPathResult.prototype = {};
-XPathResult.prototype.constructor = XPathResult;
-XPathResult.superclass = Object.prototype;
-
-function XPathResult(v, t) {
-	if (t == XPathResult.ANY_TYPE) {
-		if (v.constructor === XString) {
-			t = XPathResult.STRING_TYPE;
-		} else if (v.constructor === XNumber) {
-			t = XPathResult.NUMBER_TYPE;
-		} else if (v.constructor === XBoolean) {
-			t = XPathResult.BOOLEAN_TYPE;
-		} else if (v.constructor === XNodeSet) {
-			t = XPathResult.UNORDERED_NODE_ITERATOR_TYPE;
-		}
-	}
-	this.resultType = t;
-	switch (t) {
-		case XPathResult.NUMBER_TYPE:
-			this.numberValue = v.numberValue();
-			return;
-		case XPathResult.STRING_TYPE:
-			this.stringValue = v.stringValue();
-			return;
-		case XPathResult.BOOLEAN_TYPE:
-			this.booleanValue = v.booleanValue();
-			return;
-		case XPathResult.ANY_UNORDERED_NODE_TYPE:
-		case XPathResult.FIRST_ORDERED_NODE_TYPE:
-			if (v.constructor === XNodeSet) {
-				this.singleNodeValue = v.first();
-				return;
-			}
-			break;
-		case XPathResult.UNORDERED_NODE_ITERATOR_TYPE:
-		case XPathResult.ORDERED_NODE_ITERATOR_TYPE:
-			if (v.constructor === XNodeSet) {
-				this.invalidIteratorState = false;
-				this.nodes = v.toArray();
-				this.iteratorIndex = 0;
-				return;
-			}
-			break;
-		case XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE:
-		case XPathResult.ORDERED_NODE_SNAPSHOT_TYPE:
-			if (v.constructor === XNodeSet) {
-				this.nodes = v.toArray();
-				this.snapshotLength = this.nodes.length;
-				return;
-			}
-			break;
-	}
-	throw new XPathException(XPathException.TYPE_ERR);
-};
-
-XPathResult.prototype.iterateNext = function() {
-	if (this.resultType != XPathResult.UNORDERED_NODE_ITERATOR_TYPE
-			&& this.resultType != XPathResult.ORDERED_NODE_ITERATOR_TYPE) {
-		throw new XPathException(XPathException.TYPE_ERR);
-	}
-	return this.nodes[this.iteratorIndex++];
-};
-
-XPathResult.prototype.snapshotItem = function(i) {
-	if (this.resultType != XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE
-			&& this.resultType != XPathResult.ORDERED_NODE_SNAPSHOT_TYPE) {
-		throw new XPathException(XPathException.TYPE_ERR);
-	}
-	return this.nodes[i];
-};
-
-XPathResult.ANY_TYPE = 0;
-XPathResult.NUMBER_TYPE = 1;
-XPathResult.STRING_TYPE = 2;
-XPathResult.BOOLEAN_TYPE = 3;
-XPathResult.UNORDERED_NODE_ITERATOR_TYPE = 4;
-XPathResult.ORDERED_NODE_ITERATOR_TYPE = 5;
-XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE = 6;
-XPathResult.ORDERED_NODE_SNAPSHOT_TYPE = 7;
-XPathResult.ANY_UNORDERED_NODE_TYPE = 8;
-XPathResult.FIRST_ORDERED_NODE_TYPE = 9;
-
-// DOM 3 XPath support ///////////////////////////////////////////////////////
-
-function installDOM3XPathSupport(doc, p) {
-	doc.createExpression = function(e, r) {
-		try {
-			return new XPathExpression(e, r, p);
-		} catch (e) {
-			throw new XPathException(XPathException.INVALID_EXPRESSION_ERR, e);
-		}
-	};
-	doc.createNSResolver = function(n) {
-		return new NodeXPathNSResolver(n);
-	};
-	doc.evaluate = function(e, cn, r, t, res) {
-		if (t < 0 || t > 9) {
-			throw { code: 0, toString: function() { return "Request type not supported"; } };
-		}
-        return doc.createExpression(e, r, p).evaluate(cn, t, res);
-	};
-};
-
-// ---------------------------------------------------------------------------
-
-// Install DOM 3 XPath support for the current document.
-try {
-	var shouldInstall = true;
-	try {
-		if (document.implementation
-				&& document.implementation.hasFeature
-				&& document.implementation.hasFeature("XPath", null)) {
-			shouldInstall = false;
-		}
-	} catch (e) {
-	}
-	if (shouldInstall) {
-		installDOM3XPathSupport(document, new XPathParser());
-	}
-} catch (e) {
-}
-
-// ---------------------------------------------------------------------------
-// exports for node.js
-
-installDOM3XPathSupport(exports, new XPathParser());
-
-(function() {
-    var parser = new XPathParser();
-
-    var defaultNSResolver = new NamespaceResolver();
-    var defaultFunctionResolver = new FunctionResolver();
-    var defaultVariableResolver = new VariableResolver();
-
-    function makeNSResolverFromFunction(func) {
-        return {
-            getNamespace: function (prefix, node) {
-                var ns = func(prefix, node);
-
-                return ns || defaultNSResolver.getNamespace(prefix, node);
-            }
-        };
-    }
-
-    function makeNSResolverFromObject(obj) {
-        return makeNSResolverFromFunction(obj.getNamespace.bind(obj));
-    }
-
-    function makeNSResolverFromMap(map) {
-        return makeNSResolverFromFunction(function (prefix) {
-            return map[prefix];
-        });
-    }
-
-    function makeNSResolver(resolver) {
-        if (resolver && typeof resolver.getNamespace === "function") {
-            return makeNSResolverFromObject(resolver);
+        var n1Par = n1.parentNode || n1.ownerElement,
+            n2Par = n2.parentNode || n2.ownerElement;
+
+        // find common parent
+        while (n1Par !== n2Par) {
+            n1 = n1Par;
+            n2 = n2Par;
+            n1Par = n1.parentNode || n1.ownerElement;
+            n2Par = n2.parentNode || n2.ownerElement;
         }
 
-        if (typeof resolver === "function") {
-            return makeNSResolverFromFunction(resolver);
+        var n1isAttr = Utilities.isAttribute(n1);
+        var n2isAttr = Utilities.isAttribute(n2);
+
+        if (n1isAttr && !n2isAttr) {
+            return -1;
+        }
+        if (!n1isAttr && n2isAttr) {
+            return 1;
         }
 
-        // assume prefix -> uri mapping
-        if (typeof resolver === "object") {
-            return makeNSResolverFromMap(resolver);
-        }
-
-        return defaultNSResolver;
-    }
-
-    /** Converts native JavaScript types to their XPath library equivalent */
-    function convertValue(value) {
-        if (value === null ||
-            typeof value === "undefined" ||
-            value instanceof XString ||
-            value instanceof XBoolean ||
-            value instanceof XNumber ||
-            value instanceof XNodeSet) {
-            return value;
-        }
-
-        switch (typeof value) {
-            case "string": return new XString(value);
-            case "boolean": return new XBoolean(value);
-            case "number": return new XNumber(value);
-        }
-
-        // assume node(s)
-        var ns = new XNodeSet();
-        ns.addArray([].concat(value));
-        return ns;
-    }
-
-    function makeEvaluator(func) {
-        return function (context) {
-            var args = Array.prototype.slice.call(arguments, 1).map(function (arg) {
-                return arg.evaluate(context);
-            });
-            var result = func.apply(this, [].concat(context, args));
-            return convertValue(result);
-        };
-    }
-
-    function makeFunctionResolverFromFunction(func) {
-        return {
-            getFunction: function (name, namespace) {
-                var found = func(name, namespace);
-                if (found) {
-                    return makeEvaluator(found);
+        if (n1Par) {
+            var cn = n1isAttr ? n1Par.attributes : n1Par.childNodes,
+                len = cn.length;
+            for (var i = 0; i < len; i += 1) {
+                var n = cn[i];
+                if (n === n1) {
+                    return -1;
                 }
-                return defaultFunctionResolver.getFunction(name, namespace);
+                if (n === n2) {
+                    return 1;
+                }
+            }
+        }
+
+        throw new Error('Unexpected: could not determine node order');
+    }
+
+    AVLTree.prototype.add = function (n) {
+        if (n === this.node) {
+            return false;
+        }
+
+        var o = nodeOrder(n, this.node);
+
+        var ret = false;
+        if (o == -1) {
+            if (this.left == null) {
+                this.left = new AVLTree(n);
+                ret = true;
+            } else {
+                ret = this.left.add(n);
+                if (ret) {
+                    this.balance();
+                }
+            }
+        } else if (o == 1) {
+            if (this.right == null) {
+                this.right = new AVLTree(n);
+                ret = true;
+            } else {
+                ret = this.right.add(n);
+                if (ret) {
+                    this.balance();
+                }
+            }
+        }
+
+        if (ret) {
+            this.getDepthFromChildren();
+        }
+        return ret;
+    };
+
+    // XNodeSet //////////////////////////////////////////////////////////////////
+
+    XNodeSet.prototype = new Expression();
+    XNodeSet.prototype.constructor = XNodeSet;
+    XNodeSet.superclass = Expression.prototype;
+
+    function XNodeSet() {
+        this.init();
+    }
+
+    XNodeSet.prototype.init = function () {
+        this.tree = null;
+        this.nodes = [];
+        this.size = 0;
+    };
+
+    XNodeSet.prototype.toString = function () {
+        var p = this.first();
+        if (p == null) {
+            return "";
+        }
+        return this.stringForNode(p);
+    };
+
+    XNodeSet.prototype.evaluate = function (c) {
+        return this;
+    };
+
+    XNodeSet.prototype.string = function () {
+        return new XString(this.toString());
+    };
+
+    XNodeSet.prototype.stringValue = function () {
+        return this.toString();
+    };
+
+    XNodeSet.prototype.number = function () {
+        return new XNumber(this.string());
+    };
+
+    XNodeSet.prototype.numberValue = function () {
+        return Number(this.string());
+    };
+
+    XNodeSet.prototype.bool = function () {
+        return new XBoolean(this.booleanValue());
+    };
+
+    XNodeSet.prototype.booleanValue = function () {
+        return !!this.size;
+    };
+
+    XNodeSet.prototype.nodeset = function () {
+        return this;
+    };
+
+    XNodeSet.prototype.stringForNode = function (n) {
+        if (n.nodeType == 9   /*Node.DOCUMENT_NODE*/ ||
+            n.nodeType == 1   /*Node.ELEMENT_NODE */ ||
+            n.nodeType === 11 /*Node.DOCUMENT_FRAGMENT*/) {
+            return this.stringForContainerNode(n);
+        }
+        if (n.nodeType === 2 /* Node.ATTRIBUTE_NODE */) {
+            return n.value || n.nodeValue;
+        }
+        if (n.isNamespaceNode) {
+            return n.namespace;
+        }
+        return n.nodeValue;
+    };
+
+    XNodeSet.prototype.stringForContainerNode = function (n) {
+        var s = "";
+        for (var n2 = n.firstChild; n2 != null; n2 = n2.nextSibling) {
+            var nt = n2.nodeType;
+            //  Element,    Text,       CDATA,      Document,   Document Fragment
+            if (nt === 1 || nt === 3 || nt === 4 || nt === 9 || nt === 11) {
+                s += this.stringForNode(n2);
+            }
+        }
+        return s;
+    };
+
+    XNodeSet.prototype.buildTree = function () {
+        if (!this.tree && this.nodes.length) {
+            this.tree = new AVLTree(this.nodes[0]);
+            for (var i = 1; i < this.nodes.length; i += 1) {
+                this.tree.add(this.nodes[i]);
+            }
+        }
+
+        return this.tree;
+    };
+
+    XNodeSet.prototype.first = function () {
+        var p = this.buildTree();
+        if (p == null) {
+            return null;
+        }
+        while (p.left != null) {
+            p = p.left;
+        }
+        return p.node;
+    };
+
+    XNodeSet.prototype.add = function (n) {
+        for (var i = 0; i < this.nodes.length; i += 1) {
+            if (n === this.nodes[i]) {
+                return;
+            }
+        }
+
+        this.tree = null;
+        this.nodes.push(n);
+        this.size += 1;
+    };
+
+    XNodeSet.prototype.addArray = function (ns) {
+        var self = this;
+
+        forEach(function (x) { self.add(x); }, ns);
+    };
+
+    /**
+     * Returns an array of the node set's contents in document order
+     */
+    XNodeSet.prototype.toArray = function () {
+        var a = [];
+        this.toArrayRec(this.buildTree(), a);
+        return a;
+    };
+
+    XNodeSet.prototype.toArrayRec = function (t, a) {
+        if (t != null) {
+            this.toArrayRec(t.left, a);
+            a.push(t.node);
+            this.toArrayRec(t.right, a);
+        }
+    };
+
+    /**
+     * Returns an array of the node set's contents in arbitrary order
+     */
+    XNodeSet.prototype.toUnsortedArray = function () {
+        return this.nodes.slice();
+    };
+
+    XNodeSet.prototype.compareWithString = function (r, o) {
+        var a = this.toUnsortedArray();
+        for (var i = 0; i < a.length; i++) {
+            var n = a[i];
+            var l = new XString(this.stringForNode(n));
+            var res = o(l, r);
+            if (res.booleanValue()) {
+                return res;
+            }
+        }
+        return new XBoolean(false);
+    };
+
+    XNodeSet.prototype.compareWithNumber = function (r, o) {
+        var a = this.toUnsortedArray();
+        for (var i = 0; i < a.length; i++) {
+            var n = a[i];
+            var l = new XNumber(this.stringForNode(n));
+            var res = o(l, r);
+            if (res.booleanValue()) {
+                return res;
+            }
+        }
+        return new XBoolean(false);
+    };
+
+    XNodeSet.prototype.compareWithBoolean = function (r, o) {
+        return o(this.bool(), r);
+    };
+
+    XNodeSet.prototype.compareWithNodeSet = function (r, o) {
+        var arr = this.toUnsortedArray();
+        var oInvert = function (lop, rop) { return o(rop, lop); };
+
+        for (var i = 0; i < arr.length; i++) {
+            var l = new XString(this.stringForNode(arr[i]));
+
+            var res = r.compareWithString(l, oInvert);
+            if (res.booleanValue()) {
+                return res;
+            }
+        }
+
+        return new XBoolean(false);
+    };
+
+    XNodeSet.compareWith = curry(function (o, r) {
+        if (Utilities.instance_of(r, XString)) {
+            return this.compareWithString(r, o);
+        }
+        if (Utilities.instance_of(r, XNumber)) {
+            return this.compareWithNumber(r, o);
+        }
+        if (Utilities.instance_of(r, XBoolean)) {
+            return this.compareWithBoolean(r, o);
+        }
+        return this.compareWithNodeSet(r, o);
+    });
+
+    XNodeSet.prototype.equals = XNodeSet.compareWith(Operators.equals);
+    XNodeSet.prototype.notequal = XNodeSet.compareWith(Operators.notequal);
+    XNodeSet.prototype.lessthan = XNodeSet.compareWith(Operators.lessthan);
+    XNodeSet.prototype.greaterthan = XNodeSet.compareWith(Operators.greaterthan);
+    XNodeSet.prototype.lessthanorequal = XNodeSet.compareWith(Operators.lessthanorequal);
+    XNodeSet.prototype.greaterthanorequal = XNodeSet.compareWith(Operators.greaterthanorequal);
+
+    XNodeSet.prototype.union = function (r) {
+        var ns = new XNodeSet();
+        ns.addArray(this.toUnsortedArray());
+        ns.addArray(r.toUnsortedArray());
+        return ns;
+    };
+
+    // XPathNamespace ////////////////////////////////////////////////////////////
+
+    XPathNamespace.prototype = new Object();
+    XPathNamespace.prototype.constructor = XPathNamespace;
+    XPathNamespace.superclass = Object.prototype;
+
+    function XPathNamespace(pre, ns, p) {
+        this.isXPathNamespace = true;
+        this.ownerDocument = p.ownerDocument;
+        this.nodeName = "#namespace";
+        this.prefix = pre;
+        this.localName = pre;
+        this.namespaceURI = ns;
+        this.nodeValue = ns;
+        this.ownerElement = p;
+        this.nodeType = XPathNamespace.XPATH_NAMESPACE_NODE;
+    }
+
+    XPathNamespace.prototype.toString = function () {
+        return "{ \"" + this.prefix + "\", \"" + this.namespaceURI + "\" }";
+    };
+
+    // XPathContext //////////////////////////////////////////////////////////////
+
+    XPathContext.prototype = new Object();
+    XPathContext.prototype.constructor = XPathContext;
+    XPathContext.superclass = Object.prototype;
+
+    function XPathContext(vr, nr, fr) {
+        this.variableResolver = vr != null ? vr : new VariableResolver();
+        this.namespaceResolver = nr != null ? nr : new NamespaceResolver();
+        this.functionResolver = fr != null ? fr : new FunctionResolver();
+    }
+
+    XPathContext.prototype.extend = function (newProps) {
+        return assign(new XPathContext(), this, newProps);
+    };
+
+    // VariableResolver //////////////////////////////////////////////////////////
+
+    VariableResolver.prototype = new Object();
+    VariableResolver.prototype.constructor = VariableResolver;
+    VariableResolver.superclass = Object.prototype;
+
+    function VariableResolver() {
+    }
+
+    VariableResolver.prototype.getVariable = function (ln, ns) {
+        return null;
+    };
+
+    // FunctionResolver //////////////////////////////////////////////////////////
+
+    FunctionResolver.prototype = new Object();
+    FunctionResolver.prototype.constructor = FunctionResolver;
+    FunctionResolver.superclass = Object.prototype;
+
+    function FunctionResolver(thisArg) {
+        this.thisArg = thisArg != null ? thisArg : Functions;
+        this.functions = new Object();
+        this.addStandardFunctions();
+    }
+
+    FunctionResolver.prototype.addStandardFunctions = function () {
+        this.functions["{}last"] = Functions.last;
+        this.functions["{}position"] = Functions.position;
+        this.functions["{}count"] = Functions.count;
+        this.functions["{}id"] = Functions.id;
+        this.functions["{}local-name"] = Functions.localName;
+        this.functions["{}namespace-uri"] = Functions.namespaceURI;
+        this.functions["{}name"] = Functions.name;
+        this.functions["{}string"] = Functions.string;
+        this.functions["{}concat"] = Functions.concat;
+        this.functions["{}starts-with"] = Functions.startsWith;
+        this.functions["{}contains"] = Functions.contains;
+        this.functions["{}substring-before"] = Functions.substringBefore;
+        this.functions["{}substring-after"] = Functions.substringAfter;
+        this.functions["{}substring"] = Functions.substring;
+        this.functions["{}string-length"] = Functions.stringLength;
+        this.functions["{}normalize-space"] = Functions.normalizeSpace;
+        this.functions["{}translate"] = Functions.translate;
+        this.functions["{}boolean"] = Functions.boolean_;
+        this.functions["{}not"] = Functions.not;
+        this.functions["{}true"] = Functions.true_;
+        this.functions["{}false"] = Functions.false_;
+        this.functions["{}lang"] = Functions.lang;
+        this.functions["{}number"] = Functions.number;
+        this.functions["{}sum"] = Functions.sum;
+        this.functions["{}floor"] = Functions.floor;
+        this.functions["{}ceiling"] = Functions.ceiling;
+        this.functions["{}round"] = Functions.round;
+    };
+
+    FunctionResolver.prototype.addFunction = function (ns, ln, f) {
+        this.functions["{" + ns + "}" + ln] = f;
+    };
+
+    FunctionResolver.getFunctionFromContext = function (qName, context) {
+        var parts = Utilities.resolveQName(qName, context.namespaceResolver, context.contextNode, false);
+
+        if (parts[0] === null) {
+            throw new Error("Cannot resolve QName " + name);
+        }
+
+        return context.functionResolver.getFunction(parts[1], parts[0]);
+    };
+
+    FunctionResolver.prototype.getFunction = function (localName, namespace) {
+        return this.functions["{" + namespace + "}" + localName];
+    };
+
+    // NamespaceResolver /////////////////////////////////////////////////////////
+
+    NamespaceResolver.prototype = new Object();
+    NamespaceResolver.prototype.constructor = NamespaceResolver;
+    NamespaceResolver.superclass = Object.prototype;
+
+    function NamespaceResolver() {
+    }
+
+    NamespaceResolver.prototype.getNamespace = function (prefix, n) {
+        if (prefix == "xml") {
+            return XPath.XML_NAMESPACE_URI;
+        } else if (prefix == "xmlns") {
+            return XPath.XMLNS_NAMESPACE_URI;
+        }
+        if (n.nodeType == 9 /*Node.DOCUMENT_NODE*/) {
+            n = n.documentElement;
+        } else if (n.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
+            n = PathExpr.getOwnerElement(n);
+        } else if (n.nodeType != 1 /*Node.ELEMENT_NODE*/) {
+            n = n.parentNode;
+        }
+        while (n != null && n.nodeType == 1 /*Node.ELEMENT_NODE*/) {
+            var nnm = n.attributes;
+            for (var i = 0; i < nnm.length; i++) {
+                var a = nnm.item(i);
+                var aname = a.name || a.nodeName;
+                if ((aname === "xmlns" && prefix === "")
+                    || aname === "xmlns:" + prefix) {
+                    return String(a.value || a.nodeValue);
+                }
+            }
+            n = n.parentNode;
+        }
+        return null;
+    };
+
+    // Functions /////////////////////////////////////////////////////////////////
+
+    var Functions = new Object();
+
+    Functions.last = function (c) {
+        if (arguments.length != 1) {
+            throw new Error("Function last expects ()");
+        }
+
+        return new XNumber(c.contextSize);
+    };
+
+    Functions.position = function (c) {
+        if (arguments.length != 1) {
+            throw new Error("Function position expects ()");
+        }
+
+        return new XNumber(c.contextPosition);
+    };
+
+    Functions.count = function () {
+        var c = arguments[0];
+        var ns;
+        if (arguments.length != 2 || !Utilities.instance_of(ns = arguments[1].evaluate(c), XNodeSet)) {
+            throw new Error("Function count expects (node-set)");
+        }
+        return new XNumber(ns.size);
+    };
+
+    Functions.id = function () {
+        var c = arguments[0];
+        var id;
+        if (arguments.length != 2) {
+            throw new Error("Function id expects (object)");
+        }
+        id = arguments[1].evaluate(c);
+        if (Utilities.instance_of(id, XNodeSet)) {
+            id = id.toArray().join(" ");
+        } else {
+            id = id.stringValue();
+        }
+        var ids = id.split(/[\x0d\x0a\x09\x20]+/);
+        var count = 0;
+        var ns = new XNodeSet();
+        var doc = c.contextNode.nodeType == 9 /*Node.DOCUMENT_NODE*/
+            ? c.contextNode
+            : c.contextNode.ownerDocument;
+        for (var i = 0; i < ids.length; i++) {
+            var n;
+            if (doc.getElementById) {
+                n = doc.getElementById(ids[i]);
+            } else {
+                n = Utilities.getElementById(doc, ids[i]);
+            }
+            if (n != null) {
+                ns.add(n);
+                count++;
+            }
+        }
+        return ns;
+    };
+
+    Functions.localName = function (c, eNode) {
+        var n;
+
+        if (arguments.length == 1) {
+            n = c.contextNode;
+        } else if (arguments.length == 2) {
+            n = eNode.evaluate(c).first();
+        } else {
+            throw new Error("Function local-name expects (node-set?)");
+        }
+
+        if (n == null) {
+            return new XString("");
+        }
+
+        return new XString(
+            n.localName ||     //  standard elements and attributes
+            n.baseName ||     //  IE
+            n.target ||     //  processing instructions
+            n.nodeName ||     //  DOM1 elements
+            ""                 //  fallback
+        );
+    };
+
+    Functions.namespaceURI = function () {
+        var c = arguments[0];
+        var n;
+        if (arguments.length == 1) {
+            n = c.contextNode;
+        } else if (arguments.length == 2) {
+            n = arguments[1].evaluate(c).first();
+        } else {
+            throw new Error("Function namespace-uri expects (node-set?)");
+        }
+        if (n == null) {
+            return new XString("");
+        }
+        return new XString(n.namespaceURI);
+    };
+
+    Functions.name = function () {
+        var c = arguments[0];
+        var n;
+        if (arguments.length == 1) {
+            n = c.contextNode;
+        } else if (arguments.length == 2) {
+            n = arguments[1].evaluate(c).first();
+        } else {
+            throw new Error("Function name expects (node-set?)");
+        }
+        if (n == null) {
+            return new XString("");
+        }
+        if (n.nodeType == 1 /*Node.ELEMENT_NODE*/) {
+            return new XString(n.nodeName);
+        } else if (n.nodeType == 2 /*Node.ATTRIBUTE_NODE*/) {
+            return new XString(n.name || n.nodeName);
+        } else if (n.nodeType === 7 /*Node.PROCESSING_INSTRUCTION_NODE*/) {
+            return new XString(n.target || n.nodeName);
+        } else if (n.localName == null) {
+            return new XString("");
+        } else {
+            return new XString(n.localName);
+        }
+    };
+
+    Functions.string = function () {
+        var c = arguments[0];
+        if (arguments.length == 1) {
+            return new XString(XNodeSet.prototype.stringForNode(c.contextNode));
+        } else if (arguments.length == 2) {
+            return arguments[1].evaluate(c).string();
+        }
+        throw new Error("Function string expects (object?)");
+    };
+
+    Functions.concat = function (c) {
+        if (arguments.length < 3) {
+            throw new Error("Function concat expects (string, string[, string]*)");
+        }
+        var s = "";
+        for (var i = 1; i < arguments.length; i++) {
+            s += arguments[i].evaluate(c).stringValue();
+        }
+        return new XString(s);
+    };
+
+    Functions.startsWith = function () {
+        var c = arguments[0];
+        if (arguments.length != 3) {
+            throw new Error("Function startsWith expects (string, string)");
+        }
+        var s1 = arguments[1].evaluate(c).stringValue();
+        var s2 = arguments[2].evaluate(c).stringValue();
+        return new XBoolean(s1.substring(0, s2.length) == s2);
+    };
+
+    Functions.contains = function () {
+        var c = arguments[0];
+        if (arguments.length != 3) {
+            throw new Error("Function contains expects (string, string)");
+        }
+        var s1 = arguments[1].evaluate(c).stringValue();
+        var s2 = arguments[2].evaluate(c).stringValue();
+        return new XBoolean(s1.indexOf(s2) !== -1);
+    };
+
+    Functions.substringBefore = function () {
+        var c = arguments[0];
+        if (arguments.length != 3) {
+            throw new Error("Function substring-before expects (string, string)");
+        }
+        var s1 = arguments[1].evaluate(c).stringValue();
+        var s2 = arguments[2].evaluate(c).stringValue();
+        return new XString(s1.substring(0, s1.indexOf(s2)));
+    };
+
+    Functions.substringAfter = function () {
+        var c = arguments[0];
+        if (arguments.length != 3) {
+            throw new Error("Function substring-after expects (string, string)");
+        }
+        var s1 = arguments[1].evaluate(c).stringValue();
+        var s2 = arguments[2].evaluate(c).stringValue();
+        if (s2.length == 0) {
+            return new XString(s1);
+        }
+        var i = s1.indexOf(s2);
+        if (i == -1) {
+            return new XString("");
+        }
+        return new XString(s1.substring(i + s2.length));
+    };
+
+    Functions.substring = function () {
+        var c = arguments[0];
+        if (!(arguments.length == 3 || arguments.length == 4)) {
+            throw new Error("Function substring expects (string, number, number?)");
+        }
+        var s = arguments[1].evaluate(c).stringValue();
+        var n1 = Math.round(arguments[2].evaluate(c).numberValue()) - 1;
+        var n2 = arguments.length == 4 ? n1 + Math.round(arguments[3].evaluate(c).numberValue()) : undefined;
+        return new XString(s.substring(n1, n2));
+    };
+
+    Functions.stringLength = function () {
+        var c = arguments[0];
+        var s;
+        if (arguments.length == 1) {
+            s = XNodeSet.prototype.stringForNode(c.contextNode);
+        } else if (arguments.length == 2) {
+            s = arguments[1].evaluate(c).stringValue();
+        } else {
+            throw new Error("Function string-length expects (string?)");
+        }
+        return new XNumber(s.length);
+    };
+
+    Functions.normalizeSpace = function () {
+        var c = arguments[0];
+        var s;
+        if (arguments.length == 1) {
+            s = XNodeSet.prototype.stringForNode(c.contextNode);
+        } else if (arguments.length == 2) {
+            s = arguments[1].evaluate(c).stringValue();
+        } else {
+            throw new Error("Function normalize-space expects (string?)");
+        }
+        var i = 0;
+        var j = s.length - 1;
+        while (Utilities.isSpace(s.charCodeAt(j))) {
+            j--;
+        }
+        var t = "";
+        while (i <= j && Utilities.isSpace(s.charCodeAt(i))) {
+            i++;
+        }
+        while (i <= j) {
+            if (Utilities.isSpace(s.charCodeAt(i))) {
+                t += " ";
+                while (i <= j && Utilities.isSpace(s.charCodeAt(i))) {
+                    i++;
+                }
+            } else {
+                t += s.charAt(i);
+                i++;
+            }
+        }
+        return new XString(t);
+    };
+
+    Functions.translate = function (c, eValue, eFrom, eTo) {
+        if (arguments.length != 4) {
+            throw new Error("Function translate expects (string, string, string)");
+        }
+
+        var value = eValue.evaluate(c).stringValue();
+        var from = eFrom.evaluate(c).stringValue();
+        var to = eTo.evaluate(c).stringValue();
+
+        var cMap = reduce(function (acc, ch, i) {
+            if (!(ch in acc)) {
+                acc[ch] = i > to.length ? '' : to[i];
+            }
+            return acc;
+        }, {}, from);
+
+        var t = join(
+            '',
+            map(function (ch) {
+                return ch in cMap ? cMap[ch] : ch;
+            }, value)
+        );
+
+        return new XString(t);
+    };
+
+    Functions.boolean_ = function () {
+        var c = arguments[0];
+        if (arguments.length != 2) {
+            throw new Error("Function boolean expects (object)");
+        }
+        return arguments[1].evaluate(c).bool();
+    };
+
+    Functions.not = function (c, eValue) {
+        if (arguments.length != 2) {
+            throw new Error("Function not expects (object)");
+        }
+        return eValue.evaluate(c).bool().not();
+    };
+
+    Functions.true_ = function () {
+        if (arguments.length != 1) {
+            throw new Error("Function true expects ()");
+        }
+        return XBoolean.true_;
+    };
+
+    Functions.false_ = function () {
+        if (arguments.length != 1) {
+            throw new Error("Function false expects ()");
+        }
+        return XBoolean.false_;
+    };
+
+    Functions.lang = function () {
+        var c = arguments[0];
+        if (arguments.length != 2) {
+            throw new Error("Function lang expects (string)");
+        }
+        var lang;
+        for (var n = c.contextNode; n != null && n.nodeType != 9 /*Node.DOCUMENT_NODE*/; n = n.parentNode) {
+            var a = n.getAttributeNS(XPath.XML_NAMESPACE_URI, "lang");
+            if (a != null) {
+                lang = String(a);
+                break;
+            }
+        }
+        if (lang == null) {
+            return XBoolean.false_;
+        }
+        var s = arguments[1].evaluate(c).stringValue();
+        return new XBoolean(lang.substring(0, s.length) == s
+            && (lang.length == s.length || lang.charAt(s.length) == '-'));
+    };
+
+    Functions.number = function () {
+        var c = arguments[0];
+        if (!(arguments.length == 1 || arguments.length == 2)) {
+            throw new Error("Function number expects (object?)");
+        }
+        if (arguments.length == 1) {
+            return new XNumber(XNodeSet.prototype.stringForNode(c.contextNode));
+        }
+        return arguments[1].evaluate(c).number();
+    };
+
+    Functions.sum = function () {
+        var c = arguments[0];
+        var ns;
+        if (arguments.length != 2 || !Utilities.instance_of((ns = arguments[1].evaluate(c)), XNodeSet)) {
+            throw new Error("Function sum expects (node-set)");
+        }
+        ns = ns.toUnsortedArray();
+        var n = 0;
+        for (var i = 0; i < ns.length; i++) {
+            n += new XNumber(XNodeSet.prototype.stringForNode(ns[i])).numberValue();
+        }
+        return new XNumber(n);
+    };
+
+    Functions.floor = function () {
+        var c = arguments[0];
+        if (arguments.length != 2) {
+            throw new Error("Function floor expects (number)");
+        }
+        return new XNumber(Math.floor(arguments[1].evaluate(c).numberValue()));
+    };
+
+    Functions.ceiling = function () {
+        var c = arguments[0];
+        if (arguments.length != 2) {
+            throw new Error("Function ceiling expects (number)");
+        }
+        return new XNumber(Math.ceil(arguments[1].evaluate(c).numberValue()));
+    };
+
+    Functions.round = function () {
+        var c = arguments[0];
+        if (arguments.length != 2) {
+            throw new Error("Function round expects (number)");
+        }
+        return new XNumber(Math.round(arguments[1].evaluate(c).numberValue()));
+    };
+
+    // Utilities /////////////////////////////////////////////////////////////////
+
+    var Utilities = new Object();
+
+    Utilities.isAttribute = function (val) {
+        return val && (val.nodeType === 2 || val.ownerElement);
+    }
+
+    Utilities.splitQName = function (qn) {
+        var i = qn.indexOf(":");
+        if (i == -1) {
+            return [null, qn];
+        }
+        return [qn.substring(0, i), qn.substring(i + 1)];
+    };
+
+    Utilities.resolveQName = function (qn, nr, n, useDefault) {
+        var parts = Utilities.splitQName(qn);
+        if (parts[0] != null) {
+            parts[0] = nr.getNamespace(parts[0], n);
+        } else {
+            if (useDefault) {
+                parts[0] = nr.getNamespace("", n);
+                if (parts[0] == null) {
+                    parts[0] = "";
+                }
+            } else {
+                parts[0] = "";
+            }
+        }
+        return parts;
+    };
+
+    Utilities.isSpace = function (c) {
+        return c == 0x9 || c == 0xd || c == 0xa || c == 0x20;
+    };
+
+    Utilities.isLetter = function (c) {
+        return c >= 0x0041 && c <= 0x005A ||
+            c >= 0x0061 && c <= 0x007A ||
+            c >= 0x00C0 && c <= 0x00D6 ||
+            c >= 0x00D8 && c <= 0x00F6 ||
+            c >= 0x00F8 && c <= 0x00FF ||
+            c >= 0x0100 && c <= 0x0131 ||
+            c >= 0x0134 && c <= 0x013E ||
+            c >= 0x0141 && c <= 0x0148 ||
+            c >= 0x014A && c <= 0x017E ||
+            c >= 0x0180 && c <= 0x01C3 ||
+            c >= 0x01CD && c <= 0x01F0 ||
+            c >= 0x01F4 && c <= 0x01F5 ||
+            c >= 0x01FA && c <= 0x0217 ||
+            c >= 0x0250 && c <= 0x02A8 ||
+            c >= 0x02BB && c <= 0x02C1 ||
+            c == 0x0386 ||
+            c >= 0x0388 && c <= 0x038A ||
+            c == 0x038C ||
+            c >= 0x038E && c <= 0x03A1 ||
+            c >= 0x03A3 && c <= 0x03CE ||
+            c >= 0x03D0 && c <= 0x03D6 ||
+            c == 0x03DA ||
+            c == 0x03DC ||
+            c == 0x03DE ||
+            c == 0x03E0 ||
+            c >= 0x03E2 && c <= 0x03F3 ||
+            c >= 0x0401 && c <= 0x040C ||
+            c >= 0x040E && c <= 0x044F ||
+            c >= 0x0451 && c <= 0x045C ||
+            c >= 0x045E && c <= 0x0481 ||
+            c >= 0x0490 && c <= 0x04C4 ||
+            c >= 0x04C7 && c <= 0x04C8 ||
+            c >= 0x04CB && c <= 0x04CC ||
+            c >= 0x04D0 && c <= 0x04EB ||
+            c >= 0x04EE && c <= 0x04F5 ||
+            c >= 0x04F8 && c <= 0x04F9 ||
+            c >= 0x0531 && c <= 0x0556 ||
+            c == 0x0559 ||
+            c >= 0x0561 && c <= 0x0586 ||
+            c >= 0x05D0 && c <= 0x05EA ||
+            c >= 0x05F0 && c <= 0x05F2 ||
+            c >= 0x0621 && c <= 0x063A ||
+            c >= 0x0641 && c <= 0x064A ||
+            c >= 0x0671 && c <= 0x06B7 ||
+            c >= 0x06BA && c <= 0x06BE ||
+            c >= 0x06C0 && c <= 0x06CE ||
+            c >= 0x06D0 && c <= 0x06D3 ||
+            c == 0x06D5 ||
+            c >= 0x06E5 && c <= 0x06E6 ||
+            c >= 0x0905 && c <= 0x0939 ||
+            c == 0x093D ||
+            c >= 0x0958 && c <= 0x0961 ||
+            c >= 0x0985 && c <= 0x098C ||
+            c >= 0x098F && c <= 0x0990 ||
+            c >= 0x0993 && c <= 0x09A8 ||
+            c >= 0x09AA && c <= 0x09B0 ||
+            c == 0x09B2 ||
+            c >= 0x09B6 && c <= 0x09B9 ||
+            c >= 0x09DC && c <= 0x09DD ||
+            c >= 0x09DF && c <= 0x09E1 ||
+            c >= 0x09F0 && c <= 0x09F1 ||
+            c >= 0x0A05 && c <= 0x0A0A ||
+            c >= 0x0A0F && c <= 0x0A10 ||
+            c >= 0x0A13 && c <= 0x0A28 ||
+            c >= 0x0A2A && c <= 0x0A30 ||
+            c >= 0x0A32 && c <= 0x0A33 ||
+            c >= 0x0A35 && c <= 0x0A36 ||
+            c >= 0x0A38 && c <= 0x0A39 ||
+            c >= 0x0A59 && c <= 0x0A5C ||
+            c == 0x0A5E ||
+            c >= 0x0A72 && c <= 0x0A74 ||
+            c >= 0x0A85 && c <= 0x0A8B ||
+            c == 0x0A8D ||
+            c >= 0x0A8F && c <= 0x0A91 ||
+            c >= 0x0A93 && c <= 0x0AA8 ||
+            c >= 0x0AAA && c <= 0x0AB0 ||
+            c >= 0x0AB2 && c <= 0x0AB3 ||
+            c >= 0x0AB5 && c <= 0x0AB9 ||
+            c == 0x0ABD ||
+            c == 0x0AE0 ||
+            c >= 0x0B05 && c <= 0x0B0C ||
+            c >= 0x0B0F && c <= 0x0B10 ||
+            c >= 0x0B13 && c <= 0x0B28 ||
+            c >= 0x0B2A && c <= 0x0B30 ||
+            c >= 0x0B32 && c <= 0x0B33 ||
+            c >= 0x0B36 && c <= 0x0B39 ||
+            c == 0x0B3D ||
+            c >= 0x0B5C && c <= 0x0B5D ||
+            c >= 0x0B5F && c <= 0x0B61 ||
+            c >= 0x0B85 && c <= 0x0B8A ||
+            c >= 0x0B8E && c <= 0x0B90 ||
+            c >= 0x0B92 && c <= 0x0B95 ||
+            c >= 0x0B99 && c <= 0x0B9A ||
+            c == 0x0B9C ||
+            c >= 0x0B9E && c <= 0x0B9F ||
+            c >= 0x0BA3 && c <= 0x0BA4 ||
+            c >= 0x0BA8 && c <= 0x0BAA ||
+            c >= 0x0BAE && c <= 0x0BB5 ||
+            c >= 0x0BB7 && c <= 0x0BB9 ||
+            c >= 0x0C05 && c <= 0x0C0C ||
+            c >= 0x0C0E && c <= 0x0C10 ||
+            c >= 0x0C12 && c <= 0x0C28 ||
+            c >= 0x0C2A && c <= 0x0C33 ||
+            c >= 0x0C35 && c <= 0x0C39 ||
+            c >= 0x0C60 && c <= 0x0C61 ||
+            c >= 0x0C85 && c <= 0x0C8C ||
+            c >= 0x0C8E && c <= 0x0C90 ||
+            c >= 0x0C92 && c <= 0x0CA8 ||
+            c >= 0x0CAA && c <= 0x0CB3 ||
+            c >= 0x0CB5 && c <= 0x0CB9 ||
+            c == 0x0CDE ||
+            c >= 0x0CE0 && c <= 0x0CE1 ||
+            c >= 0x0D05 && c <= 0x0D0C ||
+            c >= 0x0D0E && c <= 0x0D10 ||
+            c >= 0x0D12 && c <= 0x0D28 ||
+            c >= 0x0D2A && c <= 0x0D39 ||
+            c >= 0x0D60 && c <= 0x0D61 ||
+            c >= 0x0E01 && c <= 0x0E2E ||
+            c == 0x0E30 ||
+            c >= 0x0E32 && c <= 0x0E33 ||
+            c >= 0x0E40 && c <= 0x0E45 ||
+            c >= 0x0E81 && c <= 0x0E82 ||
+            c == 0x0E84 ||
+            c >= 0x0E87 && c <= 0x0E88 ||
+            c == 0x0E8A ||
+            c == 0x0E8D ||
+            c >= 0x0E94 && c <= 0x0E97 ||
+            c >= 0x0E99 && c <= 0x0E9F ||
+            c >= 0x0EA1 && c <= 0x0EA3 ||
+            c == 0x0EA5 ||
+            c == 0x0EA7 ||
+            c >= 0x0EAA && c <= 0x0EAB ||
+            c >= 0x0EAD && c <= 0x0EAE ||
+            c == 0x0EB0 ||
+            c >= 0x0EB2 && c <= 0x0EB3 ||
+            c == 0x0EBD ||
+            c >= 0x0EC0 && c <= 0x0EC4 ||
+            c >= 0x0F40 && c <= 0x0F47 ||
+            c >= 0x0F49 && c <= 0x0F69 ||
+            c >= 0x10A0 && c <= 0x10C5 ||
+            c >= 0x10D0 && c <= 0x10F6 ||
+            c == 0x1100 ||
+            c >= 0x1102 && c <= 0x1103 ||
+            c >= 0x1105 && c <= 0x1107 ||
+            c == 0x1109 ||
+            c >= 0x110B && c <= 0x110C ||
+            c >= 0x110E && c <= 0x1112 ||
+            c == 0x113C ||
+            c == 0x113E ||
+            c == 0x1140 ||
+            c == 0x114C ||
+            c == 0x114E ||
+            c == 0x1150 ||
+            c >= 0x1154 && c <= 0x1155 ||
+            c == 0x1159 ||
+            c >= 0x115F && c <= 0x1161 ||
+            c == 0x1163 ||
+            c == 0x1165 ||
+            c == 0x1167 ||
+            c == 0x1169 ||
+            c >= 0x116D && c <= 0x116E ||
+            c >= 0x1172 && c <= 0x1173 ||
+            c == 0x1175 ||
+            c == 0x119E ||
+            c == 0x11A8 ||
+            c == 0x11AB ||
+            c >= 0x11AE && c <= 0x11AF ||
+            c >= 0x11B7 && c <= 0x11B8 ||
+            c == 0x11BA ||
+            c >= 0x11BC && c <= 0x11C2 ||
+            c == 0x11EB ||
+            c == 0x11F0 ||
+            c == 0x11F9 ||
+            c >= 0x1E00 && c <= 0x1E9B ||
+            c >= 0x1EA0 && c <= 0x1EF9 ||
+            c >= 0x1F00 && c <= 0x1F15 ||
+            c >= 0x1F18 && c <= 0x1F1D ||
+            c >= 0x1F20 && c <= 0x1F45 ||
+            c >= 0x1F48 && c <= 0x1F4D ||
+            c >= 0x1F50 && c <= 0x1F57 ||
+            c == 0x1F59 ||
+            c == 0x1F5B ||
+            c == 0x1F5D ||
+            c >= 0x1F5F && c <= 0x1F7D ||
+            c >= 0x1F80 && c <= 0x1FB4 ||
+            c >= 0x1FB6 && c <= 0x1FBC ||
+            c == 0x1FBE ||
+            c >= 0x1FC2 && c <= 0x1FC4 ||
+            c >= 0x1FC6 && c <= 0x1FCC ||
+            c >= 0x1FD0 && c <= 0x1FD3 ||
+            c >= 0x1FD6 && c <= 0x1FDB ||
+            c >= 0x1FE0 && c <= 0x1FEC ||
+            c >= 0x1FF2 && c <= 0x1FF4 ||
+            c >= 0x1FF6 && c <= 0x1FFC ||
+            c == 0x2126 ||
+            c >= 0x212A && c <= 0x212B ||
+            c == 0x212E ||
+            c >= 0x2180 && c <= 0x2182 ||
+            c >= 0x3041 && c <= 0x3094 ||
+            c >= 0x30A1 && c <= 0x30FA ||
+            c >= 0x3105 && c <= 0x312C ||
+            c >= 0xAC00 && c <= 0xD7A3 ||
+            c >= 0x4E00 && c <= 0x9FA5 ||
+            c == 0x3007 ||
+            c >= 0x3021 && c <= 0x3029;
+    };
+
+    Utilities.isNCNameChar = function (c) {
+        return c >= 0x0030 && c <= 0x0039
+            || c >= 0x0660 && c <= 0x0669
+            || c >= 0x06F0 && c <= 0x06F9
+            || c >= 0x0966 && c <= 0x096F
+            || c >= 0x09E6 && c <= 0x09EF
+            || c >= 0x0A66 && c <= 0x0A6F
+            || c >= 0x0AE6 && c <= 0x0AEF
+            || c >= 0x0B66 && c <= 0x0B6F
+            || c >= 0x0BE7 && c <= 0x0BEF
+            || c >= 0x0C66 && c <= 0x0C6F
+            || c >= 0x0CE6 && c <= 0x0CEF
+            || c >= 0x0D66 && c <= 0x0D6F
+            || c >= 0x0E50 && c <= 0x0E59
+            || c >= 0x0ED0 && c <= 0x0ED9
+            || c >= 0x0F20 && c <= 0x0F29
+            || c == 0x002E
+            || c == 0x002D
+            || c == 0x005F
+            || Utilities.isLetter(c)
+            || c >= 0x0300 && c <= 0x0345
+            || c >= 0x0360 && c <= 0x0361
+            || c >= 0x0483 && c <= 0x0486
+            || c >= 0x0591 && c <= 0x05A1
+            || c >= 0x05A3 && c <= 0x05B9
+            || c >= 0x05BB && c <= 0x05BD
+            || c == 0x05BF
+            || c >= 0x05C1 && c <= 0x05C2
+            || c == 0x05C4
+            || c >= 0x064B && c <= 0x0652
+            || c == 0x0670
+            || c >= 0x06D6 && c <= 0x06DC
+            || c >= 0x06DD && c <= 0x06DF
+            || c >= 0x06E0 && c <= 0x06E4
+            || c >= 0x06E7 && c <= 0x06E8
+            || c >= 0x06EA && c <= 0x06ED
+            || c >= 0x0901 && c <= 0x0903
+            || c == 0x093C
+            || c >= 0x093E && c <= 0x094C
+            || c == 0x094D
+            || c >= 0x0951 && c <= 0x0954
+            || c >= 0x0962 && c <= 0x0963
+            || c >= 0x0981 && c <= 0x0983
+            || c == 0x09BC
+            || c == 0x09BE
+            || c == 0x09BF
+            || c >= 0x09C0 && c <= 0x09C4
+            || c >= 0x09C7 && c <= 0x09C8
+            || c >= 0x09CB && c <= 0x09CD
+            || c == 0x09D7
+            || c >= 0x09E2 && c <= 0x09E3
+            || c == 0x0A02
+            || c == 0x0A3C
+            || c == 0x0A3E
+            || c == 0x0A3F
+            || c >= 0x0A40 && c <= 0x0A42
+            || c >= 0x0A47 && c <= 0x0A48
+            || c >= 0x0A4B && c <= 0x0A4D
+            || c >= 0x0A70 && c <= 0x0A71
+            || c >= 0x0A81 && c <= 0x0A83
+            || c == 0x0ABC
+            || c >= 0x0ABE && c <= 0x0AC5
+            || c >= 0x0AC7 && c <= 0x0AC9
+            || c >= 0x0ACB && c <= 0x0ACD
+            || c >= 0x0B01 && c <= 0x0B03
+            || c == 0x0B3C
+            || c >= 0x0B3E && c <= 0x0B43
+            || c >= 0x0B47 && c <= 0x0B48
+            || c >= 0x0B4B && c <= 0x0B4D
+            || c >= 0x0B56 && c <= 0x0B57
+            || c >= 0x0B82 && c <= 0x0B83
+            || c >= 0x0BBE && c <= 0x0BC2
+            || c >= 0x0BC6 && c <= 0x0BC8
+            || c >= 0x0BCA && c <= 0x0BCD
+            || c == 0x0BD7
+            || c >= 0x0C01 && c <= 0x0C03
+            || c >= 0x0C3E && c <= 0x0C44
+            || c >= 0x0C46 && c <= 0x0C48
+            || c >= 0x0C4A && c <= 0x0C4D
+            || c >= 0x0C55 && c <= 0x0C56
+            || c >= 0x0C82 && c <= 0x0C83
+            || c >= 0x0CBE && c <= 0x0CC4
+            || c >= 0x0CC6 && c <= 0x0CC8
+            || c >= 0x0CCA && c <= 0x0CCD
+            || c >= 0x0CD5 && c <= 0x0CD6
+            || c >= 0x0D02 && c <= 0x0D03
+            || c >= 0x0D3E && c <= 0x0D43
+            || c >= 0x0D46 && c <= 0x0D48
+            || c >= 0x0D4A && c <= 0x0D4D
+            || c == 0x0D57
+            || c == 0x0E31
+            || c >= 0x0E34 && c <= 0x0E3A
+            || c >= 0x0E47 && c <= 0x0E4E
+            || c == 0x0EB1
+            || c >= 0x0EB4 && c <= 0x0EB9
+            || c >= 0x0EBB && c <= 0x0EBC
+            || c >= 0x0EC8 && c <= 0x0ECD
+            || c >= 0x0F18 && c <= 0x0F19
+            || c == 0x0F35
+            || c == 0x0F37
+            || c == 0x0F39
+            || c == 0x0F3E
+            || c == 0x0F3F
+            || c >= 0x0F71 && c <= 0x0F84
+            || c >= 0x0F86 && c <= 0x0F8B
+            || c >= 0x0F90 && c <= 0x0F95
+            || c == 0x0F97
+            || c >= 0x0F99 && c <= 0x0FAD
+            || c >= 0x0FB1 && c <= 0x0FB7
+            || c == 0x0FB9
+            || c >= 0x20D0 && c <= 0x20DC
+            || c == 0x20E1
+            || c >= 0x302A && c <= 0x302F
+            || c == 0x3099
+            || c == 0x309A
+            || c == 0x00B7
+            || c == 0x02D0
+            || c == 0x02D1
+            || c == 0x0387
+            || c == 0x0640
+            || c == 0x0E46
+            || c == 0x0EC6
+            || c == 0x3005
+            || c >= 0x3031 && c <= 0x3035
+            || c >= 0x309D && c <= 0x309E
+            || c >= 0x30FC && c <= 0x30FE;
+    };
+
+    Utilities.coalesceText = function (n) {
+        for (var m = n.firstChild; m != null; m = m.nextSibling) {
+            if (m.nodeType == 3 /*Node.TEXT_NODE*/ || m.nodeType == 4 /*Node.CDATA_SECTION_NODE*/) {
+                var s = m.nodeValue;
+                var first = m;
+                m = m.nextSibling;
+                while (m != null && (m.nodeType == 3 /*Node.TEXT_NODE*/ || m.nodeType == 4 /*Node.CDATA_SECTION_NODE*/)) {
+                    s += m.nodeValue;
+                    var del = m;
+                    m = m.nextSibling;
+                    del.parentNode.removeChild(del);
+                }
+                if (first.nodeType == 4 /*Node.CDATA_SECTION_NODE*/) {
+                    var p = first.parentNode;
+                    if (first.nextSibling == null) {
+                        p.removeChild(first);
+                        p.appendChild(p.ownerDocument.createTextNode(s));
+                    } else {
+                        var next = first.nextSibling;
+                        p.removeChild(first);
+                        p.insertBefore(p.ownerDocument.createTextNode(s), next);
+                    }
+                } else {
+                    first.nodeValue = s;
+                }
+                if (m == null) {
+                    break;
+                }
+            } else if (m.nodeType == 1 /*Node.ELEMENT_NODE*/) {
+                Utilities.coalesceText(m);
+            }
+        }
+    };
+
+    Utilities.instance_of = function (o, c) {
+        while (o != null) {
+            if (o.constructor === c) {
+                return true;
+            }
+            if (o === Object) {
+                return false;
+            }
+            o = o.constructor.superclass;
+        }
+        return false;
+    };
+
+    Utilities.getElementById = function (n, id) {
+        // Note that this does not check the DTD to check for actual
+        // attributes of type ID, so this may be a bit wrong.
+        if (n.nodeType == 1 /*Node.ELEMENT_NODE*/) {
+            if (n.getAttribute("id") == id
+                || n.getAttributeNS(null, "id") == id) {
+                return n;
+            }
+        }
+        for (var m = n.firstChild; m != null; m = m.nextSibling) {
+            var res = Utilities.getElementById(m, id);
+            if (res != null) {
+                return res;
+            }
+        }
+        return null;
+    };
+
+    // XPathException ////////////////////////////////////////////////////////////
+
+    var XPathException = (function () {
+        function getMessage(code, exception) {
+            var msg = exception ? ": " + exception.toString() : "";
+            switch (code) {
+                case XPathException.INVALID_EXPRESSION_ERR:
+                    return "Invalid expression" + msg;
+                case XPathException.TYPE_ERR:
+                    return "Type error" + msg;
+            }
+            return null;
+        }
+
+        function XPathException(code, error, message) {
+            var err = Error.call(this, getMessage(code, error) || message);
+
+            err.code = code;
+            err.exception = error;
+
+            return err;
+        }
+
+        XPathException.prototype = Object.create(Error.prototype);
+        XPathException.prototype.constructor = XPathException;
+        XPathException.superclass = Error;
+
+        XPathException.prototype.toString = function () {
+            return this.message;
+        };
+
+        XPathException.fromMessage = function (message, error) {
+            return new XPathException(null, error, message);
+        };
+
+        XPathException.INVALID_EXPRESSION_ERR = 51;
+        XPathException.TYPE_ERR = 52;
+
+        return XPathException;
+    })();
+
+    // XPathExpression ///////////////////////////////////////////////////////////
+
+    XPathExpression.prototype = {};
+    XPathExpression.prototype.constructor = XPathExpression;
+    XPathExpression.superclass = Object.prototype;
+
+    function XPathExpression(e, r, p) {
+        this.xpath = p.parse(e);
+        this.context = new XPathContext();
+        this.context.namespaceResolver = new XPathNSResolverWrapper(r);
+    }
+
+    XPathExpression.getOwnerDocument = function (n) {
+        return n.nodeType === 9 /*Node.DOCUMENT_NODE*/ ? n : n.ownerDocument;
+    }
+
+    XPathExpression.detectHtmlDom = function (n) {
+        if (!n) { return false; }
+
+        var doc = XPathExpression.getOwnerDocument(n);
+
+        try {
+            return doc.implementation.hasFeature("HTML", "2.0");
+        } catch (e) {
+            return true;
+        }
+    }
+
+    XPathExpression.prototype.evaluate = function (n, t, res) {
+        this.context.expressionContextNode = n;
+        // backward compatibility - no reliable way to detect whether the DOM is HTML, but
+        // this library has been using this method up until now, so we will continue to use it
+        // ONLY when using an XPathExpression
+        this.context.caseInsensitive = XPathExpression.detectHtmlDom(n);
+
+        var result = this.xpath.evaluate(this.context);
+        return new XPathResult(result, t);
+    }
+
+    // XPathNSResolverWrapper ////////////////////////////////////////////////////
+
+    XPathNSResolverWrapper.prototype = {};
+    XPathNSResolverWrapper.prototype.constructor = XPathNSResolverWrapper;
+    XPathNSResolverWrapper.superclass = Object.prototype;
+
+    function XPathNSResolverWrapper(r) {
+        this.xpathNSResolver = r;
+    }
+
+    XPathNSResolverWrapper.prototype.getNamespace = function (prefix, n) {
+        if (this.xpathNSResolver == null) {
+            return null;
+        }
+        return this.xpathNSResolver.lookupNamespaceURI(prefix);
+    };
+
+    // NodeXPathNSResolver ///////////////////////////////////////////////////////
+
+    NodeXPathNSResolver.prototype = {};
+    NodeXPathNSResolver.prototype.constructor = NodeXPathNSResolver;
+    NodeXPathNSResolver.superclass = Object.prototype;
+
+    function NodeXPathNSResolver(n) {
+        this.node = n;
+        this.namespaceResolver = new NamespaceResolver();
+    }
+
+    NodeXPathNSResolver.prototype.lookupNamespaceURI = function (prefix) {
+        return this.namespaceResolver.getNamespace(prefix, this.node);
+    };
+
+    // XPathResult ///////////////////////////////////////////////////////////////
+
+    XPathResult.prototype = {};
+    XPathResult.prototype.constructor = XPathResult;
+    XPathResult.superclass = Object.prototype;
+
+    function XPathResult(v, t) {
+        if (t == XPathResult.ANY_TYPE) {
+            if (v.constructor === XString) {
+                t = XPathResult.STRING_TYPE;
+            } else if (v.constructor === XNumber) {
+                t = XPathResult.NUMBER_TYPE;
+            } else if (v.constructor === XBoolean) {
+                t = XPathResult.BOOLEAN_TYPE;
+            } else if (v.constructor === XNodeSet) {
+                t = XPathResult.UNORDERED_NODE_ITERATOR_TYPE;
+            }
+        }
+        this.resultType = t;
+        switch (t) {
+            case XPathResult.NUMBER_TYPE:
+                this.numberValue = v.numberValue();
+                return;
+            case XPathResult.STRING_TYPE:
+                this.stringValue = v.stringValue();
+                return;
+            case XPathResult.BOOLEAN_TYPE:
+                this.booleanValue = v.booleanValue();
+                return;
+            case XPathResult.ANY_UNORDERED_NODE_TYPE:
+            case XPathResult.FIRST_ORDERED_NODE_TYPE:
+                if (v.constructor === XNodeSet) {
+                    this.singleNodeValue = v.first();
+                    return;
+                }
+                break;
+            case XPathResult.UNORDERED_NODE_ITERATOR_TYPE:
+            case XPathResult.ORDERED_NODE_ITERATOR_TYPE:
+                if (v.constructor === XNodeSet) {
+                    this.invalidIteratorState = false;
+                    this.nodes = v.toArray();
+                    this.iteratorIndex = 0;
+                    return;
+                }
+                break;
+            case XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE:
+            case XPathResult.ORDERED_NODE_SNAPSHOT_TYPE:
+                if (v.constructor === XNodeSet) {
+                    this.nodes = v.toArray();
+                    this.snapshotLength = this.nodes.length;
+                    return;
+                }
+                break;
+        }
+        throw new XPathException(XPathException.TYPE_ERR);
+    };
+
+    XPathResult.prototype.iterateNext = function () {
+        if (this.resultType != XPathResult.UNORDERED_NODE_ITERATOR_TYPE
+            && this.resultType != XPathResult.ORDERED_NODE_ITERATOR_TYPE) {
+            throw new XPathException(XPathException.TYPE_ERR);
+        }
+        return this.nodes[this.iteratorIndex++];
+    };
+
+    XPathResult.prototype.snapshotItem = function (i) {
+        if (this.resultType != XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE
+            && this.resultType != XPathResult.ORDERED_NODE_SNAPSHOT_TYPE) {
+            throw new XPathException(XPathException.TYPE_ERR);
+        }
+        return this.nodes[i];
+    };
+
+    XPathResult.ANY_TYPE = 0;
+    XPathResult.NUMBER_TYPE = 1;
+    XPathResult.STRING_TYPE = 2;
+    XPathResult.BOOLEAN_TYPE = 3;
+    XPathResult.UNORDERED_NODE_ITERATOR_TYPE = 4;
+    XPathResult.ORDERED_NODE_ITERATOR_TYPE = 5;
+    XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE = 6;
+    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE = 7;
+    XPathResult.ANY_UNORDERED_NODE_TYPE = 8;
+    XPathResult.FIRST_ORDERED_NODE_TYPE = 9;
+
+    // DOM 3 XPath support ///////////////////////////////////////////////////////
+
+    function installDOM3XPathSupport(doc, p) {
+        doc.createExpression = function (e, r) {
+            try {
+                return new XPathExpression(e, r, p);
+            } catch (e) {
+                throw new XPathException(XPathException.INVALID_EXPRESSION_ERR, e);
             }
         };
-    }
-
-    function makeFunctionResolverFromObject(obj) {
-        return makeFunctionResolverFromFunction(obj.getFunction.bind(obj));
-    }
-
-    function makeFunctionResolverFromMap(map) {
-        return makeFunctionResolverFromFunction(function (name) {
-            return map[name];
-        });
-    }
-
-    function makeFunctionResolver(resolver) {
-        if (resolver && typeof resolver.getFunction === "function") {
-            return makeFunctionResolverFromObject(resolver);
-        }
-
-        if (typeof resolver === "function") {
-            return makeFunctionResolverFromFunction(resolver);
-        }
-
-        // assume map
-        if (typeof resolver === "object") {
-            return makeFunctionResolverFromMap(resolver);
-        }
-
-        return defaultFunctionResolver;
-    }
-
-    function makeVariableResolverFromFunction(func) {
-        return {
-            getVariable: function (name, namespace) {
-                var value = func(name, namespace);
-                return convertValue(value);
-            }
+        doc.createNSResolver = function (n) {
+            return new NodeXPathNSResolver(n);
         };
+        doc.evaluate = function (e, cn, r, t, res) {
+            if (t < 0 || t > 9) {
+                throw { code: 0, toString: function () { return "Request type not supported"; } };
+            }
+            return doc.createExpression(e, r, p).evaluate(cn, t, res);
+        };
+    };
+
+    // ---------------------------------------------------------------------------
+
+    // Install DOM 3 XPath support for the current document.
+    try {
+        var shouldInstall = true;
+        try {
+            if (document.implementation
+                && document.implementation.hasFeature
+                && document.implementation.hasFeature("XPath", null)) {
+                shouldInstall = false;
+            }
+        } catch (e) {
+        }
+        if (shouldInstall) {
+            installDOM3XPathSupport(document, new XPathParser());
+        }
+    } catch (e) {
     }
 
-    function makeVariableResolver(resolver) {
-        if (resolver) {
-            if (typeof resolver.getVariable === "function") {
-                return makeVariableResolverFromFunction(resolver.getVariable.bind(resolver));
+    // ---------------------------------------------------------------------------
+    // exports for node.js
+
+    installDOM3XPathSupport(exports, new XPathParser());
+
+    (function () {
+        var parser = new XPathParser();
+
+        var defaultNSResolver = new NamespaceResolver();
+        var defaultFunctionResolver = new FunctionResolver();
+        var defaultVariableResolver = new VariableResolver();
+
+        function makeNSResolverFromFunction(func) {
+            return {
+                getNamespace: function (prefix, node) {
+                    var ns = func(prefix, node);
+
+                    return ns || defaultNSResolver.getNamespace(prefix, node);
+                }
+            };
+        }
+
+        function makeNSResolverFromObject(obj) {
+            return makeNSResolverFromFunction(obj.getNamespace.bind(obj));
+        }
+
+        function makeNSResolverFromMap(map) {
+            return makeNSResolverFromFunction(function (prefix) {
+                return map[prefix];
+            });
+        }
+
+        function makeNSResolver(resolver) {
+            if (resolver && typeof resolver.getNamespace === "function") {
+                return makeNSResolverFromObject(resolver);
             }
 
             if (typeof resolver === "function") {
-                return makeVariableResolverFromFunction(resolver);
+                return makeNSResolverFromFunction(resolver);
+            }
+
+            // assume prefix -> uri mapping
+            if (typeof resolver === "object") {
+                return makeNSResolverFromMap(resolver);
+            }
+
+            return defaultNSResolver;
+        }
+
+        /** Converts native JavaScript types to their XPath library equivalent */
+        function convertValue(value) {
+            if (value === null ||
+                typeof value === "undefined" ||
+                value instanceof XString ||
+                value instanceof XBoolean ||
+                value instanceof XNumber ||
+                value instanceof XNodeSet) {
+                return value;
+            }
+
+            switch (typeof value) {
+                case "string": return new XString(value);
+                case "boolean": return new XBoolean(value);
+                case "number": return new XNumber(value);
+            }
+
+            // assume node(s)
+            var ns = new XNodeSet();
+            ns.addArray([].concat(value));
+            return ns;
+        }
+
+        function makeEvaluator(func) {
+            return function (context) {
+                var args = Array.prototype.slice.call(arguments, 1).map(function (arg) {
+                    return arg.evaluate(context);
+                });
+                var result = func.apply(this, [].concat(context, args));
+                return convertValue(result);
+            };
+        }
+
+        function makeFunctionResolverFromFunction(func) {
+            return {
+                getFunction: function (name, namespace) {
+                    var found = func(name, namespace);
+                    if (found) {
+                        return makeEvaluator(found);
+                    }
+                    return defaultFunctionResolver.getFunction(name, namespace);
+                }
+            };
+        }
+
+        function makeFunctionResolverFromObject(obj) {
+            return makeFunctionResolverFromFunction(obj.getFunction.bind(obj));
+        }
+
+        function makeFunctionResolverFromMap(map) {
+            return makeFunctionResolverFromFunction(function (name) {
+                return map[name];
+            });
+        }
+
+        function makeFunctionResolver(resolver) {
+            if (resolver && typeof resolver.getFunction === "function") {
+                return makeFunctionResolverFromObject(resolver);
+            }
+
+            if (typeof resolver === "function") {
+                return makeFunctionResolverFromFunction(resolver);
             }
 
             // assume map
             if (typeof resolver === "object") {
-                return makeVariableResolverFromFunction(function (name) {
-                    return resolver[name];
-                });
+                return makeFunctionResolverFromMap(resolver);
             }
+
+            return defaultFunctionResolver;
         }
 
-        return defaultVariableResolver;
-    }
-	
-	function copyIfPresent(prop, dest, source) {
-		if (prop in source) { dest[prop] = source[prop]; }
-	}
-
-    function makeContext(options) {
-        var context = new XPathContext();
-
-        if (options) {
-            context.namespaceResolver = makeNSResolver(options.namespaces);
-            context.functionResolver = makeFunctionResolver(options.functions);
-            context.variableResolver = makeVariableResolver(options.variables);
-			context.expressionContextNode = options.node;
-			copyIfPresent('allowAnyNamespaceForNoPrefix', context, options);
-			copyIfPresent('isHtml', context, options);
-        } else {
-            context.namespaceResolver = defaultNSResolver;
+        function makeVariableResolverFromFunction(func) {
+            return {
+                getVariable: function (name, namespace) {
+                    var value = func(name, namespace);
+                    return convertValue(value);
+                }
+            };
         }
 
-        return context;
-    }
+        function makeVariableResolver(resolver) {
+            if (resolver) {
+                if (typeof resolver.getVariable === "function") {
+                    return makeVariableResolverFromFunction(resolver.getVariable.bind(resolver));
+                }
 
-    function evaluate(parsedExpression, options) {
-        var context = makeContext(options);
+                if (typeof resolver === "function") {
+                    return makeVariableResolverFromFunction(resolver);
+                }
 
-        return parsedExpression.evaluate(context);
-    }
+                // assume map
+                if (typeof resolver === "object") {
+                    return makeVariableResolverFromFunction(function (name) {
+                        return resolver[name];
+                    });
+                }
+            }
 
-    var evaluatorPrototype = {
-        evaluate: function (options) {
-            return evaluate(this.expression, options);
+            return defaultVariableResolver;
         }
 
-        ,evaluateNumber: function (options) {
-            return this.evaluate(options).numberValue();
+        function copyIfPresent(prop, dest, source) {
+            if (prop in source) { dest[prop] = source[prop]; }
         }
 
-        ,evaluateString: function (options) {
-            return this.evaluate(options).stringValue();
+        function makeContext(options) {
+            var context = new XPathContext();
+
+            if (options) {
+                context.namespaceResolver = makeNSResolver(options.namespaces);
+                context.functionResolver = makeFunctionResolver(options.functions);
+                context.variableResolver = makeVariableResolver(options.variables);
+                context.expressionContextNode = options.node;
+                copyIfPresent('allowAnyNamespaceForNoPrefix', context, options);
+                copyIfPresent('isHtml', context, options);
+            } else {
+                context.namespaceResolver = defaultNSResolver;
+            }
+
+            return context;
         }
 
-        ,evaluateBoolean: function (options) {
-            return this.evaluate(options).booleanValue();
+        function evaluate(parsedExpression, options) {
+            var context = makeContext(options);
+
+            return parsedExpression.evaluate(context);
         }
 
-        ,evaluateNodeSet: function (options) {
-            return this.evaluate(options).nodeset();
+        var evaluatorPrototype = {
+            evaluate: function (options) {
+                return evaluate(this.expression, options);
+            }
+
+            , evaluateNumber: function (options) {
+                return this.evaluate(options).numberValue();
+            }
+
+            , evaluateString: function (options) {
+                return this.evaluate(options).stringValue();
+            }
+
+            , evaluateBoolean: function (options) {
+                return this.evaluate(options).booleanValue();
+            }
+
+            , evaluateNodeSet: function (options) {
+                return this.evaluate(options).nodeset();
+            }
+
+            , select: function (options) {
+                return this.evaluateNodeSet(options).toArray()
+            }
+
+            , select1: function (options) {
+                return this.select(options)[0];
+            }
+        };
+
+        function parse(xpath) {
+            var parsed = parser.parse(xpath);
+
+            return Object.create(evaluatorPrototype, {
+                expression: {
+                    value: parsed
+                }
+            });
         }
 
-        ,select: function (options) {
-            return this.evaluateNodeSet(options).toArray()
-        }
+        exports.parse = parse;
+    })();
 
-        ,select1: function (options) {
-            return this.select(options)[0];
+    assign(
+        exports,
+        {
+            XPath,
+            XPathParser,
+            XPathResult,
+
+            Step,
+            PathExpr,
+            NodeTest,
+            LocationPath,
+
+            OrOperation,
+            AndOperation,
+
+            BarOperation,
+
+            EqualsOperation,
+            NotEqualOperation,
+            LessThanOperation,
+            GreaterThanOperation,
+            LessThanOrEqualOperation,
+            GreaterThanOrEqualOperation,
+
+            PlusOperation,
+            MinusOperation,
+            MultiplyOperation,
+            DivOperation,
+            ModOperation,
+            UnaryMinusOperation,
+
+            FunctionCall,
+            VariableReference,
+
+            XPathContext,
+
+            XNodeSet,
+            XBoolean,
+            XString,
+            XNumber,
+
+            NamespaceResolver,
+            FunctionResolver,
+            VariableResolver,
+
+            Utilities,
         }
+    );
+
+    // helper
+    exports.select = function (e, doc, single) {
+        return exports.selectWithResolver(e, doc, null, single);
     };
 
-    function parse(xpath) {
-        var parsed = parser.parse(xpath);
-
-        return Object.create(evaluatorPrototype, {
-            expression: {
-                value: parsed
+    exports.useNamespaces = function (mappings) {
+        var resolver = {
+            mappings: mappings || {},
+            lookupNamespaceURI: function (prefix) {
+                return this.mappings[prefix];
             }
-        });
-    }
+        };
 
-    exports.parse = parse;
-})();
+        return function (e, doc, single) {
+            return exports.selectWithResolver(e, doc, resolver, single);
+        };
+    };
 
-exports.XPath = XPath;
-exports.XPathParser = XPathParser;
-exports.XPathResult = XPathResult;
+    exports.selectWithResolver = function (e, doc, resolver, single) {
+        var expression = new XPathExpression(e, resolver, new XPathParser());
+        var type = XPathResult.ANY_TYPE;
 
-exports.Step = Step;
-exports.NodeTest = NodeTest;
-exports.BarOperation = BarOperation;
+        var result = expression.evaluate(doc, type, null);
 
-exports.NamespaceResolver = NamespaceResolver;
-exports.FunctionResolver = FunctionResolver;
-exports.VariableResolver = VariableResolver;
+        if (result.resultType == XPathResult.STRING_TYPE) {
+            result = result.stringValue;
+        }
+        else if (result.resultType == XPathResult.NUMBER_TYPE) {
+            result = result.numberValue;
+        }
+        else if (result.resultType == XPathResult.BOOLEAN_TYPE) {
+            result = result.booleanValue;
+        }
+        else {
+            result = result.nodes;
+            if (single) {
+                result = result[0];
+            }
+        }
 
-exports.Utilities = Utilities;
+        return result;
+    };
 
-exports.XPathContext = XPathContext;
-exports.XNodeSet = XNodeSet;
-exports.XBoolean = XBoolean;
-exports.XString = XString;
-exports.XNumber = XNumber;
+    exports.select1 = function (e, doc) {
+        return exports.select(e, doc, true);
+    };
 
-// helper
-exports.select = function(e, doc, single) {
-	return exports.selectWithResolver(e, doc, null, single);
-};
-
-exports.useNamespaces = function(mappings) {
-	var resolver = {
-		mappings: mappings || {},
-		lookupNamespaceURI: function(prefix) {
-			return this.mappings[prefix];
-		}
-	};
-
-	return function(e, doc, single) {
-		return exports.selectWithResolver(e, doc, resolver, single);
-	};
-};
-
-exports.selectWithResolver = function(e, doc, resolver, single) {
-	var expression = new XPathExpression(e, resolver, new XPathParser());
-	var type = XPathResult.ANY_TYPE;
-
-	var result = expression.evaluate(doc, type, null);
-
-	if (result.resultType == XPathResult.STRING_TYPE) {
-		result = result.stringValue;
-	}
-	else if (result.resultType == XPathResult.NUMBER_TYPE) {
-		result = result.numberValue;
-	}
-	else if (result.resultType == XPathResult.BOOLEAN_TYPE) {
-		result = result.booleanValue;
-	}
-	else {
-		result = result.nodes;
-		if (single) {
-			result = result[0];
-		}
-	}
-
-	return result;
-};
-
-exports.select1 = function(e, doc) {
-	return exports.select(e, doc, true);
-};
-
-// end non-node wrapper
+    // end non-node wrapper
 })(xpath);
 
-},{}],39:[function(require,module,exports){
-var axios = require('axios');
+},{}],41:[function(require,module,exports){
+const httpClient = require('./internal/httpClient');
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
 var clq_filter = require('./internal/cql_filter')
@@ -12894,7 +13652,7 @@ Client.prototype.getDefaultHeaders = function(){
 Client.prototype.getTypeNames = function () {
     var params = this.getDefaultParams();
     params.request = 'GetCapabilities';
-    return axios.get(
+    return httpClient.get(
         this.getUrl(),
         {
             'params': params,
@@ -12941,7 +13699,7 @@ Client.prototype.getFeatures = function (typeName, params) {
      */
     var cql_filter = clq_filter(params);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
-    return axios.post(this.getUrl(), body, {
+    return httpClient.post(this.getUrl(), body, {
         params: queryParams,
         headers: headers,
         responseType: 'text',
@@ -12963,7 +13721,7 @@ Client.prototype.getFeatures = function (typeName, params) {
 
 module.exports = Client;
 
-},{"./internal/cql_filter":40,"./internal/getTypeNamesFromCapabilities":41,"axios":6}],40:[function(require,module,exports){
+},{"./internal/cql_filter":42,"./internal/getTypeNamesFromCapabilities":43,"./internal/httpClient":44}],42:[function(require,module,exports){
 
 var WKT = require('terraformer-wkt-parser');
 var flip = require('@turf/flip');
@@ -13021,7 +13779,7 @@ module.exports =  function(params){
     return parts.join(' and ') ;
 };
 
-},{"@turf/flip":3,"terraformer-wkt-parser":33}],41:[function(require,module,exports){
+},{"@turf/flip":3,"terraformer-wkt-parser":34}],43:[function(require,module,exports){
 var xpath = require('xpath')
   , dom = require('xmldom').DOMParser;
 
@@ -13041,5 +13799,34 @@ var getTypeNamesFromCapabilities = function(xml){
 
 module.exports = getTypeNamesFromCapabilities;
 
-},{"xmldom":35,"xpath":38}]},{},[1])(1)
+},{"xmldom":36,"xpath":40}],44:[function(require,module,exports){
+(function (process){(function (){
+const axios = require('axios');
+
+const axiosGlobalConfig = {};
+
+/*
+ * NodeJS specific code to allow https throw http proxy with axios
+ * (fixes https://github.com/IGNF/geoportal-wfs-client/issues/5)
+ */
+if (typeof window === 'undefined' ){
+  const HttpProxyAgent = require('http-proxy-agent');
+  if ( process.env.HTTP_PROXY ){
+    axiosGlobalConfig.httpAgent = new HttpProxyAgent(process.env.HTTP_PROXY);
+  }
+  const HttpsProxyAgent = require('https-proxy-agent');
+  if ( process.env.HTTPS_PROXY ){
+    axiosGlobalConfig.httpsAgent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
+  }
+  axiosGlobalConfig.proxy = false;
+}
+
+const httpClient = axios.create(axiosGlobalConfig);
+module.exports = httpClient;
+
+
+
+
+}).call(this)}).call(this,require('_process'))
+},{"_process":33,"axios":6,"http-proxy-agent":undefined,"https-proxy-agent":undefined}]},{},[1])(1)
 });
