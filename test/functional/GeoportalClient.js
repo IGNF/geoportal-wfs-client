@@ -46,7 +46,7 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
     });
 
 
-    it('should return a FeatureCollection for getFeatures("CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle",{"code_dep":"25349"})', async function () {
+    it('should return a FeatureCollection for getFeatures("CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle",{"code_insee":"25349"})', async function () {
         var featureCollection = await client.getFeatures(
             "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle",
             {
