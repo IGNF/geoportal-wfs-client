@@ -27,6 +27,8 @@ Voir [demo/parcelle.html](https://ignf.github.io/geoportal-wfs-client/demo/parce
 
 ## Construction du client
 
+En prenant par exemple `GEOPORTAL_API_KEY='choisirgeoportail'` (voir [Accéder au Géoportail sans créer de compte](https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html))...
+
 ### En contexte NodeJS
 
 
@@ -34,9 +36,9 @@ Voir [demo/parcelle.html](https://ignf.github.io/geoportal-wfs-client/demo/parce
 var Client = require('geoportal-wfs-client');
 
 var options = {
-    "apiKey":API_KEY,
+    "apiKey": GEOPORTAL_API_KEY,
     "headers":{
-        Referer: 'http://localhost.ign.fr'
+        Referer: 'https://mon-application.fr'
     }
 };
 var client = new GeoportalWfsClient(options);
@@ -49,7 +51,7 @@ var client = new GeoportalWfsClient(options);
 <script type="text/javascript">
 
 var options = {
-    "apiKey":API_KEY
+    "apiKey": GEOPORTAL_API_KEY
 };
 var client = new GeoportalWfsClient(options);
 </script>
@@ -76,10 +78,9 @@ client.getTypeNames()
 
 ```js
 [
-    "BDADRESSE_BDD_WLD_WGS84G:adresse",
-    "BDADRESSE_BDD_WLD_WGS84G:arrondissement",
-    "BDADRESSE_BDD_WLD_WGS84G:chef_lieu",
-    "BDADRESSE_BDD_WLD_WGS84G:commune"
+  "BDTOPO_V3:batiment",
+  "BDTOPO_V3:troncon_de_route",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle"
 ]
 ```
 
@@ -87,13 +88,14 @@ client.getTypeNames()
 
 ### Exemple d'utilisation
 
+Récupération des parcelles de la section "0A" de la commune "25349" :
+
 ```js
-var params = {
-    bbox: [5.0,47.1,5.1,47.2],
-    code_dep: "21",
-    _limit: 10
+const params = {
+    code_insee: '25349',
+    section: '0A'
 };
-client.getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:divcad",params)
+client.getFeatures("CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle",params)
     .then(function(featureCollection){
         console.log(featureCollection);
     })
@@ -103,34 +105,27 @@ client.getFeatures("BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:divcad",params)
 ;
 ```
 
-### Exemple de résultat
-
-```json
-{"type":"FeatureCollection","features":[...]}
-```
+Exemple de résultat : [parcelles-25349-0A.json](demo/parcelles-25349-0A.json)
 
 ### Détails sur params
 
-*params* permet de définir des filtres cumulatifs et de gérer la pagination
+`params` permet de définir des filtres cumulatifs et de gérer la pagination.
 
-* filtrage spatial
-    * bbox : permet de filtrer par boite englobante
-    * geom : permet de filtrer par une géométrie intersectante
+* La syntaxe `{"<attributeName>":"<attributeValue>"}` permet un filtrage attributaire suivant `<attributeName> == <attributeValue>`.
 
-* filtrage par attribut
+* Un filtrage spatial est disponible sous deux formes :
 
-La syntaxe ci-après permet de définir des égalités
+    * `bbox` permet de filtrer par boite englobante
+    * `geom` permet de filtrer par une géométrie intersectante
 
-```js
-{"<attributeName>":"<attributeValue>"}
-```
+* La pagination est gérée via deux paramètres :
 
-* pagination
-
-    * *_limit* : nombre maximum de résultats
-    * *_start* : premier résultat
-
+    * `_limit` : Le nombre maximum de résultats (équivalent à `COUNT` sur le WFS, définit par défaut au niveau du flux)
+    * `_start` : Indexe du premier résultat (0 par défaut, équivalent à `STARTINDEX` sur le WFS)
 
 ### Remarque sur les performances
 
-Certains types correspondent à l'aggrégation de plusieurs schémas de données. Certaines requêtes seront sous-performantes ou en échec en l'abscence de filtre.
+Certains types WFS Géoportail correspondent à l'aggrégation de plusieurs schémas de données. Ceci implique qu'en l'absence de filtrage, les requêtes WFS peuvent être sous-performante ou en échec.
+
+A titre d'exemple, les requêtes `getFeatures('CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle',params)` seront sous performantes ou en échec si `params` ne contient pas l'un des éléments suivants : `code_insee`, `geom` ou `bbox`.
+
