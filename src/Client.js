@@ -1,7 +1,7 @@
 const httpClient = require('./internal/httpClient');
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
-var clq_filter = require('./internal/cql_filter')
+var buildCqlFilter = require('./internal/buildCqlFilter')
 
 /**
  * @classdesc
@@ -14,6 +14,8 @@ var Client = function (options) {
     this.url = options.url || 'https://wxs.ign.fr/{apiKey}/geoportail/wfs';
     this.apiKey = options.apiKey || null;
     this.headers = options.headers || {};
+    /* allows to use WFS with different naming convention */
+    this.defaultGeomFieldName = options.defaultGeomFieldName || 'the_geom';
 };
 
 /**
@@ -39,7 +41,7 @@ Client.prototype.getDefaultParams = function () {
  * @private
  * @returns {Object}
  */
-Client.prototype.getDefaultHeaders = function(){
+Client.prototype.getDefaultHeaders = function () {
     return this.headers;
 }
 
@@ -67,8 +69,14 @@ Client.prototype.getTypeNames = function () {
 
 /**
  * Get features for a given type
+ *
  * @param {string} typeName - name of type
- * @param {Object} params - define cumulative filters (bbox, geom) and to manage the pagination
+ * @param {object} params - define cumulative filters (bbox, geom) and to manage the pagination
+ * @param {number} [params._start=0] index of the first result (STARTINDEX on the WFS)
+ * @param {number} [params._limit] maximum number of result (COUNT on the WFS)
+ * @param {object} [params.geom] search geometry intersecting the resulting features.
+ * @param {object} [params.bbox] search bbox intersecting the resulting features.
+ *
  * @return {Promise}
  */
 Client.prototype.getFeatures = function (typeName, params) {
@@ -78,10 +86,10 @@ Client.prototype.getFeatures = function (typeName, params) {
     headers['Accept'] = 'application/json';
 
     /*
-     * GetFeature params 
+     * GetFeature params
      */
     var queryParams = this.getDefaultParams();
-    queryParams['request']  = 'GetFeature';
+    queryParams['request'] = 'GetFeature';
     queryParams['typename'] = typeName;
     queryParams['outputFormat'] = 'application/json';
     queryParams['srsName'] = 'CRS:84';
@@ -91,11 +99,11 @@ Client.prototype.getFeatures = function (typeName, params) {
     if (typeof params._start !== 'undefined') {
         queryParams['startIndex'] = params._start;
     }
-    
+
     /*
      * bbox and attribute filter as POST parameter
      */
-    var cql_filter = clq_filter(params);
+    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
     return httpClient.post(this.getUrl(), body, {
         params: queryParams,
