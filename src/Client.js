@@ -15,7 +15,7 @@ var Client = function (options) {
     this.apiKey = options.apiKey || null;
     this.headers = options.headers || {};
     /* allows to use WFS with different naming convention */
-    this.defaultGeomFieldName = 'the_geom';
+    this.defaultGeomFieldName = options.defaultGeomFieldName || 'the_geom';
 };
 
 /**
