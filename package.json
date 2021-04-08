@@ -2,7 +2,14 @@
   "name": "geoportal-wfs-client",
   "version": "0.3.0",
   "description": "Client GeoJSON pour les WFS du géoportail",
-  "repository": "IGNF/geoportal-wfs-client",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IGNF/geoportal-wfs-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IGNF/geoportal-wfs-client/issues"
+  },
+  "homepage": "https://ignf.github.io/geoportal-wfs-client/",
   "main": "index.js",
   "browser": {
     "index.js": "./dist/geoportal-wfs-client.min.js"
@@ -13,8 +20,14 @@
     "cover": "istanbul cover _mocha",
     "coveralls": "npm run cover && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "IGNF",
+  "license": "CECILL-B",
+  "contributors": [
+    "Mickaël Borne <mborne@users.noreply.github.com>",
+    "Vincent Sagniez <vinsag@users.noreply.github.com>",
+    "Florian Cerizay <floriancerizay@users.noreply.github.com>",
+    "Clément Gimazane <cgimazane@users.noreply.github.com>"
+  ],
   "dependencies": {
     "@turf/flip": "^6.3.0",
     "axios": "^0.21.1",
