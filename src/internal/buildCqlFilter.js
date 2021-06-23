@@ -42,10 +42,12 @@ function bboxToFilter(bbox, geomFieldName) {
  * @param {object} [params.geom] search geometry intersecting the resulting features.
  * @param {object} [params.bbox] search bbox intersecting the resulting features.
  * @param {string} [geomFieldName="the_geom"] name of the geometry column
+ * @param {string} [geomEPSGIn="4326"]  référentiel par défaut
  * @returns {string}
  */
-function buildCqlFilter(params, geomFieldName) {
+function buildCqlFilter(params, geomFieldName,geomEPSGIn) {
     geomFieldName = geomFieldName || 'the_geom';
+    geomEPSGIn = geomEPSGIn || '4326';
 
     var parts = [];
     for (var name in params) {
@@ -61,7 +63,11 @@ function buildCqlFilter(params, geomFieldName) {
             if (typeof geom !== 'object') {
                 geom = JSON.parse(geom);
             }
-            var wkt = WKT.convert(flip(geom));
+            if (geomEPSGIn == "4326") { 
+                var wkt = WKT.convert(flip(geom));
+            } else { 
+                var wkt = WKT.convert(geom);
+            }
             parts.push('INTERSECTS(' + geomFieldName + ',' + wkt + ')');
         } else {
             parts.push(name + '=\'' + params[name] + '\'');

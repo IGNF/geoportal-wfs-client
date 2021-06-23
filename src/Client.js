@@ -16,6 +16,7 @@ var Client = function (options) {
     this.headers = options.headers || {};
     /* allows to use WFS with different naming convention */
     this.defaultGeomFieldName = options.defaultGeomFieldName || 'the_geom';
+    this.defaultgeomEPSGIn = options.defaultgeomEPSGIn || '4326';
 };
 
 /**
@@ -103,7 +104,7 @@ Client.prototype.getFeatures = function (typeName, params) {
     /*
      * bbox and attribute filter as POST parameter
      */
-    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName);
+    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName,this.defaultgeomEPSGIn);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
     return httpClient.post(this.getUrl(), body, {
         params: queryParams,
