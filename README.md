@@ -123,6 +123,10 @@ Exemple de résultat : [parcelles-25349-0A.json](demo/parcelles-25349-0A.json)
     * `_limit` : Le nombre maximum de résultats (équivalent à `COUNT` sur le WFS, définit par défaut au niveau du flux)
     * `_start` : Indexe du premier résultat (0 par défaut, équivalent à `STARTINDEX` sur le WFS)
 
+* Récupérer seulement certain champs :
+
+    * `_propertyNames` : La liste des propriétés demandées dans le résultat
+
 ### Remarque sur les performances
 
 Certains types WFS Géoportail correspondent à l'aggrégation de plusieurs schémas de données. Ceci implique qu'en l'absence de filtrage, les requêtes WFS peuvent être sous-performante ou en échec.

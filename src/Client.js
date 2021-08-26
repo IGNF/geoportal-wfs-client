@@ -74,6 +74,7 @@ Client.prototype.getTypeNames = function () {
  * @param {object} params - define cumulative filters (bbox, geom) and to manage the pagination
  * @param {number} [params._start=0] index of the first result (STARTINDEX on the WFS)
  * @param {number} [params._limit] maximum number of result (COUNT on the WFS)
+ * @param {array}  [params._propertyNames] restrict a GetFeature request by properties
  * @param {object} [params.geom] search geometry intersecting the resulting features.
  * @param {object} [params.bbox] search bbox intersecting the resulting features.
  *
@@ -99,7 +100,9 @@ Client.prototype.getFeatures = function (typeName, params) {
     if (typeof params._start !== 'undefined') {
         queryParams['startIndex'] = params._start;
     }
-
+    if (typeof params._propertyNames !== 'undefined') {
+        queryParams['propertyName'] = params._propertyNames.join();
+    }
     /*
      * bbox and attribute filter as POST parameter
      */
