@@ -82,4 +82,21 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
         });
     });
 
+    it('should return a FeatureCollection with null geometry)', async function () {
+        var featureCollection = await client.getFeatures(
+            "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle",
+            {
+                "code_insee": "25349",
+                "_propertyNames": ["numero","feuille"]
+            }
+        );
+
+        featureCollection['features'].map(feature => {
+            expect(feature.geometry).to.equal(null);
+            expect(feature.properties).to.have.property('numero');
+            expect(feature.properties).to.have.property('feuille');
+            expect(feature.properties).to.not.have.property('code_dep');
+        });
+    });
+
 });
