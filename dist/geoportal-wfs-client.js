@@ -13603,7 +13603,7 @@ var xpath = (typeof exports === 'undefined') ? {} : exports;
 const httpClient = require('./internal/httpClient');
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
-var clq_filter = require('./internal/cql_filter')
+var buildCqlFilter = require('./internal/buildCqlFilter')
 
 /**
  * @classdesc
@@ -13616,6 +13616,8 @@ var Client = function (options) {
     this.url = options.url || 'https://wxs.ign.fr/{apiKey}/geoportail/wfs';
     this.apiKey = options.apiKey || null;
     this.headers = options.headers || {};
+    /* allows to use WFS with different naming convention */
+    this.defaultGeomFieldName = options.defaultGeomFieldName || 'the_geom';
 };
 
 /**
@@ -13641,7 +13643,7 @@ Client.prototype.getDefaultParams = function () {
  * @private
  * @returns {Object}
  */
-Client.prototype.getDefaultHeaders = function(){
+Client.prototype.getDefaultHeaders = function () {
     return this.headers;
 }
 
@@ -13669,8 +13671,15 @@ Client.prototype.getTypeNames = function () {
 
 /**
  * Get features for a given type
+ *
  * @param {string} typeName - name of type
- * @param {Object} params - define cumulative filters (bbox, geom) and to manage the pagination
+ * @param {object} params - define cumulative filters (bbox, geom) and to manage the pagination
+ * @param {number} [params._start=0] index of the first result (STARTINDEX on the WFS)
+ * @param {number} [params._limit] maximum number of result (COUNT on the WFS)
+ * @param {array}  [params._propertyNames] restrict a GetFeature request by properties
+ * @param {object} [params.geom] search geometry intersecting the resulting features.
+ * @param {object} [params.bbox] search bbox intersecting the resulting features.
+ *
  * @return {Promise}
  */
 Client.prototype.getFeatures = function (typeName, params) {
@@ -13680,10 +13689,10 @@ Client.prototype.getFeatures = function (typeName, params) {
     headers['Accept'] = 'application/json';
 
     /*
-     * GetFeature params 
+     * GetFeature params
      */
     var queryParams = this.getDefaultParams();
-    queryParams['request']  = 'GetFeature';
+    queryParams['request'] = 'GetFeature';
     queryParams['typename'] = typeName;
     queryParams['outputFormat'] = 'application/json';
     queryParams['srsName'] = 'CRS:84';
@@ -13693,11 +13702,13 @@ Client.prototype.getFeatures = function (typeName, params) {
     if (typeof params._start !== 'undefined') {
         queryParams['startIndex'] = params._start;
     }
-    
+    if (typeof params._propertyNames !== 'undefined') {
+        queryParams['propertyName'] = params._propertyNames.join();
+    }
     /*
      * bbox and attribute filter as POST parameter
      */
-    var cql_filter = clq_filter(params);
+    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
     return httpClient.post(this.getUrl(), body, {
         params: queryParams,
@@ -13721,7 +13732,7 @@ Client.prototype.getFeatures = function (typeName, params) {
 
 module.exports = Client;
 
-},{"./internal/cql_filter":42,"./internal/getTypeNamesFromCapabilities":43,"./internal/httpClient":44}],42:[function(require,module,exports){
+},{"./internal/buildCqlFilter":42,"./internal/getTypeNamesFromCapabilities":43,"./internal/httpClient":44}],42:[function(require,module,exports){
 
 var WKT = require('terraformer-wkt-parser');
 var flip = require('@turf/flip');
@@ -13731,53 +13742,75 @@ var flip = require('@turf/flip');
  */
 
 /**
- * Convert a bbox on array with 4 values
+ * Convert a bbox on array with 4 values (split string if required)
+ *
+ * @param {string|number[]} bbox
+ * @returns {number[]}
  */
-function parseBoundingBox(bbox){
-    if ( typeof bbox !== 'string' ){
+function parseBoundingBox(bbox) {
+    if (typeof bbox !== 'string') {
         return bbox;
     }
     return bbox.replace(/'/g, '').split(',');
 }
 
 /**
- * Convert a bbox in cql_filter fragment
+ * Convert a bbox in cql_filter fragment.
+ *
+ * @param {string|number[]} bbox input bbox (CRS:84)
+ * @param {string} geomFieldName name of the geometry (ex : the_geom)
+ * @returns {string}
  */
-function bboxToFilter(bbox){
+function bboxToFilter(bbox, geomFieldName) {
     bbox = parseBoundingBox(bbox);
     var xmin = bbox[1];
     var ymin = bbox[0];
     var xmax = bbox[3];
     var ymax = bbox[2];
-    return 'BBOX(the_geom,'+xmin+','+ymin+','+xmax+','+ymax+')' ;
+    return 'BBOX(' + geomFieldName + ',' + xmin + ',' + ymin + ',' + xmax + ',' + ymax + ')';
 }
 
-module.exports =  function(params){
-    var parts = [] ;
-    for ( var name in params ){
+/**
+ * Build cql_filter parameter for GeoServer according to user params.
+ *
+ * @param {object} params
+ * @param {object} [params.geom] search geometry intersecting the resulting features.
+ * @param {object} [params.bbox] search bbox intersecting the resulting features.
+ * @param {string} [geomFieldName="the_geom"] name of the geometry column
+ * @returns {string}
+ */
+function buildCqlFilter(params, geomFieldName) {
+    geomFieldName = geomFieldName || 'the_geom';
+
+    var parts = [];
+    for (var name in params) {
         // ignore _limit, _start, etc.
-        if ( name.charAt(0) === '_' ){
+        if (name.charAt(0) === '_') {
             continue;
         }
 
-        if ( name == 'bbox' ){
-            parts.push(bboxToFilter(params['bbox'])) ;
-        }else if ( name == 'geom' ){
-            var geom = params[name] ;
-            if ( typeof geom !== 'object' ){
-                geom = JSON.parse(geom) ;
+        if (name == 'bbox') {
+            parts.push(bboxToFilter(params['bbox'], geomFieldName));
+        } else if (name == 'geom') {
+            var geom = params[name];
+            if (typeof geom !== 'object') {
+                geom = JSON.parse(geom);
             }
             var wkt = WKT.convert(flip(geom));
-            parts.push('INTERSECTS(the_geom,'+wkt+')');
-        }else{
-            parts.push(name+'=\''+ params[name]+'\'');
+            parts.push('INTERSECTS(' + geomFieldName + ',' + wkt + ')');
+        } else {
+            parts.push(name + '=\'' + params[name] + '\'');
         }
     }
-    if ( parts.length === 0 ){
+    if (parts.length === 0) {
         return null;
     }
-    return parts.join(' and ') ;
+    return parts.join(' and ');
 };
+
+
+module.exports = buildCqlFilter;
+
 
 },{"@turf/flip":3,"terraformer-wkt-parser":34}],43:[function(require,module,exports){
 var xpath = require('xpath')
