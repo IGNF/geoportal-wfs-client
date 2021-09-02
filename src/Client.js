@@ -1,7 +1,9 @@
 const httpClient = require('./internal/httpClient');
 
 var getTypeNamesFromCapabilities = require('./internal/getTypeNamesFromCapabilities');
-var buildCqlFilter = require('./internal/buildCqlFilter')
+var buildCqlFilter = require('./internal/buildCqlFilter');
+const proj4 = require('proj4');
+var constants = require('./internal/constants.js');
 
 /**
  * @classdesc
@@ -15,7 +17,8 @@ var Client = function (options) {
     this.apiKey = options.apiKey || null;
     this.headers = options.headers || {};
     /* allows to use WFS with different naming convention */
-    this.defaultGeomFieldName = options.defaultGeomFieldName || 'the_geom';
+    this.defaultGeomFieldName = options.defaultGeomFieldName || constants.defaultGeomFieldName;
+    this.defaultCrs = options.defaultCRS || constants.defaultCRS;
 };
 
 /**
@@ -77,6 +80,8 @@ Client.prototype.getTypeNames = function () {
  * @param {array}  [params._propertyNames] restrict a GetFeature request by properties
  * @param {object} [params.geom] search geometry intersecting the resulting features.
  * @param {object} [params.bbox] search bbox intersecting the resulting features.
+ * @param {string} [defaultGeomFieldName="the_geom"] name of the geometry column by default
+ * @param {string} [defaultCRS="urn:ogc:def:crs:EPSG::4326"]  référentiel by default
  *
  * @return {Promise}
  */
@@ -106,7 +111,7 @@ Client.prototype.getFeatures = function (typeName, params) {
     /*
      * bbox and attribute filter as POST parameter
      */
-    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName);
+    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName,this.defaultCrs);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
     return httpClient.post(this.getUrl(), body, {
         params: queryParams,
