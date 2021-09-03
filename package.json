@@ -30,6 +30,8 @@
   ],
   "dependencies": {
     "@turf/flip": "^6.3.0",
+    "@turf/meta": "6.4.0",
+    "@turf/turf": "^6.4.0",
     "axios": "^0.21.1",
     "http-proxy-agent": "^4.0.1",
     "https-proxy-agent": "^5.0.0",
