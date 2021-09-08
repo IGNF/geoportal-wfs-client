@@ -18,7 +18,7 @@ var Client = function (options) {
     this.headers = options.headers || {};
     /* allows to use WFS with different naming convention */
     this.defaultGeomFieldName = options.defaultGeomFieldName || constants.defaultGeomFieldName;
-    this.defaultCrs = options.defaultCRS || constants.defaultCRS;
+    this.defaultCRS = options.defaultCRS || constants.defaultCRS;
 };
 
 /**
@@ -81,7 +81,7 @@ Client.prototype.getTypeNames = function () {
  * @param {object} [params.geom] search geometry intersecting the resulting features.
  * @param {object} [params.bbox] search bbox intersecting the resulting features.
  * @param {string} [defaultGeomFieldName="the_geom"] name of the geometry column by default
- * @param {string} [defaultCRS="urn:ogc:def:crs:EPSG::4326"]  référentiel by default
+ * @param {string} [defaultCRS="urn:ogc:def:crs:EPSG::4326"] default data CRS (required in cql_filter)
  *
  * @return {Promise}
  */
@@ -111,7 +111,7 @@ Client.prototype.getFeatures = function (typeName, params) {
     /*
      * bbox and attribute filter as POST parameter
      */
-    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName,this.defaultCrs);
+    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName,this.defaultCRS);
     var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
     return httpClient.post(this.getUrl(), body, {
         params: queryParams,
