@@ -28,5 +28,13 @@ describe('test Client', function () {
         expect(client.defaultGeomFieldName).to.equal('geom');
     });
 
+    it('should use support user value for defaultCRS', function () {
+        let client = new Client({
+            apiKey: 'my-api-key',
+            defaultCRS: 'urn:ogc:def:crs:EPSG::4326'
+        });
+        expect(client.defaultCRS).to.equal('urn:ogc:def:crs:EPSG::4326');
+    });
+
 });
 
