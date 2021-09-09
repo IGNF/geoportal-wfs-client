@@ -36,7 +36,7 @@
     "http-proxy-agent": "^4.0.1",
     "https-proxy-agent": "^5.0.0",
     "terraformer-wkt-parser": "^1.1.2",
-    "xmldom": "^0.6.0",
+    "@xmldom/xmldom": "^0.7.4",
     "xpath": "0.0.32",
     "proj4": "^2.7.5"
   },

@@ -1,5 +1,5 @@
 var xpath = require('xpath')
-  , dom = require('xmldom').DOMParser;
+  , dom = require('@xmldom/xmldom').DOMParser;
 
 /**
  * Get list of typeName from Capabilities
