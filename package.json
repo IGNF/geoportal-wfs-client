@@ -1,6 +1,6 @@
 {
   "name": "geoportal-wfs-client",
-  "version": "0.4.0",
+  "version": "0.4.1-pre",
   "description": "Client GeoJSON pour les WFS du géoportail",
   "repository": {
     "type": "git",
