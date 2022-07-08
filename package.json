@@ -17,6 +17,8 @@
   "scripts": {
     "build": "grunt",
     "test": "nyc --reporter=html --reporter=text --reporter=cobertura mocha",
+    "check-style": "eslint src/**/*.js test/**/*.js",
+    "fix-style": "eslint src/**/*.js test/**/*.js --fix",
     "coveralls": "nyc report --reporter=text-lcov | coveralls"
   },
   "author": "IGNF",
@@ -42,6 +44,8 @@
   "devDependencies": {
     "chai": "^4.3.6",
     "coveralls": "^3.1.1",
+    "eslint": "^8.19.0",
+    "eslint-plugin-jest": "^26.5.3",
     "grunt": "^1.5.3",
     "grunt-browserify": "^6.0.0",
     "grunt-contrib-uglify": "^5.2.2",
