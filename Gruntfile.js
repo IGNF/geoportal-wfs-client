@@ -22,21 +22,11 @@ module.exports = function (grunt) {
                     './dist/geoportal-wfs-client.min.js': ['./dist/geoportal-wfs-client.js']
                 }
             }
-        },
-        jsdoc : {
-			dist : {
-				src: ['src/*.js'],
-				options: {
-					"destination": "doc",
-					"configure" : "jsdoc.conf.json"
-				}
-			}
-		}
+        }
     });
 
     grunt.loadNpmTasks('grunt-browserify');
     grunt.loadNpmTasks('grunt-contrib-uglify');
-    grunt.loadNpmTasks('grunt-jsdoc');
 
     grunt.registerTask('build', ['browserify','uglify']);
     grunt.registerTask('default', ['build']);
