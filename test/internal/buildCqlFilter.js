@@ -36,7 +36,7 @@ describe('test buildCqlFilter', function () {
         var input = {
             'bbox': '0,1,2,3'
         };
-        var expected = "BBOX(the_geom,1,0,3,2)";
+        var expected = 'BBOX(the_geom,1,0,3,2)';
         var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
@@ -45,7 +45,7 @@ describe('test buildCqlFilter', function () {
         var input = {
             'bbox': [0, 1, 2, 3]
         };
-        var expected = "BBOX(the_geom,1,0,3,2)";
+        var expected = 'BBOX(the_geom,1,0,3,2)';
         var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
@@ -55,7 +55,7 @@ describe('test buildCqlFilter', function () {
         var input = {
             'bbox': [0, 1, 2, 3]
         };
-        var expected = "BBOX(geom,1,0,3,2)";
+        var expected = 'BBOX(geom,1,0,3,2)';
         var result = buildCqlFilter(input,'geom');
         expect(result).to.equals(expected);
     });
@@ -67,7 +67,7 @@ describe('test buildCqlFilter', function () {
                 'coordinates': [3.0, 4.0]
             }
         };
-        var expected = "INTERSECTS(the_geom,POINT (4 3))";
+        var expected = 'INTERSECTS(the_geom,POINT (4 3))';
         var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
@@ -79,7 +79,7 @@ describe('test buildCqlFilter', function () {
                 'coordinates': [3.0, 4.0]
             })
         };
-        var expected = "INTERSECTS(the_geom,POINT (4 3))";
+        var expected = 'INTERSECTS(the_geom,POINT (4 3))';
         var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
@@ -92,7 +92,7 @@ describe('test buildCqlFilter', function () {
                 'coordinates': [3.0, 4.0]
             }
         };
-        var expected = "INTERSECTS(geom,POINT (4 3))";
+        var expected = 'INTERSECTS(geom,POINT (4 3))';
         var result = buildCqlFilter(input,'geom');
         expect(result).to.equals(expected);
     });
@@ -104,7 +104,7 @@ describe('test buildCqlFilter', function () {
         var input = {
             'code_dept': 12
         };
-        var expected = "code_dept='12'";
+        var expected = 'code_dept=\'12\'';
         var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
@@ -115,7 +115,7 @@ describe('test buildCqlFilter', function () {
             'bbox': [0, 1, 2, 3],
             'code_dept': '12'
         };
-        var expected = "BBOX(the_geom,1,0,3,2) and code_dept='12'";
+        var expected = 'BBOX(the_geom,1,0,3,2) and code_dept=\'12\'';
         var result = buildCqlFilter(input);
         expect(result).to.equals(expected);
     });
