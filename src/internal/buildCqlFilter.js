@@ -83,12 +83,11 @@ function buildCqlFilter(params, geomFieldName,geomDefaultCRS) {
                 });
                 geom=input;
             }
+            // flip coordinate as EPSG:4326 is lat,lon for GeoServer
             if (geomDefaultCRS == constants.defaultCRS) {
-                // flip coordinate as EPSG:4326 is lat,lon for GeoServer
-                var wkt = WKT.convert(flip(geom));
-            } else {
-                var wkt = WKT.convert(geom);
+                geom = flip(geom);
             }
+            let wkt = WKT.convert(geom);
             parts.push('INTERSECTS(' + geomFieldName + ',' + wkt + ')');
         } else {
             parts.push(name + '=\'' + params[name] + '\'');

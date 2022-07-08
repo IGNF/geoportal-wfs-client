@@ -24,6 +24,7 @@ jobs:
         cache: 'npm'
 
     - run: npm ci
+    - run: npm run check-style
     - run: npm test
 
     - name: Publish coverage to coveralls.io
