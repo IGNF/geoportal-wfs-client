@@ -2,7 +2,7 @@ const Client = require('../index');
 
 const fs = require('fs');
 
-const GEOPORTAL_API_KEY = 'choisirgeoportail';
+const GEOPORTAL_API_KEY = 'parcellaire';
 
 async function main(){
     var client = new Client({

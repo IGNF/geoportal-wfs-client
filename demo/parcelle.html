@@ -29,15 +29,10 @@
     <script>
 
         /**
-         * @see https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html
-         */
-        const GEOPORTAL_API_KEY = 'choisirgeoportail';
-
-        /**
         * Renvoie l'URL de la couche geoportail
         */
         function getGeoportalURL( layerName ){
-            var url = "https://wxs.ign.fr/"+GEOPORTAL_API_KEY+"/geoportail/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile";
+            var url = "https://wxs.ign.fr/essentiels/geoportail/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile";
             url += "&LAYER="+layerName;
             url += "&STYLE=normal&FORMAT=image/png";
             url += "&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}" ;
@@ -51,9 +46,9 @@
             id: 'ignf/carte'
         }).addTo(map);
 
-        /* création du client WFS */
+        /* création du client WFS pour les flux parcellaire */
         var wfsClient = new GeoportalWfsClient({
-            apiKey: GEOPORTAL_API_KEY
+            apiKey: "parcellaire"
         });
 
         /* utilitaire d'affichage d'une popup */

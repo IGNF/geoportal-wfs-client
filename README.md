@@ -5,7 +5,7 @@
 
 ## Description
 
-Cette bibliothèque est un client d'accès spécifique aux services WFS du géoportail ([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities]([http://wxs.ign.fr/geoportail/wfs?service=WFS&request=GetCapabilities)) visant à simplifier l'accès aux données vectorielles. 
+Cette bibliothèque est un client d'accès spécifique aux [services WFS du géoportail](https://geoservices.ign.fr/services-web-experts) visant à simplifier l'accès aux données vectorielles.
 
 Ce client reprend les principes de simplification de l'utilisation des services initiés dans le cadre d'[APICARTO](https://apicarto.ign.fr) :
 
@@ -27,7 +27,7 @@ Voir [demo/parcelle.html](https://ignf.github.io/geoportal-wfs-client/demo/parce
 
 ## Construction du client
 
-En prenant par exemple `GEOPORTAL_API_KEY='choisirgeoportail'` (voir [Accéder au Géoportail sans créer de compte](https://geoservices.ign.fr/blog/2018/09/06/acces_geoportail_sans_compte.html))...
+En prenant par exemple `GEOPORTAL_API_KEY='parcellaire'`
 
 ### En contexte NodeJS
 
@@ -36,9 +36,9 @@ En prenant par exemple `GEOPORTAL_API_KEY='choisirgeoportail'` (voir [Accéder a
 var Client = require('geoportal-wfs-client');
 
 var options = {
-    "apiKey": GEOPORTAL_API_KEY,
+    "apiKey": "GEOPORTAL_API_KEY",
     "headers":{
-        Referer: 'https://mon-application.fr'
+        "Referer": 'https://mon-application.fr'
     }
 };
 var client = new GeoportalWfsClient(options);
@@ -76,11 +76,25 @@ client.getTypeNames()
 
 ### Exemple de résultat
 
-```js
+```json
 [
-  "BDTOPO_V3:batiment",
-  "BDTOPO_V3:troncon_de_route",
-  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle"
+  "AOC-VITICOLES:aire_parcellaire",
+  "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:arrondissement",
+  "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:batiment",
+  "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:commune",
+  "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:divcad",
+  "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:localisant",
+  "BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:parcelle",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:arrondissement",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:batiment",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:borne_limite_propriete",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:borne_parcelle",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:commune",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:feuille",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:localisant",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle",
+  "CADASTRALPARCELS.PARCELLAIRE_EXPRESS:subdivision_fiscale",
+  "DEVIATION_BDP_PCI_BDD_SYMBO_WLD_WM_20200428:parcelle_wld"
 ]
 ```
 
@@ -129,7 +143,9 @@ Exemple de résultat : [parcelles-25349-0A.json](demo/parcelles-25349-0A.json)
 
 ### Remarque sur les performances
 
-Certains types WFS Géoportail correspondent à l'aggrégation de plusieurs schémas de données. Ceci implique qu'en l'absence de filtrage, les requêtes WFS peuvent être sous-performante ou en échec.
+~~Certains types WFS Géoportail correspondent à l'agrégation de plusieurs schémas de données. Ceci implique qu'en l'absence de filtrage, les requêtes WFS peuvent être sous-performante ou en échec~~.
+
+Les résultats au format GeoJSON incluent un comptage (`totalFeatures`, `numberMatched`, `numberReturned`). L'opération correspondante étant coûteuse, les requêtes WFS peuvent être sous-performante ou en échec en l'absence de filtrage.
 
 A titre d'exemple, les requêtes `getFeatures('CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle',params)` seront sous performantes ou en échec si `params` ne contient pas l'un des éléments suivants : `code_insee`, `geom` ou `bbox`.
 
