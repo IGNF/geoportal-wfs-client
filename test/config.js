@@ -3,7 +3,7 @@
  */
 
 /* allows to switch to http */
-const GEOPORTAL_WFS_URL = process.env.GEOPORTAL_WFS_URL || 'https://wxs.ign.fr/{apiKey}/geoportail/wfs';
+const GEOPORTAL_WFS_URL = process.env.GEOPORTAL_WFS_URL || 'https://data.geopf.fr/wfs/ows';
 
 const config = {
     GEOPORTAL_WFS_URL: GEOPORTAL_WFS_URL,

@@ -36,7 +36,6 @@ En prenant par exemple `GEOPORTAL_API_KEY='parcellaire'`
 var Client = require('geoportal-wfs-client');
 
 var options = {
-    "apiKey": "GEOPORTAL_API_KEY",
     "headers":{
         "Referer": 'https://mon-application.fr'
     }
@@ -50,9 +49,8 @@ var client = new GeoportalWfsClient(options);
 <script src="dist/geoportal-wfs-client.js"></script>
 <script type="text/javascript">
 
-var options = {
-    "apiKey": GEOPORTAL_API_KEY
-};
+var options = {};
+
 var client = new GeoportalWfsClient(options);
 </script>
 ```
@@ -98,7 +96,7 @@ client.getTypeNames()
 ]
 ```
 
-## client.getFeatures(typeName,params) - récupérer les objets d'un type
+## client.getFeatures(typeName,params,method='post') - récupérer les objets d'un type
 
 ### Exemple d'utilisation
 
@@ -109,7 +107,7 @@ const params = {
     code_insee: '25349',
     section: '0A'
 };
-client.getFeatures("CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle",params)
+client.getFeatures("CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle", params, 'get')
     .then(function(featureCollection){
         console.log(featureCollection);
     })

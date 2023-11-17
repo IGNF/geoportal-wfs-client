@@ -10,7 +10,7 @@ describe('test Client', function () {
         let client = new Client({
             apiKey: 'my-api-key'
         });
-        expect(client.getUrl()).to.equal('https://wxs.ign.fr/my-api-key/geoportail/wfs');
+        expect(client.getUrl()).to.equal('https://data.geopf.fr/wfs/ows');
     });
 
     it('should use "the_geom" as default value for defaultGeomFieldName', function () {

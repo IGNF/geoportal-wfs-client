@@ -12,9 +12,7 @@ var constants = require('./internal/constants.js');
  */
 var Client = function (options) {
     // should be removed to allow user/password?
-    if (typeof options.apiKey === 'undefined') throw new Error('Required param: apiKey');
-    this.url = options.url || 'https://wxs.ign.fr/{apiKey}/geoportail/wfs';
-    this.apiKey = options.apiKey || null;
+    this.url = options.url || 'https://data.geopf.fr/wfs/ows';
     this.headers = options.headers || {};
     /* allows to use WFS with different naming convention */
     this.defaultGeomFieldName = options.defaultGeomFieldName || constants.defaultGeomFieldName;
@@ -25,7 +23,7 @@ var Client = function (options) {
  * Get WFS URL
  */
 Client.prototype.getUrl = function () {
-    return this.url.replace('{apiKey}', this.apiKey);
+    return this.url;
 };
 
 
@@ -80,12 +78,11 @@ Client.prototype.getTypeNames = function () {
  * @param {array}  [params._propertyNames] restrict a GetFeature request by properties
  * @param {object} [params.geom] search geometry intersecting the resulting features.
  * @param {object} [params.bbox] search bbox intersecting the resulting features.
- * @param {string} [defaultGeomFieldName="the_geom"] name of the geometry column by default
- * @param {string} [defaultCRS="urn:ogc:def:crs:EPSG::4326"] default data CRS (required in cql_filter)
+ * @param {string} [method="post"] request method to getFeatures
  *
  * @return {Promise}
  */
-Client.prototype.getFeatures = function (typeName, params) {
+Client.prototype.getFeatures = function (typeName, params, method = 'post') {
     var params = params || {};
 
     var headers = this.getDefaultHeaders();
@@ -111,26 +108,55 @@ Client.prototype.getFeatures = function (typeName, params) {
     /*
      * bbox and attribute filter as POST parameter
      */
-    var cql_filter = buildCqlFilter(params,this.defaultGeomFieldName,this.defaultCRS);
-    var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
-    return httpClient.post(this.getUrl(), body, {
-        params: queryParams,
-        headers: headers,
-        responseType: 'text',
-        transformResponse: function (body) {
-            try {
-                return JSON.parse(body);
-            } catch (err) {
-                // forward xml errors
-                throw {
-                    'type': 'error',
-                    'message': body
-                };
+    var cql_filter = buildCqlFilter(params, this.defaultGeomFieldName, this.defaultCRS);
+
+    if ('post' == method.toLowerCase()) {
+        var body = (cql_filter !== null) ? 'cql_filter=' + encodeURI(cql_filter) : '';
+        return httpClient.post(this.getUrl(), body, {
+            params: queryParams,
+            headers: headers,
+            responseType: 'text',
+            transformResponse: function (body) {
+                try {
+                    return JSON.parse(body);
+                } catch (err) {
+                    // forward xml errors
+                    throw {
+                        'type': 'error',
+                        'message': body
+                    };
+                }
             }
+        }).then(function (response) {
+            return response.data;
+        });
+    }
+
+    if ('get' == method.toLowerCase()) {
+        if (cql_filter !== null) {
+            queryParams['cql_filter'] = cql_filter;
         }
-    }).then(function (response) {
-        return response.data;
-    });
+
+        return httpClient.get(this.getUrl(), {
+            params: queryParams,
+            headers: headers,
+            responseType: 'text',
+            transformResponse: function (body) {
+                try {
+                    return JSON.parse(body);
+                } catch (err) {
+                    // forward xml errors
+                    throw {
+                        'type': 'error',
+                        'message': body
+                    };
+                }
+            }
+        }).then(function (response) {
+            return response.data;
+        });
+    }
+
 };
 
 module.exports = Client;

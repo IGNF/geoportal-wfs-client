@@ -4,7 +4,6 @@ const Client = require('../../src/Client');
 const config = require('../config');
 
 const client = new Client({
-    'apiKey': config.GEOPORTAL_API_KEY,
     'url': config.GEOPORTAL_WFS_URL,
     'referer': config.GEOPORTAL_REFERER
 });
@@ -20,13 +19,17 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
     it('should throw a nice error getFeatures("TYPE_NOT_FOUND")', async function () {
         try {
             await client.getFeatures('TYPE_NOT_FOUND');
-        }catch(e){
+        } catch (e) {
             expect(e).to.be.an('object');
             expect(e).to.have.property('type');
             expect(e.type).to.equal('error');
             expect(e).to.have.property('message');
             expect(e.message).to.equal(
-                '<ExceptionReport><Exception exceptionCode="MissingRights">No rights for this ressource or ressource does not exist</Exception></ExceptionReport>'
+                '<?xml version="1.0" encoding="UTF-8"?><ows:ExceptionReport xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.0.0" xsi:schemaLocation="http://www.opengis.net/ows/1.1 https://data.geopf.fr/wfs/schemas/ows/1.1.0/owsAll.xsd">\n'
+                + '<ows:Exception exceptionCode="InvalidParameterValue" locator="typeName">\n'
+                + '<ows:ExceptionText>Feature type :TYPE_NOT_FOUND unknown</ows:ExceptionText>\n'
+                + '</ows:Exception>\n'
+                + '</ows:ExceptionReport>\n'
             );
         }
     });
@@ -60,6 +63,7 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
 
     it('should work with a "large" geometry ', async function () {
         const filterGeom = require('../data/filter-geom-01.json');
+        client.defaultGeomFieldName = 'geom';
         var featureCollection = await client.getFeatures(
             'CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle',
             {
@@ -87,7 +91,7 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
             'CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle',
             {
                 'code_insee': '25349',
-                '_propertyNames': ['numero','feuille']
+                '_propertyNames': ['numero', 'feuille']
             }
         );
 
