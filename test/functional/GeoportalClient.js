@@ -18,7 +18,7 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
 
     it('should throw a nice error getFeatures("TYPE_NOT_FOUND")', async function () {
         try {
-            await client.getFeatures('TYPE_NOT_FOUND');
+            await client.getFeatures('TYPE_NOT_FOUND', [], 'get');
         } catch (e) {
             expect(e).to.be.an('object');
             expect(e).to.have.property('type');
@@ -55,7 +55,7 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
             {
                 'code_insee': '25349',
                 '_limit': 1
-            }
+            }, 'get'
         );
         expect(featureCollection).to.have.property('type');
         expect(featureCollection['type']).to.equal('FeatureCollection');
@@ -69,7 +69,8 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
             {
                 'geom': filterGeom,
                 '_limit': 10
-            }
+            },
+            'get'
         );
 
         expect(featureCollection).to.have.property('type');
@@ -92,7 +93,8 @@ describe(`Functional tests on ${config.GEOPORTAL_WFS_URL}`, function () {
             {
                 'code_insee': '25349',
                 '_propertyNames': ['numero', 'feuille']
-            }
+            },
+            'get'
         );
 
         featureCollection['features'].map(feature => {
