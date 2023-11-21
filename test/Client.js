@@ -1,7 +1,5 @@
-const expect = require('chai').expect;
-
-const Client = require('../src/Client');
-
+import { expect } from 'chai';
+import Client from '../src/Client.js';
 
 
 describe('test Client', function () {

@@ -1,14 +1,14 @@
 
-var WKT = require('terraformer-wkt-parser');
-var flip = require('@turf/flip');
-var constants = require('./constants.js');
+import WKT from 'terraformer-wkt-parser';
+import flip from '@turf/flip';
+import constants from './constants.js';
+import proj4  from 'proj4';
+import { coordEach } from '@turf/meta';
 
-const proj4 = require('proj4');
 proj4.defs('EPSG:4326','+proj=longlat +datum=WGS84 +no_defs');
 proj4.defs('EPSG:2154','+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
 proj4.defs('EPSG:3857','+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs');
 
-const meta = require('@turf/meta');
 
 /*
  * WARNING: Despite the use of WGS84, you need to do a flip on the coordinates
@@ -21,7 +21,7 @@ const meta = require('@turf/meta');
  * @returns {number[]}
  */
 function parseBoundingBox(bbox) {
-    if (typeof bbox !== 'string') {
+    if ('string' !== typeof bbox) {
         return bbox;
     }
     return bbox.replace(/'/g, '').split(',');
@@ -60,15 +60,15 @@ function buildCqlFilter(params, geomFieldName,geomDefaultCRS) {
     var parts = [];
     for (var name in params) {
         // ignore _limit, _start, etc.
-        if (name.charAt(0) === '_') {
+        if ('_' === name.charAt(0)) {
             continue;
         }
 
-        if (name == 'bbox') {
+        if ('bbox' == name) {
             parts.push(bboxToFilter(params['bbox'], geomFieldName));
-        } else if (name == 'geom') {
+        } else if ('geom' == name) {
             var geom = params[name];
-            if (typeof geom !== 'object') {
+            if ('object' !== typeof geom) {
                 geom = JSON.parse(geom);
             }
             if(geomDefaultCRS != constants.defaultCRS) {
@@ -76,7 +76,7 @@ function buildCqlFilter(params, geomFieldName,geomDefaultCRS) {
 
                 const transform = proj4('EPSG:4326',geomDefaultCRS);
 
-                meta.coordEach(input,function(c){
+                coordEach(input,function(c){
                     let newC = transform.forward(c);
                     c[0] = newC[0];
                     c[1] = newC[1];
@@ -93,12 +93,10 @@ function buildCqlFilter(params, geomFieldName,geomDefaultCRS) {
             parts.push(name + '=\'' + params[name] + '\'');
         }
     }
-    if (parts.length === 0) {
+    if (0 === parts.length) {
         return null;
     }
     return parts.join(' and ');
 }
 
-
-module.exports = buildCqlFilter;
-
+export default buildCqlFilter;

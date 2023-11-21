@@ -27,7 +27,6 @@ Voir [demo/parcelle.html](https://ignf.github.io/geoportal-wfs-client/demo/parce
 
 ## Construction du client
 
-En prenant par exemple `GEOPORTAL_API_KEY='parcellaire'`
 
 ### En contexte NodeJS
 

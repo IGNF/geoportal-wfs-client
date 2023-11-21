@@ -16,7 +16,11 @@
             "unix"
         ],
         "semi": [
-            2,
+            "error",
+            "always"
+        ],
+        "yoda": [
+            "error",
             "always"
         ],
         "no-console": [
@@ -29,7 +33,11 @@
         "jest": true
     },
     "parserOptions": {
-        "ecmaVersion": 8
+        "ecmaVersion": 2020,
+        "sourceType": "module"
     },
-    "extends": "eslint:recommended"
+    "extends": "eslint:recommended",
+    "ignorePatterns": [
+        "dist/*"
+    ]
 }

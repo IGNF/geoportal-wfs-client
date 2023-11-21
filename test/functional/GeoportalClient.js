@@ -1,7 +1,11 @@
-const expect = require('chai').expect;
-const Client = require('../../src/Client');
+import { expect } from 'chai';
+import Client from '../../src/Client.js';
+import config from '../config.js';
 
-const config = require('../config');
+
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
 
 const client = new Client({
     'url': config.GEOPORTAL_WFS_URL,

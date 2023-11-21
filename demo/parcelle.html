@@ -17,7 +17,7 @@
         integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
         crossorigin=""></script>
 
-    <script src="../dist/geoportal-wfs-client.min.js"></script>
+    <script src="../dist/geoportal-wfs-client.js"></script>
 </head>
 
 <body>
@@ -47,9 +47,7 @@
         }).addTo(map);
 
         /* création du client WFS pour les flux parcellaire */
-        var wfsClient = new GeoportalWfsClient({
-            apiKey: "parcellaire"
-        });
+        var wfsClient = new GeoportalWfsClient({ defaultGeomFieldName: 'geom' });
 
         /* utilitaire d'affichage d'une popup */
         var popup = L.popup();
@@ -76,7 +74,8 @@
             /* recherche WFS */
             wfsClient.getFeatures(
                 'CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle',
-                filter
+                filter,
+                'get'
             ).then(function(geojson){
                 /* affichage de la popup */
                 const message = geojson.features.length == 0 ? 'Parcelle non trouvée' : 'Parcelle '+geojson.features[0].properties.idu

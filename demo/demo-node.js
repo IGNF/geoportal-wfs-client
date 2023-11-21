@@ -2,12 +2,8 @@ const Client = require('../index');
 
 const fs = require('fs');
 
-const GEOPORTAL_API_KEY = 'parcellaire';
-
 async function main(){
-    var client = new Client({
-        apiKey: GEOPORTAL_API_KEY
-    });
+    var client = new Client({});
 
     /* récupération des types disponibles pour la clé */
     console.log("-- client.getTypeNames() ...");
@@ -22,7 +18,8 @@ async function main(){
     console.log(`-- client.getFeatures('CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle',${JSON.stringify(params)}) -> parcelles-25349-0A.json`)
     const featureCollection = await client.getFeatures(
         'CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle',
-        params
+        params,
+        'get'
     );
 
     /* sauvegarde des parcelles dans parcelles-25349-0A.json */

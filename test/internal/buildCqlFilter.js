@@ -1,6 +1,5 @@
-const expect = require('chai').expect;
-
-const buildCqlFilter = require('../../src/internal/buildCqlFilter');
+import { expect } from 'chai';
+import buildCqlFilter from '../../src/internal/buildCqlFilter.js';
 
 describe('test buildCqlFilter', function () {
 

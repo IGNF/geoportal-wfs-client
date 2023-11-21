@@ -1,4 +1,6 @@
-const axios = require('axios');
+import axios from 'axios';
+import  { HttpProxyAgent }  from 'http-proxy-agent';
+import  { HttpsProxyAgent } from 'https-proxy-agent';
 
 const axiosGlobalConfig = {};
 
@@ -6,12 +8,10 @@ const axiosGlobalConfig = {};
  * NodeJS specific code to allow https throw http proxy with axios
  * (fixes https://github.com/IGNF/geoportal-wfs-client/issues/5)
  */
-if (typeof window === 'undefined' ){
-    const HttpProxyAgent = require('http-proxy-agent');
+if ('undefined' === typeof window ){
     if ( process.env.HTTP_PROXY ){
         axiosGlobalConfig.httpAgent = new HttpProxyAgent(process.env.HTTP_PROXY);
     }
-    const HttpsProxyAgent = require('https-proxy-agent');
     if ( process.env.HTTPS_PROXY ){
         axiosGlobalConfig.httpsAgent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
     }
@@ -19,7 +19,5 @@ if (typeof window === 'undefined' ){
 }
 
 const httpClient = axios.create(axiosGlobalConfig);
-module.exports = httpClient;
 
-
-
+export default httpClient;

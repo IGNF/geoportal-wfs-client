@@ -7,8 +7,7 @@ const GEOPORTAL_WFS_URL = process.env.GEOPORTAL_WFS_URL || 'https://data.geopf.f
 
 const config = {
     GEOPORTAL_WFS_URL: GEOPORTAL_WFS_URL,
-    GEOPORTAL_API_KEY: 'choisirgeoportail',
     GEOPORTAL_REFERER: 'http://localhost'
 };
 
-module.exports = config;
+export default config;
