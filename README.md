@@ -23,7 +23,7 @@ La bibliothèque génère des requêtes WFS (GetCapabilities et GetFeatures avec
 
 ## Démonstration
 
-Voir [demo/parcelle.html](https://ignf.github.io/geoportal-wfs-client/demo/parcelle.html) qui illustre la récupération et l'affichage d'une parcelle au clic sur une carte leaflet.
+Voir [public/parcelle.html](https://ignf.github.io/geoportal-wfs-client/public/parcelle.html) qui illustre la récupération et l'affichage d'une parcelle au clic sur une carte leaflet.
 
 ## Construction du client
 
@@ -116,7 +116,7 @@ client.getFeatures("CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle", params, 'get
 ;
 ```
 
-Exemple de résultat : [parcelles-25349-0A.json](demo/parcelles-25349-0A.json)
+Exemple de résultat : [parcelles-25349-0A.json](public/parcelles-25349-0A.json)
 
 ### Détails sur params
 
