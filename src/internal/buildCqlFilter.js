@@ -90,7 +90,10 @@ function buildCqlFilter(params, geomFieldName,geomDefaultCRS) {
             let wkt = WKT.convert(geom);
             parts.push('INTERSECTS(' + geomFieldName + ',' + wkt + ')');
         } else {
-            parts.push(name + '=\'' + params[name] + '\'');
+            if (Array.isArray(params[name]))
+                parts.push(name + ' IN (\'' + params[name].join('\',\'') + '\')');
+            else
+                parts.push(name + '=\'' + params[name] + '\'');
         }
     }
     if (0 === parts.length) {
