@@ -1,7 +1,7 @@
 # geoportal-wfs-client
 
 ![Build Status](https://github.com/IGNF/geoportal-wfs-client/actions/workflows/node.js.yml/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/IGNF/geoportal-wfs-client/badge.svg?branch=master)](https://coveralls.io/github/IGNF/geoportal-wfs-client?branch=master)
+
 
 ## Description
 
