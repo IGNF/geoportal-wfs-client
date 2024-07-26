@@ -43252,6 +43252,60 @@ class Client {
     }
 
     /**
+	 * Get description of features for a given type
+	 * @param {string} typeName - name of type
+	 * 
+	 * @return {Promise}
+	 */
+    getDescribeFeatureType(typeName) {
+
+        var headers = this.getDefaultHeaders();
+        headers['Accept'] = 'application/json';
+
+        var queryParams = this.getDefaultParams();
+        queryParams['request'] = 'DescribeFeatureType';
+        queryParams['typename'] = typeName;
+        queryParams['outputFormat'] = 'application/json';
+
+        return internal_httpClient.get(this.getUrl(), {
+            params: queryParams,
+            headers: headers,
+            responseType: 'text',
+            transformResponse: function (body) {
+                try {
+                    return JSON.parse(body);
+                } catch (err) {
+                    // forward xml errors
+                    throw {
+                        'type': 'error',
+                        'message': body
+                    };
+                }
+            }
+        }).then(function (response) {
+            return response.data;
+        });
+    }
+
+    /**
+    * GetCapabilities
+    * @returns {Promise}
+    */
+    getCapabilities() {
+        var headers = this.getDefaultHeaders();
+
+            var queryParams = this.getDefaultParams();
+            queryParams['request'] = 'GetCapabilities';
+            return internal_httpClient.get(this.getUrl(), {
+                params: queryParams,
+                headers: headers,
+                responseType: 'text'
+            }).then(function (response) {
+                return response.data;
+            });
+    };
+
+    /**
      * Get features for a given type
      *
      * @param {string} typeName - name of type
