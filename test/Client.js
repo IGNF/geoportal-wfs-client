@@ -34,12 +34,12 @@ describe('test Client', function () {
         expect(client.defaultCRS).to.equal('urn:ogc:def:crs:EPSG::4326');
     });
 
-    it('should rtodo', async function () {
+    it('should return the description of a feature of the layer', async function () {
         let client = new Client({
             apiKey: 'my-api-key'
         });
 
-        var featureTypeDescription = await client.getDescribeFeatureType('CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle');
+        let featureTypeDescription = await client.getDescribeFeatureType('CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle');
 
         expect(featureTypeDescription).to.be.an('object');
         expect(featureTypeDescription).to.have.all.keys(['targetNamespace', 'elementFormDefault', 'targetPrefix', 'featureTypes']);
@@ -57,5 +57,16 @@ describe('test Client', function () {
         expect(featureTypeDescription.featureTypes[0].properties[0]).to.have.all.keys(['name', 'maxOccurs', 'minOccurs', 'nillable', 'type', 'localType']);
     });
 
+    it('should return xml string from getCapabilities', async function () {
+        let client = new Client({
+            apiKey: 'my-api-key'
+        });
+
+        let getCapabilitiesData = await client.getCapabilities();
+        expect(getCapabilitiesData).to.be.an('string');
+        expect(getCapabilitiesData).to.have.string('<?xml');
+        expect(getCapabilitiesData).to.have.string('<wfs:WFS_Capabilities');
+        expect(getCapabilitiesData).to.have.string('</wfs:WFS_Capabilities>');
+    });
 });
 

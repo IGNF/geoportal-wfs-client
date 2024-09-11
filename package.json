@@ -16,8 +16,8 @@
     "watch": "webpack --watch --mode development",
     "build": "webpack --mode production",
     "test": "c8 --reporter=html --reporter=text --reporter=cobertura mocha",
-    "check-style": "eslint src/**/*.js test/**/*.js",
-    "fix-style": "eslint src/**/*.js test/**/*.js --fix"
+    "check-style": "eslint src/**/*.js test/**/*.js test/*.js",
+    "fix-style": "eslint src/**/*.js test/**/*.js  test/*.js --fix"
   },
   "author": "IGNF",
   "license": "CECILL-B",
