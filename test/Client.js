@@ -34,5 +34,28 @@ describe('test Client', function () {
         expect(client.defaultCRS).to.equal('urn:ogc:def:crs:EPSG::4326');
     });
 
+    it('should rtodo', async function () {
+        let client = new Client({
+            apiKey: 'my-api-key'
+        });
+
+        var featureTypeDescription = await client.getDescribeFeatureType('CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle');
+
+        expect(featureTypeDescription).to.be.an('object');
+        expect(featureTypeDescription).to.have.all.keys(['targetNamespace', 'elementFormDefault', 'targetPrefix', 'featureTypes']);
+        expect(featureTypeDescription.elementFormDefault).to.equal('qualified');
+        expect(featureTypeDescription.targetNamespace).to.equal('http://CADASTRALPARCELS.PARCELLAIRE_EXPRESS');
+        expect(featureTypeDescription.targetPrefix).to.equal('CADASTRALPARCELS.PARCELLAIRE_EXPRESS');
+        expect(featureTypeDescription.featureTypes).to.be.an('array');
+
+        expect(featureTypeDescription.featureTypes[0]).to.have.all.keys(['typeName', 'properties']);
+        expect(featureTypeDescription.featureTypes[0].typeName).to.equal('parcelle');
+
+        expect(featureTypeDescription.featureTypes[0].properties).to.be.an('array');
+
+        expect(featureTypeDescription.featureTypes[0].properties[0]).to.be.an('object');
+        expect(featureTypeDescription.featureTypes[0].properties[0]).to.have.all.keys(['name', 'maxOccurs', 'minOccurs', 'nillable', 'type', 'localType']);
+    });
+
 });
 
