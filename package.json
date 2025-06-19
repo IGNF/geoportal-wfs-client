@@ -24,8 +24,6 @@
   "contributors": [
     "Mickaël Borne <mborne@users.noreply.github.com>",
     "Vincent Sagniez <vinsag@users.noreply.github.com>",
-    "Florian Cerizay <floriancerizay@users.noreply.github.com>",
-    "Clément Gimazane <cgimazane@users.noreply.github.com>"
   ],
   "dependencies": {
     "@turf/flip": "^6.5.0",
