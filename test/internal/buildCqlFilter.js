@@ -71,6 +71,18 @@ describe('test buildCqlFilter', function () {
         expect(result).to.equals(expected);
     });
 
+    it('should encode "geom" (GeoJSON) as "intersects" with coordinate swapping (MultiPoint)', function () {
+        var input = {
+            'geom': {
+                'type': 'MultiPoint',
+                'coordinates': [[3.0, 4.0]]
+            }
+        };
+        var expected = 'INTERSECTS(the_geom,MULTIPOINT ((4 3)))';
+        var result = buildCqlFilter(input);
+        expect(result).to.equals(expected);
+    });
+
     it('should encode "geom" (GeoJSON string) as "intersects" with coordinate swapping', function () {
         var input = {
             'geom': JSON.stringify({

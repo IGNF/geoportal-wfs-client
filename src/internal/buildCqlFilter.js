@@ -87,7 +87,14 @@ function buildCqlFilter(params, geomFieldName, geomDefaultCRS) {
             if (geomDefaultCRS == constants.defaultCRS) {
                 geom = flip(geom);
             }
-            let wkt = WKT.convert(geom);
+
+            let wkt;
+            if ('MultiPoint' == geom.type) {
+                wkt = getMultiPointWKT(geom);
+            } else {
+                wkt = WKT.convert(geom);
+            }
+
             parts.push('INTERSECTS(' + geomFieldName + ',' + wkt + ')');
         } else {
             if (Array.isArray(params[name])) {
@@ -102,6 +109,42 @@ function buildCqlFilter(params, geomFieldName, geomDefaultCRS) {
         return null;
     }
     return parts.join(' and ');
+}
+
+function getMultiPointWKT(geom) {
+    let wkt = 'MULTIPOINT ';
+
+    if (geom.coordinates === undefined || 0 === geom.coordinates.length || 0 === geom.coordinates[0].length) {
+        wkt += 'EMPTY';
+
+        return wkt;
+    } else if (3 === geom.coordinates[0].length) {
+        if (geom.properties && true === geom.properties.m) {
+            wkt += 'M ';
+        } else {
+            wkt += 'Z ';
+        }
+    } else if (4 === geom.coordinates[0].length) {
+        wkt += 'ZM ';
+    }
+
+    let wktCoords = [];
+
+    for (let i in geom.coordinates) {
+        wktCoords.push(geom.coordinates[i].join(' '));
+    }
+
+    wkt += '(';
+
+    for (let i in wktCoords) {
+        wkt += '(' + wktCoords[i] + '),';
+    }
+
+    wkt = wkt.replace(/,$/, '');
+
+    wkt += ')';
+
+    return wkt;
 }
 
 export default buildCqlFilter;
