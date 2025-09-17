@@ -23,7 +23,7 @@
   "license": "CECILL-B",
   "contributors": [
     "Mickaël Borne <mborne@users.noreply.github.com>",
-    "Vincent Sagniez <vinsag@users.noreply.github.com>",
+    "Vincent Sagniez <vinsag@users.noreply.github.com>"
   ],
   "dependencies": {
     "@turf/flip": "^6.5.0",

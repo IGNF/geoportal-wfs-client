@@ -5499,7 +5499,7 @@ var _require2 = __webpack_require__(537),
 var _require$types = (__webpack_require__(537).types),
   isPromise = _require$types.isPromise,
   isRegExp = _require$types.isRegExp;
-var objectAssign = __webpack_require__(1514)();
+var objectAssign = __webpack_require__(9133)();
 var objectIs = __webpack_require__(9394)();
 var RegExpPrototypeTest = __webpack_require__(8075)('RegExp.prototype.test');
 var errorCache = new Map();
@@ -9605,6 +9605,101 @@ module.exports = {
 
 /***/ }),
 
+/***/ 3144:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var bind = __webpack_require__(6743);
+
+var $apply = __webpack_require__(1002);
+var $call = __webpack_require__(76);
+var $reflectApply = __webpack_require__(7119);
+
+/** @type {import('./actualApply')} */
+module.exports = $reflectApply || bind.call($call, $apply);
+
+
+/***/ }),
+
+/***/ 2205:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var bind = __webpack_require__(6743);
+var $apply = __webpack_require__(1002);
+var actualApply = __webpack_require__(3144);
+
+/** @type {import('./applyBind')} */
+module.exports = function applyBind() {
+	return actualApply(bind, $apply, arguments);
+};
+
+
+/***/ }),
+
+/***/ 1002:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./functionApply')} */
+module.exports = Function.prototype.apply;
+
+
+/***/ }),
+
+/***/ 76:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./functionCall')} */
+module.exports = Function.prototype.call;
+
+
+/***/ }),
+
+/***/ 3126:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var bind = __webpack_require__(6743);
+var $TypeError = __webpack_require__(9675);
+
+var $call = __webpack_require__(76);
+var $actualApply = __webpack_require__(3144);
+
+/** @type {(args: [Function, thisArg?: unknown, ...args: unknown[]]) => Function} TODO FIXME, find a way to use import('.') */
+module.exports = function callBindBasic(args) {
+	if (args.length < 1 || typeof args[0] !== 'function') {
+		throw new $TypeError('a function is required');
+	}
+	return $actualApply(bind, $call, args);
+};
+
+
+/***/ }),
+
+/***/ 7119:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./reflectApply')} */
+module.exports = typeof Reflect !== 'undefined' && Reflect && Reflect.apply;
+
+
+/***/ }),
+
 /***/ 8075:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -9634,41 +9729,21 @@ module.exports = function callBoundIntrinsic(name, allowMissing) {
 "use strict";
 
 
-var bind = __webpack_require__(6743);
-var GetIntrinsic = __webpack_require__(453);
 var setFunctionLength = __webpack_require__(6897);
 
-var $TypeError = GetIntrinsic('%TypeError%');
-var $apply = GetIntrinsic('%Function.prototype.apply%');
-var $call = GetIntrinsic('%Function.prototype.call%');
-var $reflectApply = GetIntrinsic('%Reflect.apply%', true) || bind.call($call, $apply);
+var $defineProperty = __webpack_require__(655);
 
-var $defineProperty = GetIntrinsic('%Object.defineProperty%', true);
-var $max = GetIntrinsic('%Math.max%');
-
-if ($defineProperty) {
-	try {
-		$defineProperty({}, 'a', { value: 1 });
-	} catch (e) {
-		// IE 8 has a broken defineProperty
-		$defineProperty = null;
-	}
-}
+var callBindBasic = __webpack_require__(3126);
+var applyBind = __webpack_require__(2205);
 
 module.exports = function callBind(originalFunction) {
-	if (typeof originalFunction !== 'function') {
-		throw new $TypeError('a function is required');
-	}
-	var func = $reflectApply(bind, $call, arguments);
+	var func = callBindBasic(arguments);
+	var adjustedLength = originalFunction.length - (arguments.length - 1);
 	return setFunctionLength(
 		func,
-		1 + $max(0, originalFunction.length - (arguments.length - 1)),
+		1 + (adjustedLength > 0 ? adjustedLength : 0),
 		true
 	);
-};
-
-var applyBind = function applyBind() {
-	return $reflectApply(bind, $apply, arguments);
 };
 
 if ($defineProperty) {
@@ -9676,6 +9751,33 @@ if ($defineProperty) {
 } else {
 	module.exports.apply = applyBind;
 }
+
+
+/***/ }),
+
+/***/ 6556:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var GetIntrinsic = __webpack_require__(453);
+
+var callBindBasic = __webpack_require__(3126);
+
+/** @type {(thisArg: string, searchString: string, position?: number) => number} */
+var $indexOf = callBindBasic([GetIntrinsic('%String.prototype.indexOf%')]);
+
+/** @type {import('.')} */
+module.exports = function callBoundIntrinsic(name, allowMissing) {
+	/* eslint no-extra-parens: 0 */
+
+	var intrinsic = /** @type {(this: unknown, ...args: unknown[]) => unknown} */ (GetIntrinsic(name, !!allowMissing));
+	if (typeof intrinsic === 'function' && $indexOf(name, '.prototype.') > -1) {
+		return callBindBasic(/** @type {const} */ ([intrinsic]));
+	}
+	return intrinsic;
+};
 
 
 /***/ }),
@@ -9906,14 +10008,17 @@ function useColors() {
 		return false;
 	}
 
+	let m;
+
 	// Is webkit? http://stackoverflow.com/a/16459606/376773
 	// document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
+	// eslint-disable-next-line no-return-assign
 	return (typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
 		// Is firebug? http://stackoverflow.com/a/398120/376773
 		(typeof window !== 'undefined' && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
 		// Is firefox >= v31?
 		// https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-		(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
+		(typeof navigator !== 'undefined' && navigator.userAgent && (m = navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/)) && parseInt(m[1], 10) >= 31) ||
 		// Double check webkit in userAgent just in case we are in a worker
 		(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
 }
@@ -9997,7 +10102,7 @@ function save(namespaces) {
 function load() {
 	let r;
 	try {
-		r = exports.storage.getItem('debug');
+		r = exports.storage.getItem('debug') || exports.storage.getItem('DEBUG') ;
 	} catch (error) {
 		// Swallow
 		// XXX (@Qix-) should we be logging these?
@@ -10224,24 +10329,62 @@ function setup(env) {
 		createDebug.names = [];
 		createDebug.skips = [];
 
-		let i;
-		const split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
-		const len = split.length;
+		const split = (typeof namespaces === 'string' ? namespaces : '')
+			.trim()
+			.replace(/\s+/g, ',')
+			.split(',')
+			.filter(Boolean);
 
-		for (i = 0; i < len; i++) {
-			if (!split[i]) {
-				// ignore empty strings
-				continue;
-			}
-
-			namespaces = split[i].replace(/\*/g, '.*?');
-
-			if (namespaces[0] === '-') {
-				createDebug.skips.push(new RegExp('^' + namespaces.slice(1) + '$'));
+		for (const ns of split) {
+			if (ns[0] === '-') {
+				createDebug.skips.push(ns.slice(1));
 			} else {
-				createDebug.names.push(new RegExp('^' + namespaces + '$'));
+				createDebug.names.push(ns);
 			}
 		}
+	}
+
+	/**
+	 * Checks if the given string matches a namespace template, honoring
+	 * asterisks as wildcards.
+	 *
+	 * @param {String} search
+	 * @param {String} template
+	 * @return {Boolean}
+	 */
+	function matchesTemplate(search, template) {
+		let searchIndex = 0;
+		let templateIndex = 0;
+		let starIndex = -1;
+		let matchIndex = 0;
+
+		while (searchIndex < search.length) {
+			if (templateIndex < template.length && (template[templateIndex] === search[searchIndex] || template[templateIndex] === '*')) {
+				// Match character or proceed with wildcard
+				if (template[templateIndex] === '*') {
+					starIndex = templateIndex;
+					matchIndex = searchIndex;
+					templateIndex++; // Skip the '*'
+				} else {
+					searchIndex++;
+					templateIndex++;
+				}
+			} else if (starIndex !== -1) { // eslint-disable-line no-negated-condition
+				// Backtrack to the last '*' and try to match more characters
+				templateIndex = starIndex + 1;
+				matchIndex++;
+				searchIndex = matchIndex;
+			} else {
+				return false; // No match
+			}
+		}
+
+		// Handle trailing '*' in template
+		while (templateIndex < template.length && template[templateIndex] === '*') {
+			templateIndex++;
+		}
+
+		return templateIndex === template.length;
 	}
 
 	/**
@@ -10252,8 +10395,8 @@ function setup(env) {
 	*/
 	function disable() {
 		const namespaces = [
-			...createDebug.names.map(toNamespace),
-			...createDebug.skips.map(toNamespace).map(namespace => '-' + namespace)
+			...createDebug.names,
+			...createDebug.skips.map(namespace => '-' + namespace)
 		].join(',');
 		createDebug.enable('');
 		return namespaces;
@@ -10267,39 +10410,19 @@ function setup(env) {
 	* @api public
 	*/
 	function enabled(name) {
-		if (name[name.length - 1] === '*') {
-			return true;
-		}
-
-		let i;
-		let len;
-
-		for (i = 0, len = createDebug.skips.length; i < len; i++) {
-			if (createDebug.skips[i].test(name)) {
+		for (const skip of createDebug.skips) {
+			if (matchesTemplate(name, skip)) {
 				return false;
 			}
 		}
 
-		for (i = 0, len = createDebug.names.length; i < len; i++) {
-			if (createDebug.names[i].test(name)) {
+		for (const ns of createDebug.names) {
+			if (matchesTemplate(name, ns)) {
 				return true;
 			}
 		}
 
 		return false;
-	}
-
-	/**
-	* Convert regexp to namespace
-	*
-	* @param {RegExp} regxep
-	* @return {String} namespace
-	* @api private
-	*/
-	function toNamespace(regexp) {
-		return regexp.toString()
-			.substring(2, regexp.toString().length - 2)
-			.replace(/\.\*\?$/, '*');
 	}
 
 	/**
@@ -10340,26 +10463,14 @@ module.exports = setup;
 "use strict";
 
 
-var hasPropertyDescriptors = __webpack_require__(592)();
+var $defineProperty = __webpack_require__(655);
 
-var GetIntrinsic = __webpack_require__(453);
-
-var $defineProperty = hasPropertyDescriptors && GetIntrinsic('%Object.defineProperty%', true);
-if ($defineProperty) {
-	try {
-		$defineProperty({}, 'a', { value: 1 });
-	} catch (e) {
-		// IE 8 has a broken defineProperty
-		$defineProperty = false;
-	}
-}
-
-var $SyntaxError = GetIntrinsic('%SyntaxError%');
-var $TypeError = GetIntrinsic('%TypeError%');
+var $SyntaxError = __webpack_require__(8068);
+var $TypeError = __webpack_require__(9675);
 
 var gopd = __webpack_require__(5795);
 
-/** @type {(obj: Record<PropertyKey, unknown>, property: PropertyKey, value: unknown, nonEnumerable?: boolean | null, nonWritable?: boolean | null, nonConfigurable?: boolean | null, loose?: boolean) => void} */
+/** @type {import('.')} */
 module.exports = function defineDataProperty(
 	obj,
 	property,
@@ -10461,6 +10572,162 @@ var defineProperties = function (object, map) {
 defineProperties.supportsDescriptors = !!supportsDescriptors;
 
 module.exports = defineProperties;
+
+
+/***/ }),
+
+/***/ 7176:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var callBind = __webpack_require__(3126);
+var gOPD = __webpack_require__(5795);
+
+var hasProtoAccessor;
+try {
+	// eslint-disable-next-line no-extra-parens, no-proto
+	hasProtoAccessor = /** @type {{ __proto__?: typeof Array.prototype }} */ ([]).__proto__ === Array.prototype;
+} catch (e) {
+	if (!e || typeof e !== 'object' || !('code' in e) || e.code !== 'ERR_PROTO_ACCESS') {
+		throw e;
+	}
+}
+
+// eslint-disable-next-line no-extra-parens
+var desc = !!hasProtoAccessor && gOPD && gOPD(Object.prototype, /** @type {keyof typeof Object.prototype} */ ('__proto__'));
+
+var $Object = Object;
+var $getPrototypeOf = $Object.getPrototypeOf;
+
+/** @type {import('./get')} */
+module.exports = desc && typeof desc.get === 'function'
+	? callBind([desc.get])
+	: typeof $getPrototypeOf === 'function'
+		? /** @type {import('./get')} */ function getDunder(value) {
+			// eslint-disable-next-line eqeqeq
+			return $getPrototypeOf(value == null ? value : $Object(value));
+		}
+		: false;
+
+
+/***/ }),
+
+/***/ 655:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('.')} */
+var $defineProperty = Object.defineProperty || false;
+if ($defineProperty) {
+	try {
+		$defineProperty({}, 'a', { value: 1 });
+	} catch (e) {
+		// IE 8 has a broken defineProperty
+		$defineProperty = false;
+	}
+}
+
+module.exports = $defineProperty;
+
+
+/***/ }),
+
+/***/ 1237:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./eval')} */
+module.exports = EvalError;
+
+
+/***/ }),
+
+/***/ 9383:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('.')} */
+module.exports = Error;
+
+
+/***/ }),
+
+/***/ 9290:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./range')} */
+module.exports = RangeError;
+
+
+/***/ }),
+
+/***/ 9538:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./ref')} */
+module.exports = ReferenceError;
+
+
+/***/ }),
+
+/***/ 8068:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./syntax')} */
+module.exports = SyntaxError;
+
+
+/***/ }),
+
+/***/ 9675:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./type')} */
+module.exports = TypeError;
+
+
+/***/ }),
+
+/***/ 5345:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./uri')} */
+module.exports = URIError;
+
+
+/***/ }),
+
+/***/ 9612:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('.')} */
+module.exports = Object;
 
 
 /***/ }),
@@ -10982,6 +11249,7 @@ var isCallable = __webpack_require__(9600);
 var toStr = Object.prototype.toString;
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
+/** @type {<This, A extends readonly unknown[]>(arr: A, iterator: (this: This | void, value: A[number], index: number, arr: A) => void, receiver: This | undefined) => void} */
 var forEachArray = function forEachArray(array, iterator, receiver) {
     for (var i = 0, len = array.length; i < len; i++) {
         if (hasOwnProperty.call(array, i)) {
@@ -10994,6 +11262,7 @@ var forEachArray = function forEachArray(array, iterator, receiver) {
     }
 };
 
+/** @type {<This, S extends string>(string: S, iterator: (this: This | void, value: S[number], index: number, string: S) => void, receiver: This | undefined) => void} */
 var forEachString = function forEachString(string, iterator, receiver) {
     for (var i = 0, len = string.length; i < len; i++) {
         // no such thing as a sparse string.
@@ -11005,6 +11274,7 @@ var forEachString = function forEachString(string, iterator, receiver) {
     }
 };
 
+/** @type {<This, O>(obj: O, iterator: (this: This | void, value: O[keyof O], index: keyof O, obj: O) => void, receiver: This | undefined) => void} */
 var forEachObject = function forEachObject(object, iterator, receiver) {
     for (var k in object) {
         if (hasOwnProperty.call(object, k)) {
@@ -11017,7 +11287,13 @@ var forEachObject = function forEachObject(object, iterator, receiver) {
     }
 };
 
-var forEach = function forEach(list, iterator, thisArg) {
+/** @type {(x: unknown) => x is readonly unknown[]} */
+function isArray(x) {
+    return toStr.call(x) === '[object Array]';
+}
+
+/** @type {import('.')._internal} */
+module.exports = function forEach(list, iterator, thisArg) {
     if (!isCallable(iterator)) {
         throw new TypeError('iterator must be a function');
     }
@@ -11027,7 +11303,7 @@ var forEach = function forEach(list, iterator, thisArg) {
         receiver = thisArg;
     }
 
-    if (toStr.call(list) === '[object Array]') {
+    if (isArray(list)) {
         forEachArray(list, iterator, receiver);
     } else if (typeof list === 'string') {
         forEachString(list, iterator, receiver);
@@ -11035,8 +11311,6 @@ var forEach = function forEach(list, iterator, thisArg) {
         forEachObject(list, iterator, receiver);
     }
 };
-
-module.exports = forEach;
 
 
 /***/ }),
@@ -11154,9 +11428,25 @@ module.exports = Function.prototype.bind || implementation;
 
 var undefined;
 
-var $SyntaxError = SyntaxError;
+var $Object = __webpack_require__(9612);
+
+var $Error = __webpack_require__(9383);
+var $EvalError = __webpack_require__(1237);
+var $RangeError = __webpack_require__(9290);
+var $ReferenceError = __webpack_require__(9538);
+var $SyntaxError = __webpack_require__(8068);
+var $TypeError = __webpack_require__(9675);
+var $URIError = __webpack_require__(5345);
+
+var abs = __webpack_require__(1514);
+var floor = __webpack_require__(8968);
+var max = __webpack_require__(6188);
+var min = __webpack_require__(8002);
+var pow = __webpack_require__(5880);
+var round = __webpack_require__(414);
+var sign = __webpack_require__(3093);
+
 var $Function = Function;
-var $TypeError = TypeError;
 
 // eslint-disable-next-line consistent-return
 var getEvalledConstructor = function (expressionSyntax) {
@@ -11165,14 +11455,8 @@ var getEvalledConstructor = function (expressionSyntax) {
 	} catch (e) {}
 };
 
-var $gOPD = Object.getOwnPropertyDescriptor;
-if ($gOPD) {
-	try {
-		$gOPD({}, '');
-	} catch (e) {
-		$gOPD = null; // this is IE 8, which has a broken gOPD
-	}
-}
+var $gOPD = __webpack_require__(5795);
+var $defineProperty = __webpack_require__(655);
 
 var throwTypeError = function () {
 	throw new $TypeError();
@@ -11195,19 +11479,20 @@ var ThrowTypeError = $gOPD
 	: throwTypeError;
 
 var hasSymbols = __webpack_require__(4039)();
-var hasProto = __webpack_require__(24)();
 
-var getProto = Object.getPrototypeOf || (
-	hasProto
-		? function (x) { return x.__proto__; } // eslint-disable-line no-proto
-		: null
-);
+var getProto = __webpack_require__(3628);
+var $ObjectGPO = __webpack_require__(1064);
+var $ReflectGPO = __webpack_require__(8648);
+
+var $apply = __webpack_require__(1002);
+var $call = __webpack_require__(76);
 
 var needsEval = {};
 
 var TypedArray = typeof Uint8Array === 'undefined' || !getProto ? undefined : getProto(Uint8Array);
 
 var INTRINSICS = {
+	__proto__: null,
 	'%AggregateError%': typeof AggregateError === 'undefined' ? undefined : AggregateError,
 	'%Array%': Array,
 	'%ArrayBuffer%': typeof ArrayBuffer === 'undefined' ? undefined : ArrayBuffer,
@@ -11228,9 +11513,10 @@ var INTRINSICS = {
 	'%decodeURIComponent%': decodeURIComponent,
 	'%encodeURI%': encodeURI,
 	'%encodeURIComponent%': encodeURIComponent,
-	'%Error%': Error,
+	'%Error%': $Error,
 	'%eval%': eval, // eslint-disable-line no-eval
-	'%EvalError%': EvalError,
+	'%EvalError%': $EvalError,
+	'%Float16Array%': typeof Float16Array === 'undefined' ? undefined : Float16Array,
 	'%Float32Array%': typeof Float32Array === 'undefined' ? undefined : Float32Array,
 	'%Float64Array%': typeof Float64Array === 'undefined' ? undefined : Float64Array,
 	'%FinalizationRegistry%': typeof FinalizationRegistry === 'undefined' ? undefined : FinalizationRegistry,
@@ -11247,13 +11533,14 @@ var INTRINSICS = {
 	'%MapIteratorPrototype%': typeof Map === 'undefined' || !hasSymbols || !getProto ? undefined : getProto(new Map()[Symbol.iterator]()),
 	'%Math%': Math,
 	'%Number%': Number,
-	'%Object%': Object,
+	'%Object%': $Object,
+	'%Object.getOwnPropertyDescriptor%': $gOPD,
 	'%parseFloat%': parseFloat,
 	'%parseInt%': parseInt,
 	'%Promise%': typeof Promise === 'undefined' ? undefined : Promise,
 	'%Proxy%': typeof Proxy === 'undefined' ? undefined : Proxy,
-	'%RangeError%': RangeError,
-	'%ReferenceError%': ReferenceError,
+	'%RangeError%': $RangeError,
+	'%ReferenceError%': $ReferenceError,
 	'%Reflect%': typeof Reflect === 'undefined' ? undefined : Reflect,
 	'%RegExp%': RegExp,
 	'%Set%': typeof Set === 'undefined' ? undefined : Set,
@@ -11270,10 +11557,23 @@ var INTRINSICS = {
 	'%Uint8ClampedArray%': typeof Uint8ClampedArray === 'undefined' ? undefined : Uint8ClampedArray,
 	'%Uint16Array%': typeof Uint16Array === 'undefined' ? undefined : Uint16Array,
 	'%Uint32Array%': typeof Uint32Array === 'undefined' ? undefined : Uint32Array,
-	'%URIError%': URIError,
+	'%URIError%': $URIError,
 	'%WeakMap%': typeof WeakMap === 'undefined' ? undefined : WeakMap,
 	'%WeakRef%': typeof WeakRef === 'undefined' ? undefined : WeakRef,
-	'%WeakSet%': typeof WeakSet === 'undefined' ? undefined : WeakSet
+	'%WeakSet%': typeof WeakSet === 'undefined' ? undefined : WeakSet,
+
+	'%Function.prototype.call%': $call,
+	'%Function.prototype.apply%': $apply,
+	'%Object.defineProperty%': $defineProperty,
+	'%Object.getPrototypeOf%': $ObjectGPO,
+	'%Math.abs%': abs,
+	'%Math.floor%': floor,
+	'%Math.max%': max,
+	'%Math.min%': min,
+	'%Math.pow%': pow,
+	'%Math.round%': round,
+	'%Math.sign%': sign,
+	'%Reflect.getPrototypeOf%': $ReflectGPO
 };
 
 if (getProto) {
@@ -11312,6 +11612,7 @@ var doEval = function doEval(name) {
 };
 
 var LEGACY_ALIASES = {
+	__proto__: null,
 	'%ArrayBufferPrototype%': ['ArrayBuffer', 'prototype'],
 	'%ArrayPrototype%': ['Array', 'prototype'],
 	'%ArrayProto_entries%': ['Array', 'prototype', 'entries'],
@@ -11367,11 +11668,11 @@ var LEGACY_ALIASES = {
 
 var bind = __webpack_require__(6743);
 var hasOwn = __webpack_require__(9957);
-var $concat = bind.call(Function.call, Array.prototype.concat);
-var $spliceApply = bind.call(Function.apply, Array.prototype.splice);
-var $replace = bind.call(Function.call, String.prototype.replace);
-var $strSlice = bind.call(Function.call, String.prototype.slice);
-var $exec = bind.call(Function.call, RegExp.prototype.exec);
+var $concat = bind.call($call, Array.prototype.concat);
+var $spliceApply = bind.call($apply, Array.prototype.splice);
+var $replace = bind.call($call, String.prototype.replace);
+var $strSlice = bind.call($call, String.prototype.slice);
+var $exec = bind.call($call, RegExp.prototype.exec);
 
 /* adapted from https://github.com/lodash/lodash/blob/4.17.15/dist/lodash.js#L6735-L6744 */
 var rePropName = /[^%.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|%$))/g;
@@ -11505,15 +11806,87 @@ module.exports = function GetIntrinsic(name, allowMissing) {
 
 /***/ }),
 
+/***/ 1064:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var $Object = __webpack_require__(9612);
+
+/** @type {import('./Object.getPrototypeOf')} */
+module.exports = $Object.getPrototypeOf || null;
+
+
+/***/ }),
+
+/***/ 8648:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./Reflect.getPrototypeOf')} */
+module.exports = (typeof Reflect !== 'undefined' && Reflect.getPrototypeOf) || null;
+
+
+/***/ }),
+
+/***/ 3628:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var reflectGetProto = __webpack_require__(8648);
+var originalGetProto = __webpack_require__(1064);
+
+var getDunderProto = __webpack_require__(7176);
+
+/** @type {import('.')} */
+module.exports = reflectGetProto
+	? function getProto(O) {
+		// @ts-expect-error TS can't narrow inside a closure, for some reason
+		return reflectGetProto(O);
+	}
+	: originalGetProto
+		? function getProto(O) {
+			if (!O || (typeof O !== 'object' && typeof O !== 'function')) {
+				throw new TypeError('getProto: not an object');
+			}
+			// @ts-expect-error TS can't narrow inside a closure, for some reason
+			return originalGetProto(O);
+		}
+		: getDunderProto
+			? function getProto(O) {
+				// @ts-expect-error TS can't narrow inside a closure, for some reason
+				return getDunderProto(O);
+			}
+			: null;
+
+
+/***/ }),
+
+/***/ 6549:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./gOPD')} */
+module.exports = Object.getOwnPropertyDescriptor;
+
+
+/***/ }),
+
 /***/ 5795:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __webpack_require__(453);
-
-var $gOPD = GetIntrinsic('%Object.getOwnPropertyDescriptor%', true);
+/** @type {import('.')} */
+var $gOPD = __webpack_require__(6549);
 
 if ($gOPD) {
 	try {
@@ -11535,26 +11908,15 @@ module.exports = $gOPD;
 "use strict";
 
 
-var GetIntrinsic = __webpack_require__(453);
-
-var $defineProperty = GetIntrinsic('%Object.defineProperty%', true);
+var $defineProperty = __webpack_require__(655);
 
 var hasPropertyDescriptors = function hasPropertyDescriptors() {
-	if ($defineProperty) {
-		try {
-			$defineProperty({}, 'a', { value: 1 });
-			return true;
-		} catch (e) {
-			// IE 8 has a broken defineProperty
-			return false;
-		}
-	}
-	return false;
+	return !!$defineProperty;
 };
 
 hasPropertyDescriptors.hasArrayLengthDefineBug = function hasArrayLengthDefineBug() {
 	// node v0.6 has a bug where array lengths can be Set but not Defined
-	if (!hasPropertyDescriptors()) {
+	if (!$defineProperty) {
 		return null;
 	}
 	try {
@@ -11570,25 +11932,6 @@ module.exports = hasPropertyDescriptors;
 
 /***/ }),
 
-/***/ 24:
-/***/ ((module) => {
-
-"use strict";
-
-
-var test = {
-	foo: {}
-};
-
-var $Object = Object;
-
-module.exports = function hasProto() {
-	return { __proto__: test }.foo === test.foo && !({ __proto__: null } instanceof $Object);
-};
-
-
-/***/ }),
-
 /***/ 4039:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -11598,6 +11941,7 @@ module.exports = function hasProto() {
 var origSymbol = typeof Symbol !== 'undefined' && Symbol;
 var hasSymbolSham = __webpack_require__(1333);
 
+/** @type {import('.')} */
 module.exports = function hasNativeSymbols() {
 	if (typeof origSymbol !== 'function') { return false; }
 	if (typeof Symbol !== 'function') { return false; }
@@ -11616,11 +11960,13 @@ module.exports = function hasNativeSymbols() {
 "use strict";
 
 
+/** @type {import('./shams')} */
 /* eslint complexity: [2, 18], max-statements: [2, 33] */
 module.exports = function hasSymbols() {
 	if (typeof Symbol !== 'function' || typeof Object.getOwnPropertySymbols !== 'function') { return false; }
 	if (typeof Symbol.iterator === 'symbol') { return true; }
 
+	/** @type {{ [k in symbol]?: unknown }} */
 	var obj = {};
 	var sym = Symbol('test');
 	var symObj = Object(sym);
@@ -11639,7 +11985,7 @@ module.exports = function hasSymbols() {
 
 	var symVal = 42;
 	obj[sym] = symVal;
-	for (sym in obj) { return false; } // eslint-disable-line no-restricted-syntax, no-unreachable-loop
+	for (var _ in obj) { return false; } // eslint-disable-line no-restricted-syntax, no-unreachable-loop
 	if (typeof Object.keys === 'function' && Object.keys(obj).length !== 0) { return false; }
 
 	if (typeof Object.getOwnPropertyNames === 'function' && Object.getOwnPropertyNames(obj).length !== 0) { return false; }
@@ -11650,7 +11996,8 @@ module.exports = function hasSymbols() {
 	if (!Object.prototype.propertyIsEnumerable.call(obj, sym)) { return false; }
 
 	if (typeof Object.getOwnPropertyDescriptor === 'function') {
-		var descriptor = Object.getOwnPropertyDescriptor(obj, sym);
+		// eslint-disable-next-line no-extra-parens
+		var descriptor = /** @type {PropertyDescriptor} */ (Object.getOwnPropertyDescriptor(obj, sym));
 		if (descriptor.value !== symVal || descriptor.enumerable !== true) { return false; }
 	}
 
@@ -11668,6 +12015,7 @@ module.exports = function hasSymbols() {
 
 var hasSymbols = __webpack_require__(1333);
 
+/** @type {import('.')} */
 module.exports = function hasToStringTagShams() {
 	return hasSymbols() && !!Symbol.toStringTag;
 };
@@ -11685,7 +12033,7 @@ var call = Function.prototype.call;
 var $hasOwn = Object.prototype.hasOwnProperty;
 var bind = __webpack_require__(6743);
 
-/** @type {(o: {}, p: PropertyKey) => p is keyof o} */
+/** @type {import('.')} */
 module.exports = bind.call(call, $hasOwn);
 
 
@@ -12590,8 +12938,114 @@ module.exports = function shimNumberIsNaN() {
 
 var whichTypedArray = __webpack_require__(5767);
 
+/** @type {import('.')} */
 module.exports = function isTypedArray(value) {
 	return !!whichTypedArray(value);
+};
+
+
+/***/ }),
+
+/***/ 1514:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./abs')} */
+module.exports = Math.abs;
+
+
+/***/ }),
+
+/***/ 8968:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./floor')} */
+module.exports = Math.floor;
+
+
+/***/ }),
+
+/***/ 4459:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./isNaN')} */
+module.exports = Number.isNaN || function isNaN(a) {
+	return a !== a;
+};
+
+
+/***/ }),
+
+/***/ 6188:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./max')} */
+module.exports = Math.max;
+
+
+/***/ }),
+
+/***/ 8002:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./min')} */
+module.exports = Math.min;
+
+
+/***/ }),
+
+/***/ 5880:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./pow')} */
+module.exports = Math.pow;
+
+
+/***/ }),
+
+/***/ 414:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./round')} */
+module.exports = Math.round;
+
+
+/***/ }),
+
+/***/ 3093:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var $isNaN = __webpack_require__(4459);
+
+/** @type {import('./sign')} */
+module.exports = function sign(number) {
+	if ($isNaN(number) || number === 0) {
+		return number;
+	}
+	return number < 0 ? -1 : +1;
 };
 
 
@@ -12625,7 +13079,7 @@ var y = d * 365.25;
  * @api public
  */
 
-module.exports = function(val, options) {
+module.exports = function (val, options) {
   options = options || {};
   var type = typeof val;
   if (type === 'string' && val.length > 0) {
@@ -13671,7 +14125,7 @@ module.exports = function assign(target, source1) {
 
 /***/ }),
 
-/***/ 1514:
+/***/ 9133:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
@@ -13730,6 +14184,31 @@ module.exports = function getPolyfill() {
 	}
 	return Object.assign;
 };
+
+
+/***/ }),
+
+/***/ 6578:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('.')} */
+module.exports = [
+	'Float16Array',
+	'Float32Array',
+	'Float64Array',
+	'Int8Array',
+	'Int16Array',
+	'Int32Array',
+	'Uint8Array',
+	'Uint8ClampedArray',
+	'Uint16Array',
+	'Uint32Array',
+	'BigInt64Array',
+	'BigUint64Array'
+];
 
 
 /***/ }),
@@ -14008,9 +14487,10 @@ var define = __webpack_require__(41);
 var hasDescriptors = __webpack_require__(592)();
 var gOPD = __webpack_require__(5795);
 
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __webpack_require__(9675);
 var $floor = GetIntrinsic('%Math.floor%');
 
+/** @type {import('.')} */
 module.exports = function setFunctionLength(fn, length) {
 	if (typeof fn !== 'function') {
 		throw new $TypeError('`fn` is not a function');
@@ -14035,9 +14515,9 @@ module.exports = function setFunctionLength(fn, length) {
 
 	if (functionLengthIsConfigurable || functionLengthIsWritable || !loose) {
 		if (hasDescriptors) {
-			define(fn, 'length', length, true, true);
+			define(/** @type {Parameters<define>[0]} */ (fn), 'length', length, true, true);
 		} else {
-			define(fn, 'length', length);
+			define(/** @type {Parameters<define>[0]} */ (fn), 'length', length);
 		}
 	}
 	return fn;
@@ -23954,8 +24434,9 @@ exports.callbackify = callbackify;
 var forEach = __webpack_require__(2682);
 var availableTypedArrays = __webpack_require__(9209);
 var callBind = __webpack_require__(487);
-var callBound = __webpack_require__(8075);
+var callBound = __webpack_require__(6556);
 var gOPD = __webpack_require__(5795);
+var getProto = __webpack_require__(3628);
 
 var $toString = callBound('Object.prototype.toString');
 var hasToStringTag = __webpack_require__(9092)();
@@ -23964,8 +24445,8 @@ var g = typeof globalThis === 'undefined' ? __webpack_require__.g : globalThis;
 var typedArrays = availableTypedArrays();
 
 var $slice = callBound('String.prototype.slice');
-var getPrototypeOf = Object.getPrototypeOf; // require('getprototypeof');
 
+/** @type {<T = unknown>(array: readonly T[], value: unknown) => number} */
 var $indexOf = callBound('Array.prototype.indexOf', true) || function indexOf(array, value) {
 	for (var i = 0; i < array.length; i += 1) {
 		if (array[i] === value) {
@@ -23974,17 +24455,23 @@ var $indexOf = callBound('Array.prototype.indexOf', true) || function indexOf(ar
 	}
 	return -1;
 };
+
+/** @typedef {import('./types').Getter} Getter */
+/** @type {import('./types').Cache} */
 var cache = { __proto__: null };
-if (hasToStringTag && gOPD && getPrototypeOf) {
+if (hasToStringTag && gOPD && getProto) {
 	forEach(typedArrays, function (typedArray) {
 		var arr = new g[typedArray]();
-		if (Symbol.toStringTag in arr) {
-			var proto = getPrototypeOf(arr);
+		if (Symbol.toStringTag in arr && getProto) {
+			var proto = getProto(arr);
+			// @ts-expect-error TS won't narrow inside a closure
 			var descriptor = gOPD(proto, Symbol.toStringTag);
-			if (!descriptor) {
-				var superProto = getPrototypeOf(proto);
+			if (!descriptor && proto) {
+				var superProto = getProto(proto);
+				// @ts-expect-error TS won't narrow inside a closure
 				descriptor = gOPD(superProto, Symbol.toStringTag);
 			}
+			// @ts-expect-error TODO: fix
 			cache['$' + typedArray] = callBind(descriptor.get);
 		}
 	});
@@ -23993,41 +24480,59 @@ if (hasToStringTag && gOPD && getPrototypeOf) {
 		var arr = new g[typedArray]();
 		var fn = arr.slice || arr.set;
 		if (fn) {
-			cache['$' + typedArray] = callBind(fn);
+			cache[
+				/** @type {`$${import('.').TypedArrayName}`} */ ('$' + typedArray)
+			] = /** @type {import('./types').BoundSlice | import('./types').BoundSet} */ (
+				// @ts-expect-error TODO FIXME
+				callBind(fn)
+			);
 		}
 	});
 }
 
+/** @type {(value: object) => false | import('.').TypedArrayName} */
 var tryTypedArrays = function tryAllTypedArrays(value) {
-	var found = false;
-	forEach(cache, function (getter, typedArray) {
-		if (!found) {
-			try {
-				if ('$' + getter(value) === typedArray) {
-					found = $slice(typedArray, 1);
-				}
-			} catch (e) { /**/ }
+	/** @type {ReturnType<typeof tryAllTypedArrays>} */ var found = false;
+	forEach(
+		/** @type {Record<`\$${import('.').TypedArrayName}`, Getter>} */ (cache),
+		/** @type {(getter: Getter, name: `\$${import('.').TypedArrayName}`) => void} */
+		function (getter, typedArray) {
+			if (!found) {
+				try {
+					// @ts-expect-error a throw is fine here
+					if ('$' + getter(value) === typedArray) {
+						found = /** @type {import('.').TypedArrayName} */ ($slice(typedArray, 1));
+					}
+				} catch (e) { /**/ }
+			}
 		}
-	});
+	);
 	return found;
 };
 
+/** @type {(value: object) => false | import('.').TypedArrayName} */
 var trySlices = function tryAllSlices(value) {
-	var found = false;
-	forEach(cache, function (getter, name) {
-		if (!found) {
-			try {
-				getter(value);
-				found = $slice(name, 1);
-			} catch (e) { /**/ }
+	/** @type {ReturnType<typeof tryAllSlices>} */ var found = false;
+	forEach(
+		/** @type {Record<`\$${import('.').TypedArrayName}`, Getter>} */(cache),
+		/** @type {(getter: Getter, name: `\$${import('.').TypedArrayName}`) => void} */ function (getter, name) {
+			if (!found) {
+				try {
+					// @ts-expect-error a throw is fine here
+					getter(value);
+					found = /** @type {import('.').TypedArrayName} */ ($slice(name, 1));
+				} catch (e) { /**/ }
+			}
 		}
-	});
+	);
 	return found;
 };
 
+/** @type {import('.')} */
 module.exports = function whichTypedArray(value) {
 	if (!value || typeof value !== 'object') { return false; }
 	if (!hasToStringTag) {
+		/** @type {string} */
 		var tag = $slice($toString(value), 8, -1);
 		if ($indexOf(typedArrays, tag) > -1) {
 			return tag;
@@ -28953,26 +29458,16 @@ function extend() {
 "use strict";
 
 
-var possibleNames = [
-	'BigInt64Array',
-	'BigUint64Array',
-	'Float32Array',
-	'Float64Array',
-	'Int16Array',
-	'Int32Array',
-	'Int8Array',
-	'Uint16Array',
-	'Uint32Array',
-	'Uint8Array',
-	'Uint8ClampedArray'
-];
+var possibleNames = __webpack_require__(6578);
 
 var g = typeof globalThis === 'undefined' ? __webpack_require__.g : globalThis;
 
+/** @type {import('.')} */
 module.exports = function availableTypedArrays() {
-	var out = [];
+	var /** @type {ReturnType<typeof availableTypedArrays>} */ out = [];
 	for (var i = 0; i < possibleNames.length; i++) {
 		if (typeof g[possibleNames[i]] === 'function') {
+			// @ts-expect-error
 			out[out.length] = possibleNames[i];
 		}
 	}
@@ -29102,6 +29597,7 @@ function bind(fn, thisArg) {
 
 const {toString: utils_toString} = Object.prototype;
 const {getPrototypeOf} = Object;
+const {iterator, toStringTag} = Symbol;
 
 const kindOf = (cache => thing => {
     const str = utils_toString.call(thing);
@@ -29228,7 +29724,28 @@ const isPlainObject = (val) => {
   }
 
   const prototype = getPrototypeOf(val);
-  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(Symbol.toStringTag in val) && !(Symbol.iterator in val);
+  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(toStringTag in val) && !(iterator in val);
+}
+
+/**
+ * Determine if a value is an empty object (safely handles Buffers)
+ *
+ * @param {*} val The value to test
+ *
+ * @returns {boolean} True if value is an empty object, otherwise false
+ */
+const isEmptyObject = (val) => {
+  // Early return for non-objects or Buffers to prevent RangeError
+  if (!utils_isObject(val) || isBuffer(val)) {
+    return false;
+  }
+
+  try {
+    return Object.keys(val).length === 0 && Object.getPrototypeOf(val) === Object.prototype;
+  } catch (e) {
+    // Fallback for any other objects that might cause RangeError with Object.keys()
+    return false;
+  }
 }
 
 /**
@@ -29353,6 +29870,11 @@ function forEach(obj, fn, {allOwnKeys = false} = {}) {
       fn.call(null, obj[i], i, obj);
     }
   } else {
+    // Buffer check
+    if (isBuffer(obj)) {
+      return;
+    }
+
     // Iterate over object keys
     const keys = allOwnKeys ? Object.getOwnPropertyNames(obj) : Object.keys(obj);
     const len = keys.length;
@@ -29366,6 +29888,10 @@ function forEach(obj, fn, {allOwnKeys = false} = {}) {
 }
 
 function findKey(obj, key) {
+  if (isBuffer(obj)){
+    return null;
+  }
+
   key = key.toLowerCase();
   const keys = Object.keys(obj);
   let i = keys.length;
@@ -29406,7 +29932,7 @@ const isContextDefined = (context) => !isUndefined(context) && context !== _glob
  * @returns {Object} Result of all merge properties
  */
 function merge(/* obj1, obj2, obj3, ... */) {
-  const {caseless} = isContextDefined(this) && this || {};
+  const {caseless, skipUndefined} = isContextDefined(this) && this || {};
   const result = {};
   const assignValue = (val, key) => {
     const targetKey = caseless && findKey(result, key) || key;
@@ -29416,7 +29942,7 @@ function merge(/* obj1, obj2, obj3, ... */) {
       result[targetKey] = merge({}, val);
     } else if (isArray(val)) {
       result[targetKey] = val.slice();
-    } else {
+    } else if (!skipUndefined || !isUndefined(val)) {
       result[targetKey] = val;
     }
   }
@@ -29579,13 +30105,13 @@ const isTypedArray = (TypedArray => {
  * @returns {void}
  */
 const forEachEntry = (obj, fn) => {
-  const generator = obj && obj[Symbol.iterator];
+  const generator = obj && obj[iterator];
 
-  const iterator = generator.call(obj);
+  const _iterator = generator.call(obj);
 
   let result;
 
-  while ((result = iterator.next()) && !result.done) {
+  while ((result = _iterator.next()) && !result.done) {
     const pair = result.value;
     fn.call(obj, pair[0], pair[1]);
   }
@@ -29698,25 +30224,7 @@ const toFiniteNumber = (value, defaultValue) => {
   return value != null && Number.isFinite(value = +value) ? value : defaultValue;
 }
 
-const ALPHA = 'abcdefghijklmnopqrstuvwxyz'
 
-const DIGIT = '0123456789';
-
-const ALPHABET = {
-  DIGIT,
-  ALPHA,
-  ALPHA_DIGIT: ALPHA + ALPHA.toUpperCase() + DIGIT
-}
-
-const generateString = (size = 16, alphabet = ALPHABET.ALPHA_DIGIT) => {
-  let str = '';
-  const {length} = alphabet;
-  while (size--) {
-    str += alphabet[Math.random() * length|0]
-  }
-
-  return str;
-}
 
 /**
  * If the thing is a FormData object, return true, otherwise return false.
@@ -29726,7 +30234,7 @@ const generateString = (size = 16, alphabet = ALPHABET.ALPHA_DIGIT) => {
  * @returns {boolean}
  */
 function isSpecCompliantForm(thing) {
-  return !!(thing && isFunction(thing.append) && thing[Symbol.toStringTag] === 'FormData' && thing[Symbol.iterator]);
+  return !!(thing && isFunction(thing.append) && thing[toStringTag] === 'FormData' && thing[iterator]);
 }
 
 const toJSONObject = (obj) => {
@@ -29737,6 +30245,11 @@ const toJSONObject = (obj) => {
     if (utils_isObject(source)) {
       if (stack.indexOf(source) >= 0) {
         return;
+      }
+
+      //Buffer check
+      if (isBuffer(source)) {
+        return source;
       }
 
       if(!('toJSON' in source)) {
@@ -29795,6 +30308,10 @@ const asap = typeof queueMicrotask !== 'undefined' ?
 
 // *********************
 
+
+const isIterable = (thing) => thing != null && isFunction(thing[iterator]);
+
+
 /* harmony default export */ const utils = ({
   isArray,
   isArrayBuffer,
@@ -29806,6 +30323,7 @@ const asap = typeof queueMicrotask !== 'undefined' ?
   isBoolean,
   isObject: utils_isObject,
   isPlainObject,
+  isEmptyObject,
   isReadableStream,
   isRequest,
   isResponse,
@@ -29845,14 +30363,13 @@ const asap = typeof queueMicrotask !== 'undefined' ?
   findKey,
   global: _global,
   isContextDefined,
-  ALPHABET,
-  generateString,
   isSpecCompliantForm,
   toJSONObject,
   isAsyncFn,
   isThenable,
   setImmediate: _setImmediate,
-  asap
+  asap,
+  isIterable
 });
 
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/core/AxiosError.js
@@ -29947,11 +30464,18 @@ AxiosError.from = (error, code, config, request, response, customProps) => {
     return prop !== 'isAxiosError';
   });
 
-  AxiosError.call(axiosError, error.message, code, config, request, response);
+  const msg = error && error.message ? error.message : 'Error';
 
-  axiosError.cause = error;
+  // Prefer explicit code; otherwise copy the low-level error's code (e.g. ECONNREFUSED)
+  const errCode = code == null && error ? error.code : code;
+  AxiosError.call(axiosError, msg, errCode, config, request, response);
 
-  axiosError.name = error.name;
+  // Chain the original error on the standard field; non-enumerable to avoid JSON noise
+  if (error && axiosError.cause == null) {
+    Object.defineProperty(axiosError, 'cause', { value: error, configurable: true });
+  }
+
+  axiosError.name = (error && error.name) || 'Error';
 
   customProps && Object.assign(axiosError, customProps);
 
@@ -30086,6 +30610,10 @@ function toFormData(obj, formData, options) {
 
     if (utils.isDate(value)) {
       return value.toISOString();
+    }
+
+    if (utils.isBoolean(value)) {
+      return value.toString();
     }
 
     if (!useBlob && utils.isBlob(value)) {
@@ -30265,9 +30793,7 @@ function buildURL_encode(val) {
     replace(/%3A/gi, ':').
     replace(/%24/g, '$').
     replace(/%2C/gi, ',').
-    replace(/%20/g, '+').
-    replace(/%5B/gi, '[').
-    replace(/%5D/gi, ']');
+    replace(/%20/g, '+');
 }
 
 /**
@@ -30275,7 +30801,7 @@ function buildURL_encode(val) {
  *
  * @param {string} url The base of the url (e.g., http://www.google.com)
  * @param {object} [params] The params to be appended
- * @param {?object} options
+ * @param {?(object|Function)} options
  *
  * @returns {string} The formatted url
  */
@@ -30286,6 +30812,12 @@ function buildURL(url, params, options) {
   }
   
   const _encode = options && options.encode || buildURL_encode;
+
+  if (utils.isFunction(options)) {
+    options = {
+      serialize: options
+    };
+  } 
 
   const serializeFn = options && options.serialize;
 
@@ -30488,7 +31020,7 @@ const origin = hasBrowserEnv && window.location.href || 'http://localhost';
 
 
 function toURLEncodedForm(data, options) {
-  return helpers_toFormData(data, new platform.classes.URLSearchParams(), Object.assign({
+  return helpers_toFormData(data, new platform.classes.URLSearchParams(), {
     visitor: function(value, key, path, helpers) {
       if (platform.isNode && utils.isBuffer(value)) {
         this.append(key, value.toString('base64'));
@@ -30496,8 +31028,9 @@ function toURLEncodedForm(data, options) {
       }
 
       return helpers.defaultVisitor.apply(this, arguments);
-    }
-  }, options));
+    },
+    ...options
+  });
 }
 
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/helpers/formDataToJSON.js
@@ -30711,7 +31244,7 @@ const defaults = {
       const strictJSONParsing = !silentJSONParsing && JSONRequested;
 
       try {
-        return JSON.parse(data);
+        return JSON.parse(data, this.parseReviver);
       } catch (e) {
         if (strictJSONParsing) {
           if (e.name === 'SyntaxError') {
@@ -30920,10 +31453,18 @@ class AxiosHeaders {
       setHeaders(header, valueOrRewrite)
     } else if(utils.isString(header) && (header = header.trim()) && !isValidHeaderName(header)) {
       setHeaders(parseHeaders(header), valueOrRewrite);
-    } else if (utils.isHeaders(header)) {
-      for (const [key, value] of header.entries()) {
-        setHeader(value, key, rewrite);
+    } else if (utils.isObject(header) && utils.isIterable(header)) {
+      let obj = {}, dest, key;
+      for (const entry of header) {
+        if (!utils.isArray(entry)) {
+          throw TypeError('Object iterator must return a key-value pair');
+        }
+
+        obj[key = entry[0]] = (dest = obj[key]) ?
+          (utils.isArray(dest) ? [...dest, entry[1]] : [dest, entry[1]]) : entry[1];
       }
+
+      setHeaders(obj, valueOrRewrite)
     } else {
       header != null && setHeader(valueOrRewrite, header, rewrite);
     }
@@ -31063,6 +31604,10 @@ class AxiosHeaders {
 
   toString() {
     return Object.entries(this.toJSON()).map(([header, value]) => header + ': ' + value).join('\n');
+  }
+
+  getSetCookie() {
+    return this.get("set-cookie") || [];
   }
 
   get [Symbol.toStringTag]() {
@@ -31299,7 +31844,7 @@ function throttle(fn, freq) {
       clearTimeout(timer);
       timer = null;
     }
-    fn.apply(null, args);
+    fn(...args);
   }
 
   const throttled = (...args) => {
@@ -31374,71 +31919,18 @@ const asyncDecorator = (fn) => (...args) => utils.asap(() => fn(...args));
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/helpers/isURLSameOrigin.js
 
 
+/* harmony default export */ const isURLSameOrigin = (platform.hasStandardBrowserEnv ? ((origin, isMSIE) => (url) => {
+  url = new URL(url, platform.origin);
 
-
-
-/* harmony default export */ const isURLSameOrigin = (platform.hasStandardBrowserEnv ?
-
-// Standard browser envs have full support of the APIs needed to test
-// whether the request URL is of the same origin as current location.
-  (function standardBrowserEnv() {
-    const msie = platform.navigator && /(msie|trident)/i.test(platform.navigator.userAgent);
-    const urlParsingNode = document.createElement('a');
-    let originURL;
-
-    /**
-    * Parse a URL to discover its components
-    *
-    * @param {String} url The URL to be parsed
-    * @returns {Object}
-    */
-    function resolveURL(url) {
-      let href = url;
-
-      if (msie) {
-        // IE needs attribute set twice to normalize properties
-        urlParsingNode.setAttribute('href', href);
-        href = urlParsingNode.href;
-      }
-
-      urlParsingNode.setAttribute('href', href);
-
-      // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
-      return {
-        href: urlParsingNode.href,
-        protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
-        host: urlParsingNode.host,
-        search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
-        hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
-        hostname: urlParsingNode.hostname,
-        port: urlParsingNode.port,
-        pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
-          urlParsingNode.pathname :
-          '/' + urlParsingNode.pathname
-      };
-    }
-
-    originURL = resolveURL(window.location.href);
-
-    /**
-    * Determine if a URL shares the same origin as the current location
-    *
-    * @param {String} requestURL The URL to test
-    * @returns {boolean} True if URL shares the same origin, otherwise false
-    */
-    return function isURLSameOrigin(requestURL) {
-      const parsed = (utils.isString(requestURL)) ? resolveURL(requestURL) : requestURL;
-      return (parsed.protocol === originURL.protocol &&
-          parsed.host === originURL.host);
-    };
-  })() :
-
-  // Non standard browser envs (web workers, react-native) lack needed support.
-  (function nonStandardBrowserEnv() {
-    return function isURLSameOrigin() {
-      return true;
-    };
-  })());
+  return (
+    origin.protocol === url.protocol &&
+    origin.host === url.host &&
+    (isMSIE || origin.port === url.port)
+  );
+})(
+  new URL(platform.origin),
+  platform.navigator && /(msie|trident)/i.test(platform.navigator.userAgent)
+) : () => true);
 
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/helpers/cookies.js
 
@@ -31534,8 +32026,9 @@ function combineURLs(baseURL, relativeURL) {
  *
  * @returns {string} The combined full path
  */
-function buildFullPath(baseURL, requestedURL) {
-  if (baseURL && !isAbsoluteURL(requestedURL)) {
+function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
+  let isRelativeUrl = !isAbsoluteURL(requestedURL);
+  if (baseURL && (isRelativeUrl || allowAbsoluteUrls == false)) {
     return combineURLs(baseURL, requestedURL);
   }
   return requestedURL;
@@ -31563,7 +32056,7 @@ function mergeConfig(config1, config2) {
   config2 = config2 || {};
   const config = {};
 
-  function getMergedValue(target, source, caseless) {
+  function getMergedValue(target, source, prop, caseless) {
     if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
       return utils.merge.call({caseless}, target, source);
     } else if (utils.isPlainObject(source)) {
@@ -31575,11 +32068,11 @@ function mergeConfig(config1, config2) {
   }
 
   // eslint-disable-next-line consistent-return
-  function mergeDeepProperties(a, b, caseless) {
+  function mergeDeepProperties(a, b, prop , caseless) {
     if (!utils.isUndefined(b)) {
-      return getMergedValue(a, b, caseless);
+      return getMergedValue(a, b, prop , caseless);
     } else if (!utils.isUndefined(a)) {
-      return getMergedValue(undefined, a, caseless);
+      return getMergedValue(undefined, a, prop , caseless);
     }
   }
 
@@ -31637,10 +32130,10 @@ function mergeConfig(config1, config2) {
     socketPath: defaultToConfig2,
     responseEncoding: defaultToConfig2,
     validateStatus: mergeDirectKeys,
-    headers: (a, b) => mergeDeepProperties(headersToObject(a), headersToObject(b), true)
+    headers: (a, b , prop) => mergeDeepProperties(headersToObject(a), headersToObject(b),prop, true)
   };
 
-  utils.forEach(Object.keys(Object.assign({}, config1, config2)), function computeConfigValue(prop) {
+  utils.forEach(Object.keys({...config1, ...config2}), function computeConfigValue(prop) {
     const merge = mergeMap[prop] || mergeDeepProperties;
     const configValue = merge(config1[prop], config2[prop], prop);
     (utils.isUndefined(configValue) && merge !== mergeDirectKeys) || (config[prop] = configValue);
@@ -31662,11 +32155,11 @@ function mergeConfig(config1, config2) {
 /* harmony default export */ const resolveConfig = ((config) => {
   const newConfig = mergeConfig({}, config);
 
-  let {data, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth} = newConfig;
+  let { data, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth } = newConfig;
 
   newConfig.headers = headers = core_AxiosHeaders.from(headers);
 
-  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url), config.params, config.paramsSerializer);
+  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url, newConfig.allowAbsoluteUrls), config.params, config.paramsSerializer);
 
   // HTTP basic authentication
   if (auth) {
@@ -31675,17 +32168,21 @@ function mergeConfig(config1, config2) {
     );
   }
 
-  let contentType;
-
   if (utils.isFormData(data)) {
     if (platform.hasStandardBrowserEnv || platform.hasStandardBrowserWebWorkerEnv) {
-      headers.setContentType(undefined); // Let the browser set it
-    } else if ((contentType = headers.getContentType()) !== false) {
-      // fix semicolon duplication issue for ReactNative FormData implementation
-      const [type, ...tokens] = contentType ? contentType.split(';').map(token => token.trim()).filter(Boolean) : [];
-      headers.setContentType([type || 'multipart/form-data', ...tokens].join('; '));
+      headers.setContentType(undefined); // browser handles it
+    } else if (utils.isFunction(data.getHeaders)) {
+      // Node.js FormData (like form-data package)
+      const formHeaders = data.getHeaders();
+      // Only set safe headers to avoid overwriting security headers
+      const allowedHeaders = ['content-type', 'content-length'];
+      Object.entries(formHeaders).forEach(([key, val]) => {
+        if (allowedHeaders.includes(key.toLowerCase())) {
+          headers.set(key, val);
+        }
+      });
     }
-  }
+  }  
 
   // Add xsrf header
   // This is only done if running in a standard browser environment.
@@ -31815,15 +32312,18 @@ const isXHRAdapterSupported = typeof XMLHttpRequest !== 'undefined';
     };
 
     // Handle low level network errors
-    request.onerror = function handleError() {
-      // Real errors are hidden from us by the browser
-      // onerror should only fire if it's a network error
-      reject(new core_AxiosError('Network Error', core_AxiosError.ERR_NETWORK, config, request));
-
-      // Clean up request
-      request = null;
+  request.onerror = function handleError(event) {
+       // Browsers deliver a ProgressEvent in XHR onerror
+       // (message may be empty; when present, surface it)
+       // See https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/error_event
+       const msg = event && event.message ? event.message : 'Network Error';
+       const err = new core_AxiosError(msg, core_AxiosError.ERR_NETWORK, config, request);
+       // attach the underlying event for consumers who want details
+       err.event = event || null;
+       reject(err);
+       request = null;
     };
-
+    
     // Handle timeout
     request.ontimeout = function handleTimeout() {
       let timeoutErrorMessage = _config.timeout ? 'timeout of ' + _config.timeout + 'ms exceeded' : 'timeout exceeded';
@@ -32057,14 +32557,18 @@ const trackStream = (stream, chunkSize, onProgress, onFinish) => {
 
 
 
-const isFetchSupported = typeof fetch === 'function' && typeof Request === 'function' && typeof Response === 'function';
-const isReadableStreamSupported = isFetchSupported && typeof ReadableStream === 'function';
+const DEFAULT_CHUNK_SIZE = 64 * 1024;
 
-// used only inside the fetch adapter
-const encodeText = isFetchSupported && (typeof TextEncoder === 'function' ?
-    ((encoder) => (str) => encoder.encode(str))(new TextEncoder()) :
-    async (str) => new Uint8Array(await new Response(str).arrayBuffer())
-);
+const {isFunction: fetch_isFunction} = utils;
+
+const globalFetchAPI = (({Request, Response}) => ({
+  Request, Response
+}))(utils.global);
+
+const {
+  ReadableStream: fetch_ReadableStream, TextEncoder
+} = utils.global;
+
 
 const test = (fn, ...args) => {
   try {
@@ -32074,208 +32578,263 @@ const test = (fn, ...args) => {
   }
 }
 
-const supportsRequestStream = isReadableStreamSupported && test(() => {
-  let duplexAccessed = false;
+const factory = (env) => {
+  env = utils.merge.call({
+    skipUndefined: true
+  }, globalFetchAPI, env);
 
-  const hasContentType = new Request(platform.origin, {
-    body: new ReadableStream(),
-    method: 'POST',
-    get duplex() {
-      duplexAccessed = true;
-      return 'half';
-    },
-  }).headers.has('Content-Type');
+  const {fetch: envFetch, Request, Response} = env;
+  const isFetchSupported = envFetch ? fetch_isFunction(envFetch) : typeof fetch === 'function';
+  const isRequestSupported = fetch_isFunction(Request);
+  const isResponseSupported = fetch_isFunction(Response);
 
-  return duplexAccessed && !hasContentType;
-});
+  if (!isFetchSupported) {
+    return false;
+  }
 
-const DEFAULT_CHUNK_SIZE = 64 * 1024;
+  const isReadableStreamSupported = isFetchSupported && fetch_isFunction(fetch_ReadableStream);
 
-const supportsResponseStream = isReadableStreamSupported &&
-  test(() => utils.isReadableStream(new Response('').body));
+  const encodeText = isFetchSupported && (typeof TextEncoder === 'function' ?
+      ((encoder) => (str) => encoder.encode(str))(new TextEncoder()) :
+      async (str) => new Uint8Array(await new Request(str).arrayBuffer())
+  );
 
+  const supportsRequestStream = isRequestSupported && isReadableStreamSupported && test(() => {
+    let duplexAccessed = false;
 
-const resolvers = {
-  stream: supportsResponseStream && ((res) => res.body)
-};
+    const hasContentType = new Request(platform.origin, {
+      body: new fetch_ReadableStream(),
+      method: 'POST',
+      get duplex() {
+        duplexAccessed = true;
+        return 'half';
+      },
+    }).headers.has('Content-Type');
 
-isFetchSupported && (((res) => {
-  ['text', 'arrayBuffer', 'blob', 'formData', 'stream'].forEach(type => {
-    !resolvers[type] && (resolvers[type] = utils.isFunction(res[type]) ? (res) => res[type]() :
-      (_, config) => {
+    return duplexAccessed && !hasContentType;
+  });
+
+  const supportsResponseStream = isResponseSupported && isReadableStreamSupported &&
+    test(() => utils.isReadableStream(new Response('').body));
+
+  const resolvers = {
+    stream: supportsResponseStream && ((res) => res.body)
+  };
+
+  isFetchSupported && ((() => {
+    ['text', 'arrayBuffer', 'blob', 'formData', 'stream'].forEach(type => {
+      !resolvers[type] && (resolvers[type] = (res, config) => {
+        let method = res && res[type];
+
+        if (method) {
+          return method.call(res);
+        }
+
         throw new core_AxiosError(`Response type '${type}' is not supported`, core_AxiosError.ERR_NOT_SUPPORT, config);
       })
-  });
-})(new Response));
-
-const getBodyLength = async (body) => {
-  if (body == null) {
-    return 0;
-  }
-
-  if(utils.isBlob(body)) {
-    return body.size;
-  }
-
-  if(utils.isSpecCompliantForm(body)) {
-    const _request = new Request(platform.origin, {
-      method: 'POST',
-      body,
     });
-    return (await _request.arrayBuffer()).byteLength;
-  }
+  })());
 
-  if(utils.isArrayBufferView(body) || utils.isArrayBuffer(body)) {
-    return body.byteLength;
-  }
+  const getBodyLength = async (body) => {
+    if (body == null) {
+      return 0;
+    }
 
-  if(utils.isURLSearchParams(body)) {
-    body = body + '';
-  }
+    if (utils.isBlob(body)) {
+      return body.size;
+    }
 
-  if(utils.isString(body)) {
-    return (await encodeText(body)).byteLength;
-  }
-}
-
-const resolveBodyLength = async (headers, body) => {
-  const length = utils.toFiniteNumber(headers.getContentLength());
-
-  return length == null ? getBodyLength(body) : length;
-}
-
-/* harmony default export */ const adapters_fetch = (isFetchSupported && (async (config) => {
-  let {
-    url,
-    method,
-    data,
-    signal,
-    cancelToken,
-    timeout,
-    onDownloadProgress,
-    onUploadProgress,
-    responseType,
-    headers,
-    withCredentials = 'same-origin',
-    fetchOptions
-  } = resolveConfig(config);
-
-  responseType = responseType ? (responseType + '').toLowerCase() : 'text';
-
-  let composedSignal = helpers_composeSignals([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
-
-  let request;
-
-  const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
-      composedSignal.unsubscribe();
-  });
-
-  let requestContentLength;
-
-  try {
-    if (
-      onUploadProgress && supportsRequestStream && method !== 'get' && method !== 'head' &&
-      (requestContentLength = await resolveBodyLength(headers, data)) !== 0
-    ) {
-      let _request = new Request(url, {
+    if (utils.isSpecCompliantForm(body)) {
+      const _request = new Request(platform.origin, {
         method: 'POST',
-        body: data,
-        duplex: "half"
+        body,
       });
-
-      let contentTypeHeader;
-
-      if (utils.isFormData(data) && (contentTypeHeader = _request.headers.get('content-type'))) {
-        headers.setContentType(contentTypeHeader)
-      }
-
-      if (_request.body) {
-        const [onProgress, flush] = progressEventDecorator(
-          requestContentLength,
-          progressEventReducer(asyncDecorator(onUploadProgress))
-        );
-
-        data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush);
-      }
+      return (await _request.arrayBuffer()).byteLength;
     }
 
-    if (!utils.isString(withCredentials)) {
-      withCredentials = withCredentials ? 'include' : 'omit';
+    if (utils.isArrayBufferView(body) || utils.isArrayBuffer(body)) {
+      return body.byteLength;
     }
 
-    // Cloudflare Workers throws when credentials are defined
-    // see https://github.com/cloudflare/workerd/issues/902
-    const isCredentialsSupported = "credentials" in Request.prototype;
-    request = new Request(url, {
-      ...fetchOptions,
-      signal: composedSignal,
-      method: method.toUpperCase(),
-      headers: headers.normalize().toJSON(),
-      body: data,
-      duplex: "half",
-      credentials: isCredentialsSupported ? withCredentials : undefined
+    if (utils.isURLSearchParams(body)) {
+      body = body + '';
+    }
+
+    if (utils.isString(body)) {
+      return (await encodeText(body)).byteLength;
+    }
+  }
+
+  const resolveBodyLength = async (headers, body) => {
+    const length = utils.toFiniteNumber(headers.getContentLength());
+
+    return length == null ? getBodyLength(body) : length;
+  }
+
+  return async (config) => {
+    let {
+      url,
+      method,
+      data,
+      signal,
+      cancelToken,
+      timeout,
+      onDownloadProgress,
+      onUploadProgress,
+      responseType,
+      headers,
+      withCredentials = 'same-origin',
+      fetchOptions
+    } = resolveConfig(config);
+
+    let _fetch = envFetch || fetch;
+
+    responseType = responseType ? (responseType + '').toLowerCase() : 'text';
+
+    let composedSignal = helpers_composeSignals([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
+
+    let request = null;
+
+    const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
+      composedSignal.unsubscribe();
     });
 
-    let response = await fetch(request);
+    let requestContentLength;
 
-    const isStreamResponse = supportsResponseStream && (responseType === 'stream' || responseType === 'response');
+    try {
+      if (
+        onUploadProgress && supportsRequestStream && method !== 'get' && method !== 'head' &&
+        (requestContentLength = await resolveBodyLength(headers, data)) !== 0
+      ) {
+        let _request = new Request(url, {
+          method: 'POST',
+          body: data,
+          duplex: "half"
+        });
 
-    if (supportsResponseStream && (onDownloadProgress || (isStreamResponse && unsubscribe))) {
-      const options = {};
+        let contentTypeHeader;
 
-      ['status', 'statusText', 'headers'].forEach(prop => {
-        options[prop] = response[prop];
-      });
-
-      const responseContentLength = utils.toFiniteNumber(response.headers.get('content-length'));
-
-      const [onProgress, flush] = onDownloadProgress && progressEventDecorator(
-        responseContentLength,
-        progressEventReducer(asyncDecorator(onDownloadProgress), true)
-      ) || [];
-
-      response = new Response(
-        trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
-          flush && flush();
-          unsubscribe && unsubscribe();
-        }),
-        options
-      );
-    }
-
-    responseType = responseType || 'text';
-
-    let responseData = await resolvers[utils.findKey(resolvers, responseType) || 'text'](response, config);
-
-    !isStreamResponse && unsubscribe && unsubscribe();
-
-    return await new Promise((resolve, reject) => {
-      settle(resolve, reject, {
-        data: responseData,
-        headers: core_AxiosHeaders.from(response.headers),
-        status: response.status,
-        statusText: response.statusText,
-        config,
-        request
-      })
-    })
-  } catch (err) {
-    unsubscribe && unsubscribe();
-
-    if (err && err.name === 'TypeError' && /fetch/i.test(err.message)) {
-      throw Object.assign(
-        new core_AxiosError('Network Error', core_AxiosError.ERR_NETWORK, config, request),
-        {
-          cause: err.cause || err
+        if (utils.isFormData(data) && (contentTypeHeader = _request.headers.get('content-type'))) {
+          headers.setContentType(contentTypeHeader)
         }
-      )
+
+        if (_request.body) {
+          const [onProgress, flush] = progressEventDecorator(
+            requestContentLength,
+            progressEventReducer(asyncDecorator(onUploadProgress))
+          );
+
+          data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush);
+        }
+      }
+
+      if (!utils.isString(withCredentials)) {
+        withCredentials = withCredentials ? 'include' : 'omit';
+      }
+
+      // Cloudflare Workers throws when credentials are defined
+      // see https://github.com/cloudflare/workerd/issues/902
+      const isCredentialsSupported = isRequestSupported && "credentials" in Request.prototype;
+
+      const resolvedOptions = {
+        ...fetchOptions,
+        signal: composedSignal,
+        method: method.toUpperCase(),
+        headers: headers.normalize().toJSON(),
+        body: data,
+        duplex: "half",
+        credentials: isCredentialsSupported ? withCredentials : undefined
+      };
+
+      request = isRequestSupported && new Request(url, resolvedOptions);
+
+      let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url, resolvedOptions));
+
+      const isStreamResponse = supportsResponseStream && (responseType === 'stream' || responseType === 'response');
+
+      if (supportsResponseStream && (onDownloadProgress || (isStreamResponse && unsubscribe))) {
+        const options = {};
+
+        ['status', 'statusText', 'headers'].forEach(prop => {
+          options[prop] = response[prop];
+        });
+
+        const responseContentLength = utils.toFiniteNumber(response.headers.get('content-length'));
+
+        const [onProgress, flush] = onDownloadProgress && progressEventDecorator(
+          responseContentLength,
+          progressEventReducer(asyncDecorator(onDownloadProgress), true)
+        ) || [];
+
+        response = new Response(
+          trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
+            flush && flush();
+            unsubscribe && unsubscribe();
+          }),
+          options
+        );
+      }
+
+      responseType = responseType || 'text';
+
+      let responseData = await resolvers[utils.findKey(resolvers, responseType) || 'text'](response, config);
+
+      !isStreamResponse && unsubscribe && unsubscribe();
+
+      return await new Promise((resolve, reject) => {
+        settle(resolve, reject, {
+          data: responseData,
+          headers: core_AxiosHeaders.from(response.headers),
+          status: response.status,
+          statusText: response.statusText,
+          config,
+          request
+        })
+      })
+    } catch (err) {
+      unsubscribe && unsubscribe();
+
+      if (err && err.name === 'TypeError' && /Load failed|fetch/i.test(err.message)) {
+        throw Object.assign(
+          new core_AxiosError('Network Error', core_AxiosError.ERR_NETWORK, config, request),
+          {
+            cause: err.cause || err
+          }
+        )
+      }
+
+      throw core_AxiosError.from(err, err && err.code, config, request);
     }
-
-    throw core_AxiosError.from(err, err && err.code, config, request);
   }
-}));
+}
 
+const seedCache = new Map();
 
+const getFetch = (config) => {
+  let env = config ? config.env : {};
+  const {fetch, Request, Response} = env;
+  const seeds = [
+    Request, Response, fetch
+  ];
+
+  let len = seeds.length, i = len,
+    seed, target, map = seedCache;
+
+  while (i--) {
+    seed = seeds[i];
+    target = map.get(seed);
+
+    target === undefined && map.set(seed, target = (i ? new Map() : factory(env)))
+
+    map = target;
+  }
+
+  return target;
+};
+
+const adapter = getFetch();
+
+/* harmony default export */ const adapters_fetch = ((/* unused pure expression or super */ null && (adapter)));
 
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/adapters/adapters.js
 
@@ -32287,7 +32846,9 @@ const resolveBodyLength = async (headers, body) => {
 const knownAdapters = {
   http: helpers_null,
   xhr: xhr,
-  fetch: adapters_fetch
+  fetch: {
+    get: getFetch,
+  }
 }
 
 utils.forEach(knownAdapters, (fn, value) => {
@@ -32306,7 +32867,7 @@ const renderReason = (reason) => `- ${reason}`;
 const isResolvedHandle = (adapter) => utils.isFunction(adapter) || adapter === null || adapter === false;
 
 /* harmony default export */ const adapters = ({
-  getAdapter: (adapters) => {
+  getAdapter: (adapters, config) => {
     adapters = utils.isArray(adapters) ? adapters : [adapters];
 
     const {length} = adapters;
@@ -32329,7 +32890,7 @@ const isResolvedHandle = (adapter) => utils.isFunction(adapter) || adapter === n
         }
       }
 
-      if (adapter) {
+      if (adapter && (utils.isFunction(adapter) || (adapter = adapter.get(config)))) {
         break;
       }
 
@@ -32407,7 +32968,7 @@ function dispatchRequest(config) {
     config.headers.setContentType('application/x-www-form-urlencoded', false);
   }
 
-  const adapter = adapters.getAdapter(config.adapter || lib_defaults.adapter);
+  const adapter = adapters.getAdapter(config.adapter || lib_defaults.adapter, config);
 
   return adapter(config).then(function onAdapterResolution(response) {
     throwIfCancellationRequested(config);
@@ -32442,7 +33003,7 @@ function dispatchRequest(config) {
 }
 
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/env/data.js
-const VERSION = "1.7.7";
+const VERSION = "1.12.2";
 ;// CONCATENATED MODULE: ./node_modules/axios/lib/helpers/validator.js
 /* provided dependency */ var console = __webpack_require__(6763);
 
@@ -32497,6 +33058,14 @@ validators.transitional = function transitional(validator, version, message) {
 
     return validator ? validator(value, opt, opts) : true;
   };
+};
+
+validators.spelling = function spelling(correctSpelling) {
+  return (value, opt) => {
+    // eslint-disable-next-line no-console
+    console.warn(`${opt} is likely a misspelling of ${correctSpelling}`);
+    return true;
+  }
 };
 
 /**
@@ -32560,7 +33129,7 @@ const Axios_validators = validator.validators;
  */
 class Axios {
   constructor(instanceConfig) {
-    this.defaults = instanceConfig;
+    this.defaults = instanceConfig || {};
     this.interceptors = {
       request: new core_InterceptorManager(),
       response: new core_InterceptorManager()
@@ -32580,9 +33149,9 @@ class Axios {
       return await this._request(configOrUrl, config);
     } catch (err) {
       if (err instanceof Error) {
-        let dummy;
+        let dummy = {};
 
-        Error.captureStackTrace ? Error.captureStackTrace(dummy = {}) : (dummy = new Error());
+        Error.captureStackTrace ? Error.captureStackTrace(dummy) : (dummy = new Error());
 
         // slice off the Error: ... line
         const stack = dummy.stack ? dummy.stack.replace(/^.+\n/, '') : '';
@@ -32637,6 +33206,20 @@ class Axios {
       }
     }
 
+    // Set config.allowAbsoluteUrls
+    if (config.allowAbsoluteUrls !== undefined) {
+      // do nothing
+    } else if (this.defaults.allowAbsoluteUrls !== undefined) {
+      config.allowAbsoluteUrls = this.defaults.allowAbsoluteUrls;
+    } else {
+      config.allowAbsoluteUrls = true;
+    }
+
+    validator.assertOptions(config, {
+      baseUrl: Axios_validators.spelling('baseURL'),
+      withXsrfToken: Axios_validators.spelling('withXSRFToken')
+    }, true);
+
     // Set config.method
     config.method = (config.method || this.defaults.method || 'get').toLowerCase();
 
@@ -32679,8 +33262,8 @@ class Axios {
 
     if (!synchronousRequestInterceptors) {
       const chain = [dispatchRequest.bind(this), undefined];
-      chain.unshift.apply(chain, requestInterceptorChain);
-      chain.push.apply(chain, responseInterceptorChain);
+      chain.unshift(...requestInterceptorChain);
+      chain.push(...responseInterceptorChain);
       len = chain.length;
 
       promise = Promise.resolve(config);
@@ -32695,8 +33278,6 @@ class Axios {
     len = requestInterceptorChain.length;
 
     let newConfig = config;
-
-    i = 0;
 
     while (i < len) {
       const onFulfilled = requestInterceptorChain[i++];
@@ -32727,7 +33308,7 @@ class Axios {
 
   getUri(config) {
     config = mergeConfig(this.defaults, config);
-    const fullPath = buildFullPath(config.baseURL, config.url);
+    const fullPath = buildFullPath(config.baseURL, config.url, config.allowAbsoluteUrls);
     return buildURL(fullPath, config.params, config.paramsSerializer);
   }
 }
