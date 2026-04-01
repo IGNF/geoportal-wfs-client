@@ -1,9 +1,11 @@
 import webpack from "webpack";
 import path from "path";
+import { createRequire } from "module";
 import ESLintPlugin from 'eslint-webpack-plugin';
 import { CleanWebpackPlugin } from 'clean-webpack-plugin';
-import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 import TerserPlugin from "terser-webpack-plugin";
+
+const require = createRequire(import.meta.url);
 
 const __dirname = path.resolve();
 
@@ -23,12 +25,25 @@ let config = {
     filename: '[name].js',
     globalObject: 'this'
   },
+  resolve: {
+    fallback: {
+      assert: require.resolve("assert/"),
+      buffer: require.resolve("buffer/"),
+      http: require.resolve("stream-http"),
+      https: require.resolve("https-browserify"),
+      process: require.resolve("process/browser.js"),
+      url: require.resolve("url/"),
+    },
+  },
   plugins: [
     new CleanWebpackPlugin({
       verbose: false,
       dry: false
     }),
-    new NodePolyfillPlugin(),
+    new webpack.ProvidePlugin({
+      Buffer: ["buffer", "Buffer"],
+      process: require.resolve("process/browser.js"),
+    }),
     new ESLintPlugin({
       extensions: ['js'],
       exclude: ["node_modules"],
