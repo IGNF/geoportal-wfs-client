@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "geoportal-wfs-client",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Client GeoJSON pour les WFS du géoportail",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
     "@turf/meta": "6.5.0",
     "@turf/turf": "^6.5.0",
     "@xmldom/xmldom": "^0.8.10",
-    "axios": "1.14.0",
+    "axios": "1.15.0",
     "http-proxy-agent": "^7.0.0",
     "https-proxy-agent": "^7.0.2",
     "net": "^1.0.2",
